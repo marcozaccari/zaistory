@@ -283,6 +283,31 @@ button {
   padding: 12px 14px 4px;
 }
 
+/* Ogni blocco che il player aggiunge entra in dissolvenza, salendo di pochi
+   pixel. Serve a rispondere a una domanda precisa — "cosa e' comparso adesso?"
+   — quando dopo un tocco il transcript si allunga di tre o quattro blocchi in
+   una volta: senza, si perde il filo di dove si era arrivati.
+   Lenta abbastanza da seguirla con l'occhio, ma sempre un indizio e non una
+   transizione di scena: oltre il mezzo secondo, scorrendo i beat uno dietro
+   l'altro, diventerebbe un'attesa.
+   Opacita' e translate non toccano il layout, quindi l'inseguimento del fondo
+   non ne risente. Sotto `prefers-reduced-motion` la regola globale piu' sopra
+   la spegne, e i blocchi appaiono e basta. */
+@keyframes comparsa {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.transcript > * {
+  animation: comparsa 450ms ease-out both;
+}
+
 .entry {
   margin: 0 0 14px;
   max-width: 62ch;
@@ -653,9 +678,24 @@ body.debug .only-debug {
   line-height: 1.35;
 }
 
-.choice:active {
+/* Il tocco si vede mentre il dito e' giu' (`:active`) e resta visibile dopo,
+   perche' il bottone viene trattenuto un istante prima di sparire. La
+   transizione fa arrivare la campitura invece di farla apparire di scatto. */
+.choice {
+  transition: background-color 100ms ease, border-color 100ms ease, transform 100ms ease;
+}
+
+.choice:active,
+.choice.premuto {
   background: var(--accent-soft);
   border-color: var(--accent);
+  transform: scale(0.98);
+}
+
+/* Mentre un tocco e' in corso il dock non accetta altro: due azioni partite
+   insieme sarebbero due passi di storia. */
+.dock.bloccato {
+  pointer-events: none;
 }
 
 .choice .idx {
@@ -679,7 +719,8 @@ body.debug .only-debug {
   color: var(--bg);
 }
 
-.choice.continue.start:active {
+.choice.continue.start:active,
+.choice.continue.start.premuto {
   background: var(--fg);
   border-color: var(--fg);
 }

@@ -129,6 +129,8 @@ export class WebUI implements PlayerUI {
   private anchor: 'end' | 'top' = 'end';
   /** Esito dell'`Effect` in corso, in attesa di essere disposto. */
   private pending?: { rows: PromptRow[]; texts: string[]; changes: string[] };
+  /** Un tocco e' in corso: il dock e' fermo finche' non finisce. */
+  private pressing = false;
 
   constructor(o: WebUIOptions) {
     this.story = o.story;
@@ -143,7 +145,34 @@ export class WebUI implements PlayerUI {
     this.dead = true;
     this.abort?.(new QuitError());
     this.abort = undefined;
+    this.pressing = false;
+    this.dock.classList.remove('bloccato');
     clear(this.dock);
+  }
+
+  /**
+   * Trattiene il bottone premuto quanto basta a vederlo.
+   *
+   * Senza questa pausa il tocco non si percepisce affatto: il dock viene
+   * svuotato nello stesso istante del click, quindi lo stato premuto vive
+   * qualche millisecondo e sparisce insieme al bottone. Non e' quindi una
+   * questione di durata dell'animazione — e' che non c'era niente da animare.
+   *
+   * Il ritardo si paga a ogni interazione, per questo resta corto: giusto il
+   * tempo che la campitura arrivi a fondo. Durante l'attesa il dock e' inerte,
+   * cosi' un secondo tocco non fa partire due azioni.
+   *
+   * Ritorna false se un tocco era gia' in corso: chi chiama deve fermarsi.
+   */
+  private async press(b: HTMLButtonElement): Promise<boolean> {
+    if (this.pressing || this.dead) return false;
+    this.pressing = true;
+    this.dock.classList.add('bloccato');
+    b.classList.add('premuto');
+    await new Promise((r) => setTimeout(r, 140));
+    this.pressing = false;
+    this.dock.classList.remove('bloccato');
+    return !this.dead;
   }
 
   // -------------------------------------------------------------- stampa
@@ -296,7 +325,7 @@ export class WebUI implements PlayerUI {
     this.anchor = 'top';
     this.push(cover);
     try {
-      await this.waitContinue('comincia', 'start');
+      await this.waitContinue('inizia', 'start');
     } finally {
       this.anchor = 'end';
     }
@@ -505,7 +534,8 @@ export class WebUI implements PlayerUI {
             `id: ${a.id} · condizione: ${describeCondition(a.condition)} · effetto: ${describeEffect(a.effect)}`,
           ),
         );
-        b.onclick = () => {
+        b.onclick = async () => {
+          if (!(await this.press(b))) return;
           this.entry('picked', `▸ ${a.label}`);
           resolve({ actionId: a.id });
         };
@@ -547,7 +577,8 @@ export class WebUI implements PlayerUI {
         b.append(
           el('span', 'why dbg-inline', `→ nodo ${c.goto} · condizione: ${describeCondition(c.condition)} · effetto: ${describeEffect(c.effect)}`),
         );
-        b.onclick = () => {
+        b.onclick = async () => {
+          if (!(await this.press(b))) return;
           this.entry('picked', `▸ ${c.text}`);
           resolve({ choiceIndex: i });
         };
@@ -614,7 +645,8 @@ export class WebUI implements PlayerUI {
       this.abort = reject;
       clear(this.dock);
       const b = el('button', `choice continue${variant === 'start' ? ' start' : ''}`, `▸ ${label}`);
-      const go = () => {
+      const go = async () => {
+        if (!(await this.press(b))) return;
         this.abort = undefined;
         clear(this.dock);
         document.removeEventListener('keydown', onKey);
@@ -623,7 +655,7 @@ export class WebUI implements PlayerUI {
       const onKey = (e: KeyboardEvent) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          go();
+          void go();
         }
       };
       b.onclick = go;

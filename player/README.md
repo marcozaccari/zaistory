@@ -56,7 +56,7 @@ Si apre sulla **copertina**: titolo, descrizione, `ir_version`, `id`,
 `language`, numero di scene, `start_scene`, lo stile globale, la roster dei
 personaggi coi loro prompt e gli elenchi `state_flags_schema` /
 `inventory_schema`. Serve a rispondere in un colpo d'occhio alle domande che ci
-si fa aprendo un IR che non si è compilato adesso. Un tocco su `comincia` e la
+si fa aprendo un IR che non si è compilato adesso. Un tocco su `inizia` e la
 prima scena parte — il tocco non è cerimonia: il transcript insegue il fondo, e
 senza qualcosa che trattenga la lettura la copertina scorrerebbe via prima di
 essere vista. In terminale, dove lo scrollback resta, la copertina non chiede
