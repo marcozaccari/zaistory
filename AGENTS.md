@@ -45,6 +45,24 @@ python3 skills/story-ir-compiler/scripts/segment.py script.md story_map.json
 
 Ogni IR prodotto o modificato va validato prima di considerarlo finito.
 
+```bash
+cd player && npm install
+
+npm test                                   # test di engine, linter e lettura IR
+npm run build:node                         # poi la CLI e' in dist-node/
+
+# analisi statica e playthrough di riferimento: entrambi devono uscire con 0
+node dist-node/src/cli/zaiplay.js --lint ../examples/nel-paese-dei-ciechi.ir.json
+node dist-node/src/cli/zaiplay.js \
+  --script ../examples/nel-paese-dei-ciechi.playthrough.txt \
+  ../examples/nel-paese-dei-ciechi.ir.json
+
+npm run dev                                # player web con ricarica a caldo
+npm run build:web                          # -> dist/index.html, file unico
+```
+
+Toccando lo schema o il player, il playthrough di riferimento va rigiocato.
+
 ## Vincoli di comportamento
 
 - **Il resolver e il player non inventano nulla.** Possono solo scegliere tra le
@@ -53,8 +71,12 @@ Ogni IR prodotto o modificato va validato prima di considerarlo finito.
 - **Aggiornare un IR esistente > ricompilarlo.** Il compilatore non è
   deterministico tra sessioni: id e dettagli minori cambiano. Se un
   `story.ir.json` esiste già, editalo in place mantenendo gli id.
-- **Nessuno stack è stato scelto** per il player CLI e per il generatore ad hoc.
-  La scelta è deliberatamente rimandata: chiedi, non decidere per conto tuo.
+- **Nessuno stack è stato scelto** per il generatore ad hoc. La scelta è
+  deliberatamente rimandata: chiedi, non decidere per conto tuo. (Per il player
+  invece è scelto: TypeScript, `player/` — web e CLI sullo stesso core.)
+- **La logica di gioco sta in `player/src/core/`, e solo lì.** Web e CLI sono
+  interfacce: se ti trovi a duplicare una regola in `src/web/` o `src/cli/`,
+  è nel posto sbagliato. La PWA importerà lo stesso core.
 
 ## Riprendere il progetto
 

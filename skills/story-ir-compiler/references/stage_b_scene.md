@@ -95,6 +95,24 @@ esporre informazioni che il giocatore dovrebbe scoprire tramite dialogo/azioni.
   puoi chiedere della lettera bruciata se non l'hai ancora notata) — verifica
   contro `state_flags_schema` del contesto, ma sei libero di introdurre un
   nuovo flag locale se la logica della scena lo richiede davvero.
+- **In `choices[].text`, il parlato va sempre tra virgolette basse « ».** Una
+  scelta può essere una battuta pronunciata, un'azione, o l'una introdotta
+  dall'altra: le virgolette dicono al giocatore quali parole gli usciranno
+  davvero di bocca, e senza di loro una battuta e una didascalia si leggono
+  uguali.
+
+  ```
+  «Vengo da oltre i monti, dove gli uomini vedono.»      battuta: virgolettata
+  Restare immobile e lasciarsi avvicinare.               azione: nuda
+  Insistere: «Se aveste occhi li vedreste.»              didascalia + battuta
+  Parlare del cielo e delle montagne.                    intenzione, non parole
+  ```
+
+  L'ultimo caso è la distinzione che conta: se stai *riassumendo* di cosa si
+  parla non stai citando, e le virgolette non vanno. Vanno solo sulle parole
+  esatte. Stessa regola per `DialogueNode.text`, dove però il parlante è già
+  esplicito nel campo `speaker`: lì le virgolette servono solo se la battuta
+  contiene a sua volta una citazione.
 
 ### 4. Azioni contestuali — il cuore della giocabilità (scene interactive)
 

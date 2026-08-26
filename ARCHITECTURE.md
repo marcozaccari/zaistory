@@ -8,7 +8,7 @@
 > bene — è così che è nato `scene_type`, testando su materiale reale invece
 > che discutendo in astratto. Regole operative per gli agenti: `AGENTS.md`. Oggi il lavoro attivo è su due fronti:
 > la skill `skills/story-ir-compiler`, che applica queste regole direttamente
-> in conversazione, e il player CLI di test `player-cli/`, che le verifica
+> in conversazione, e il player di test `player/`, che le verifica
 > giocando l'IR prodotto. In futuro le stesse regole del compilatore verranno
 > implementate in un generatore dedicato (non ancora iniziato, nessuna scelta
 > di linguaggio/stack presa).
@@ -31,8 +31,9 @@ sceneggiatura.md (libera)
     ▼  COMPILATORE (oggi: skill in conversazione; domani: generatore ad hoc)
 story.ir.json (formato IR, contratto stabile — engine-ir.schema.json)
     │
-    ├─▶  PLAYER CLI DI TEST (solo testo, nessun asset — `player-cli/`)
-    │      usa il RESOLVER, salta completamente il modulo assets
+    ├─▶  PLAYER DI TEST (solo testo, nessun asset — `player/`)
+    │      web (telefono/desktop) + CLI, stesso core; usa il RESOLVER e
+    │      salta completamente il modulo assets
     │
     ▼  MODULO ASSETS (design definito, non ancora implementato in un generatore)
 manifest.json + file immagini/voce/suoni generati
@@ -165,12 +166,12 @@ in un generatore.
   player mobile reale avrà comunque bisogno che gli asset siano raggiungibili
   via URL pubblico (storage/CDN), ma quale servizio usare non è stato deciso.
 
-## Player CLI di test (`player-cli/`, costruito)
+## Player di test (`player/`, costruito)
 
-Player minimale da riga di comando, **puramente testuale**: nessuna risorsa
-grafica o audio, nessun manifest asset. Consuma **esclusivamente
-`story.ir.json`** e serve a giocare e testare una storia molto prima che
-esistano il modulo assets e la PWA.
+Player minimale, **puramente testuale**: nessuna risorsa grafica o audio,
+nessun manifest asset. Consuma **esclusivamente `story.ir.json`** e serve a
+giocare e testare una storia molto prima che esistano il modulo assets e la
+PWA.
 
 Perché serve, in una riga: è il modo più economico per scoprire che una
 storia compilata *non è giocabile* (scena senza uscita, `goto` che punta a
@@ -179,31 +180,60 @@ di dialogo irraggiungibile) senza dover prima generare immagini e voci.
 La validazione di schema dice che l'IR è *ben formato*; solo giocarlo dice
 che è *giocabile*.
 
-**Stack scelto: Go, binario singolo** (`player-cli/`, comando `zaplay`,
-nessuna dipendenza esterna — `go.mod` senza `require`). Motivazione: un
-eseguibile autonomo che si passa a chiunque debba testare una storia senza
-installargli un runtime, e un linguaggio tipizzato che rende l'IR uno
-schema di tipi verificato dal compilatore. Contro consapevole: è un
-linguaggio in più nel repository e non riusabile dalla futura PWA — la
-logica di engine andrà riscritta lì, ma è poca e interamente derivabile da
-`Effect`/`Condition`.
+**Stack scelto: TypeScript, un core condiviso e due facce** (`player/`).
+Decisione presa dopo una prima versione in Go, buttata: un binario da riga di
+comando non si esegue su un telefono, e testare una storia richiede provarla
+sul device su cui verrà giocata. Il vincolo vero è quello — *testare
+indipendentemente dal device* — e in browser ci si arriva solo con JS.
+
+- `player/src/core/` — engine, stato, `Effect`/`Condition`, linter, resolver,
+  lettura severa dell'IR. Non tocca il DOM e non legge da stdin.
+- `player/src/web/` — il player vero e proprio, mobile-first. La build è **un
+  unico file HTML** (JS e CSS incorporati) che si apre anche da `file://`, si
+  manda in chat o si mette su qualunque static host: nessun runtime da
+  installare, che era poi il pregio del binario Go.
+- `player/src/cli/` — il terminale, per `--lint` e `--script` headless in CI.
+  Non gira su mobile e non deve: è l'altra metà del bisogno.
+
+Cosa si guadagna rispetto al Go, oltre al browser: la logica dell'engine non
+andrà riscritta per la PWA — `player/src/core/` è già quello che la PWA
+importerà. Contro consapevole: si perde il binario autonomo, e la CLI ora
+richiede Node installato. Le dipendenze restano zero a runtime (TypeScript e
+Vite sono soli strumenti di build).
 
 - **Input unico: l'IR.** Nessun'altra dipendenza. Tutti i campi destinati
   alla generazione asset (`image_prompt`, `ambient_sound_prompt`,
   `sound_effect_prompt`, `VoiceSpec.style_prompt`, `ambient_music_tags`)
-  non vengono generati né riprodotti: in modalità normale sono ignorati, in
-  modalità debug vengono mostrati come testo. Conseguenza voluta: il player
-  CLI è anche un **test di conformità dell'IR** — se riesce a portare una
-  storia dall'inizio alla fine, il contratto regge.
+  non vengono generati né riprodotti, ma **si vedono sempre come testo** —
+  tutti, nessuno riservato alla modalità debug — etichettati con il nome che
+  hanno nell'IR e attaccati al punto della storia a cui appartengono: lo stile
+  globale in testa alla partita, i prompt di scena e dei personaggi presenti
+  nella sua intestazione, quelli di un beat appesi al beat, `voice_override`
+  sotto la battuta, `narration_voice` e `play_sound_prompt` dopo l'effetto che
+  li produce. Sono il segnaposto di
+  quello che un giorno sarà immagine, suono e voce, ed è leggendoli mentre si
+  gioca che ci si accorge che un beat ha cambiato inquadratura senza dirlo o
+  che manca un suono — cioè si rilegge la storia con gli occhi del modulo
+  assets, prima che il modulo assets esista. Il debug non aggiunge prompt:
+  aggiunge la diagnostica intorno (id, condizioni, effetti, azioni filtrate e
+  il perché). Conseguenza voluta: il player è anche un **test di conformità
+  dell'IR** — se riesce a portare una storia dall'inizio alla fine, il
+  contratto regge.
+- **Copertina all'avvio**: prima della prima scena il player mostra quello che
+  vale per tutta la storia — titolo, descrizione, `ir_version`, `id`,
+  `language`, numero di scene, `start_scene`, `global_style` e la roster dei
+  personaggi con i loro prompt. Serve a riconoscere al volo *quale* IR si sta
+  giocando, domanda tutt'altro che oziosa quando il compilatore non è
+  deterministico tra sessioni.
 - **Cosa mostra in gioco**: narrazione all'ingresso scena (tutti i beat di
   `narration[]` in sequenza, incluse le cutscene, con tap-to-continue),
   battute di dialogo con `speaker`, scelte di dialogo disponibili, azioni
   contestuali della scena. Le scelte e le azioni non disponibili (condizione
   `Condition` non soddisfatta) restano nascoste come in un player reale.
-- **Modalità debug** (comando dedicato, es. `:debug`, oppure flag di avvio):
-  mostra i *parametri della scena* — `id`, `title`, `scene_type`,
-  `scene_tone`, prompt di background, personaggi presenti,
-  `on_enter_flags_set` — e **tutte** le azioni della scena, comprese quelle
+- **Modalità debug** (comando dedicato, es. `:debug`, oppure il tasto `debug`
+  nel player web): mostra quello che i prompt di scena non dicono già — `id`,
+  conteggi, personaggi presenti, `on_enter_flags_set` — e **tutte** le azioni
+  della scena, comprese quelle
   attualmente filtrate da una condizione, con accanto id, condizione
   richiesta ed effetto risultante. Serve a capire *perché* un'azione non
   compare, che è la domanda che ci si pone il 90% delle volte quando si
@@ -217,28 +247,30 @@ logica di engine andrà riscritta lì, ma è poca e interamente derivabile da
   un id di azione esistente oppure un fallback in-character):
   1. **nessun resolver** — selezione a menu numerato. Deterministico, zero
      dipendenze, è la modalità da usare per i test di regressione.
-     **Implementato** (`-resolver menu`, default).
+     **Implementato** (`--resolver menu`, default; nel player web le chip
+     *sono* il menu).
   2. **Claude** — via API/sessione, per input testuale libero. Non ancora
-     implementato: `-resolver claude` esce con un errore esplicito.
+     implementato: `--resolver claude` esce con un errore esplicito.
   3. **LLM/SLM locale offline** — modello piccolo eseguito in locale, per
      testare senza rete e senza costo per battuta. Non ancora implementato.
   Il backend si sceglie all'avvio; il resto del player non cambia. Motivo
   per cui i tre stanno insieme: il resolver è il pezzo più incerto del
-  progetto, e il player CLI è il banco di prova naturale per confrontare
+  progetto, e il player di test è il banco di prova naturale per confrontare
   quanto bene un modello piccolo locale se la cava rispetto a Claude sullo
   stesso set di scene.
-- **Vincolo architetturale, identico a quello del resolver**: il player CLI
+- **Vincolo architetturale, identico a quello del resolver**: il player
   non contiene logica narrativa propria. Non inventa azioni, non genera
   testo di suo, non modifica lo stato se non applicando `Effect` già
   presenti nell'IR. Se qualcosa non si può fare, è perché l'IR non lo
   prevede — ed è esattamente l'informazione che si sta cercando.
 - **Riproducibilità**: poiché il resolver può solo scegliere tra azioni già
   definite, una partita è interamente descritta dalla sequenza di id di
-  azione/scelta. Implementato: `-record` salva la sequenza giocata,
-  `-script` la rigioca senza input umano (exit code diverso da 0 se la
+  azione/scelta. Implementato: `--record` salva la sequenza giocata,
+  `--script` la rigioca senza input umano (nel player web la stessa sequenza
+  si incolla nella scheda `traccia`) (exit code diverso da 0 se la
   partita non arriva più in fondo). Le scelte di dialogo, che nello schema
   non hanno un id proprio, sono identificate dal nodo di destinazione.
-- **Linter di giocabilità** (`-lint`, aggiunto costruendo il player): i
+- **Linter di giocabilità** (`--lint`, aggiunto costruendo il player): i
   controlli statici che la validazione di schema non può fare — `goto` verso
   id inesistenti, scene irraggiungibili, nodi di dialogo monchi o
   irraggiungibili, alberi di dialogo che nessuna azione raggiunge,
@@ -256,7 +288,10 @@ logica di engine andrà riscritta lì, ma è poca e interamente derivabile da
 
 - **PWA** (target principale): installabile da browser mobile, può
   funzionare offline se gli asset sono precachati, nessun vincolo di
-  formato — pensata come il player "di riferimento" più completo.
+  formato — pensata come il player "di riferimento" più completo. Con il
+  player di test passato a TypeScript, `player/src/core/` è già il pezzo che
+  la PWA importerà: engine, stato, `Effect`/`Condition` e linter non vanno
+  riscritti, cambia solo l'interfaccia sopra di essi.
 - **Bot Telegram** (target secondario): meno adatto a un'interfaccia
   punta-e-clicca vera, ma buon secondo target proprio perché il modello di
   interazione scelto (dialoghi a scelte + azioni contestuali, non
@@ -283,10 +318,11 @@ logica di engine andrà riscritta lì, ma è poca e interamente derivabile da
 1. Continuare a iterare sulla skill: testarla su altre sceneggiature reali
    (stili diversi da quello già provato), correggere prompt/schema quando
    emergono lacune concrete — non in astratto.
-2. ~~Costruire il **player CLI di test**~~ — fatto (`player-cli/`, Go,
-   resolver a menu, modalità debug, linter, script di playthrough).
+2. ~~Costruire il **player di test**~~ — fatto (`player/`, TypeScript: player
+   web mobile-first + CLI headless sullo stesso core, resolver a menu,
+   modalità debug, linter, script di playthrough).
 3. Implementare il resolver per input testuale libero (design già fissato
-   sopra, mai implementato) — il player CLI è il suo primo consumatore e il
+   sopra, mai implementato) — il player di test è il suo primo consumatore e il
    banco di prova per confrontare Claude e un SLM locale. È ora il prossimo
    passo naturale: l'interfaccia e il backend a menu ci sono già, manca solo
    il corpo dei due backend.

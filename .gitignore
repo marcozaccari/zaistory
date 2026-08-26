@@ -1,1 +1,3 @@
-player-cli/zaplay
+player/node_modules
+player/dist
+player/dist-node

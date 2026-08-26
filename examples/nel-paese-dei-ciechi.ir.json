@@ -379,11 +379,11 @@
             "text": "Un uomo... un uomo o uno spirito, sceso dalle rocce.",
             "choices": [
               {
-                "text": "Vengo da oltre i monti. Dal paese di là, dove gli uomini possono vedere.",
+                "text": "«Vengo da oltre i monti. Dal paese di là, dove gli uomini possono vedere.»",
                 "goto": "d_vista"
               },
               {
-                "text": "Vengo da Bogotà, dove ci sono centomila persone e la città si estende a perdita d'occhio.",
+                "text": "«Vengo da Bogotà, dove ci sono centomila persone e la città si estende a perdita d'occhio.»",
                 "goto": "d_vista"
               },
               {

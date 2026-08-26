@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#12141a" />
+    <title>zaiplay — player di test ZAiStory</title>
+  </head>
+  <body>
+    <!-- Schermata iniziale: senza IR non c'e' niente da giocare. -->
+    <section id="loader" class="loader">
+      <div class="loader-card">
+        <h1>zaiplay</h1>
+        <p class="sub">Player di test per <code>story.ir.json</code>. Nessun asset: solo l'IR.</p>
+
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept=".json,application/json" hidden />
+          <strong>Scegli un file .ir.json</strong>
+          <span>oppure trascinalo qui</span>
+        </label>
+
+        <details class="paste">
+          <summary>Incolla il JSON</summary>
+          <textarea id="paste-area" rows="6" placeholder='{ "ir_version": "1.2.0", ... }'></textarea>
+          <button id="paste-go" class="btn">Carica</button>
+        </details>
+
+        <p class="hint">
+          Si puo' anche aprire con <code>?ir=URL</code> nella barra degli indirizzi.
+        </p>
+        <p class="err" id="loader-err" hidden></p>
+      </div>
+    </section>
+
+    <!-- Player -->
+    <div id="app" class="app" hidden>
+      <header class="topbar">
+        <button class="icon" id="btn-panel" aria-label="Pannello di debug">☰</button>
+        <div class="titles">
+          <strong id="story-title"></strong>
+          <span id="story-meta"></span>
+        </div>
+        <button class="icon toggle" id="btn-debug" aria-pressed="false" title="Modalita' debug">debug</button>
+      </header>
+
+      <main id="transcript" class="transcript" tabindex="-1"></main>
+
+      <footer id="dock" class="dock"></footer>
+    </div>
+
+    <!-- Pannello laterale -->
+    <aside id="panel" class="panel" hidden>
+      <div class="panel-head">
+        <nav class="tabs" id="tabs">
+          <button data-tab="stato" class="on">stato</button>
+          <button data-tab="scena">scena</button>
+          <button data-tab="linter">linter<span class="badge" id="lint-badge" hidden></span></button>
+          <button data-tab="traccia">traccia</button>
+        </nav>
+        <button class="icon" id="btn-close-panel" aria-label="Chiudi">✕</button>
+      </div>
+      <div class="panel-body" id="panel-body"></div>
+    </aside>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <script type="module" src="/src/web/main.ts"></script>
+  </body>
+</html>

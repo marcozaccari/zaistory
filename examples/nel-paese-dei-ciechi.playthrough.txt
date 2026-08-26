@@ -1,5 +1,5 @@
 # Playthrough completo di "Nel paese dei ciechi", dal prologo al finale.
-# Rigiocalo con:  zaplay -script playthrough_completo.txt nel-paese-dei-ciechi.ir.json
+# Rigiocalo con:  zaiplay -script playthrough_completo.txt nel-paese-dei-ciechi.ir.json
 # Le azioni si indicano con l'id, le scelte di dialogo con l'id del nodo di destinazione (c:).
 
 # prologo_la_valle / quindici_generazioni / la_caduta (cutscene)
