@@ -17,10 +17,11 @@ import (
 // Term e' il player interattivo su terminale.
 //
 // Non contiene logica narrativa: mostra quello che l'engine gli passa e
-// raccoglie input. Tutti i campi destinati alla generazione asset
+// raccoglie input.
+// I campi destinati alla generazione asset
 // (image_prompt, ambient_sound_prompt, sound_effect_prompt, style_prompt,
-// ambient_music_tags) sono ignorati in modalita' normale e mostrati come
-// testo in modalita' debug.
+// ambient_music_tags) sono mostrati come testo.
+// La modalità debug mostra i parametri tecnici dietro le quinte.
 type Term struct {
 	Story *ir.Story
 	Res   resolver.Resolver
@@ -95,9 +96,7 @@ func (t *Term) SceneEnter(st *engine.State, sc *ir.Scene) {
 	t.lastState = st
 	t.line("")
 	t.line(t.T.Cyan(Rule(sc.Label(), t.Width)))
-	if t.Debug {
-		t.dumpScene(st, sc)
-	}
+	t.dumpScene(st, sc)
 	t.line("")
 }
 
@@ -424,29 +423,75 @@ func (t *Term) dumpTrace() {
 	}
 }
 
-// dumpScene stampa i parametri della scena: e' il cuore della modalita' debug.
+// dumpScene stampa la scena e i suoi parametri.
 func (t *Term) dumpScene(st *engine.State, sc *ir.Scene) {
 	if sc == nil {
 		return
 	}
-	p := func(k, v string) {
+
+	printDebug := func(k, v string) {
 		if v == "" {
 			return
 		}
 		t.line(t.T.Mag(Wrap(k+": "+v, t.Width, "  ")))
 	}
-	p("id", sc.ID)
-	p("title", sc.Title)
-	p("scene_type", sc.Type())
-	tone := sc.SceneTone
-	if tone == "" {
+	printScene := func(s string) {
+		if s == "" {
+			return
+		}
+		t.line(Wrap(s, t.Width, "  "))
+	}
+
+	title := t.T.Cyan(sc.Title)
+	if t.Debug {
+		title = t.T.Mag("title: ") + title + t.T.Cyan(" ")
+
+	}
+	t.line(Rule(title, t.Width))
+
+	if t.Debug {
+		printDebug("id", sc.ID)
+	}
+
+	// Tipo e tono della scena
+	t.line("")
+
+	if t.Debug {
+		printDebug("scene_type", sc.Type())
+	}
+
+	tone := ""
+	if sc.SceneTone == "" {
 		tone = t.Story.Tone(sc) + " (default globale)"
+	} else {
+		tone = sc.SceneTone
 	}
-	p("scene_tone", tone)
+	tone = t.T.Gray(tone)
+
+	if t.Debug {
+		tone = t.T.Mag("scene_tone: ") + tone
+	}
+	printScene(tone)
+
+	t.line("")
+
+	// Background (immagine e sonoro)
 	if sc.Background != nil {
-		p("background.image_prompt", sc.Background.ImagePrompt)
-		p("background.ambient_sound_prompt", sc.Background.AmbientSoundPrompt)
+		imagePrompt := t.T.Blue(sc.Background.ImagePrompt)
+		if t.Debug {
+			imagePrompt = t.T.Mag("background.image_prompt: ") + imagePrompt
+		}
+		printScene(imagePrompt)
+
+		soundPrompt := t.T.Green(sc.Background.AmbientSoundPrompt)
+		if t.Debug {
+			soundPrompt = t.T.Mag("background.ambient_sound_prompt: ") + soundPrompt
+		}
+		printScene(soundPrompt)
 	}
+
+	t.line("")
+
 	if len(sc.Characters) > 0 {
 		var names []string
 		for _, c := range sc.Characters {
@@ -458,15 +503,15 @@ func (t *Term) dumpScene(st *engine.State, sc *ir.Scene) {
 			}
 			names = append(names, n)
 		}
-		p("personaggi in scena", strings.Join(names, ", "))
+		printDebug("personaggi in scena", strings.Join(names, ", "))
 	}
 	if len(sc.OnEnterFlagsSet) > 0 {
-		p("on_enter_flags_set", strings.Join(sc.OnEnterFlagsSet, ", "))
+		printDebug("on_enter_flags_set", strings.Join(sc.OnEnterFlagsSet, ", "))
 	}
 	if sc.DialogueTree != nil {
-		p("dialogue_tree", fmt.Sprintf("start=%s, %d nodi", sc.DialogueTree.Start, len(sc.DialogueTree.Nodes)))
+		printDebug("dialogue_tree", fmt.Sprintf("start=%s, %d nodi", sc.DialogueTree.Start, len(sc.DialogueTree.Nodes)))
 	}
-	p("narrazione", fmt.Sprintf("%d beat", len(sc.Narration)))
+	printDebug("narrazione", fmt.Sprintf("%d beat", len(sc.Narration)))
 	t.dumpActions(st, sc)
 }
 

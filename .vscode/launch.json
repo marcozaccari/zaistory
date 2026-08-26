@@ -14,7 +14,7 @@
             "env": {},
             //"buildFlags": "-race",
             "args": [
-                //"-debug", 
+                "-debug", 
                 //"-script", "examples/playthrough_completo.txt",
                 "examples/nel-paese-dei-ciechi.ir.json"
             ],
