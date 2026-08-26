@@ -30,6 +30,19 @@ export interface Character {
   voice?: VoiceSpec;
 }
 
+/**
+ * Un luogo con un'identita' stabile lungo la storia.
+ *
+ * `visual_prompt` descrive il POSTO, non una singola inquadratura: e' il
+ * riferimento che tiene uguale la casa di Yacob nelle tre scene in cui si
+ * torna. E' per i luoghi quello che `Character` e' per le persone.
+ */
+export interface Place {
+  id: string;
+  name?: string;
+  visual_prompt: string;
+}
+
 /** Condizione di visibilita' di un'azione o di una scelta.
  * I campi presenti si sommano in AND. */
 export interface Condition {
@@ -99,12 +112,16 @@ export interface NarrationBeat {
   text: string;
   voice?: VoiceSpec;
   image_prompt?: string;
+  place?: string;
+  characters_in_frame?: string[];
   sound_effect_prompt?: string;
 }
 
 export interface Background {
   image_prompt: string;
   ambient_sound_prompt?: string;
+  place?: string;
+  characters_in_frame?: string[];
 }
 
 export const SCENE_INTERACTIVE = 'interactive';
@@ -132,6 +149,7 @@ export interface Story {
   language?: string;
   global_style?: GlobalStyle;
   characters?: Character[];
+  places?: Place[];
   start_scene: string;
   state_flags_schema?: string[];
   inventory_schema?: string[];
@@ -175,6 +193,44 @@ export function speakerName(story: Story, speaker: string): string {
   if (speaker === 'narrator') return 'Narratore';
   const c = findCharacter(story, speaker);
   return c ? displayName(c) : speaker;
+}
+
+export function findPlace(story: Story, id: string): Place | undefined {
+  return story.places?.find((p) => p.id === id);
+}
+
+/**
+ * Le inquadrature di una scena: lo sfondo piu' ogni beat che cambia
+ * inquadratura. Sono i punti in cui si genera un'immagine, e quindi i punti in
+ * cui servono un luogo e un cast dichiarati.
+ */
+export interface Shot {
+  where: string;
+  image_prompt: string;
+  place?: string;
+  characters_in_frame?: string[];
+}
+
+export function shotsOf(sc: Scene): Shot[] {
+  const out: Shot[] = [];
+  if (sc.background?.image_prompt) {
+    out.push({
+      where: `${sc.id} / background`,
+      image_prompt: sc.background.image_prompt,
+      place: sc.background.place,
+      characters_in_frame: sc.background.characters_in_frame,
+    });
+  }
+  (sc.narration ?? []).forEach((b, i) => {
+    if (!b.image_prompt) return;
+    out.push({
+      where: `${sc.id} / beat ${i + 1}`,
+      image_prompt: b.image_prompt,
+      place: b.place,
+      characters_in_frame: b.characters_in_frame,
+    });
+  });
+  return out;
 }
 
 /** Tono da passare al resolver: quello locale se c'e', altrimenti il globale. */

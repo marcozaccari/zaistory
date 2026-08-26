@@ -1,5 +1,5 @@
 {
-  "ir_version": "1.2.0",
+  "ir_version": "1.3.0",
   "id": "mini-taverna",
   "title": "La chiave perduta (fixture)",
   "description": "Storia giocattolo usata dai test del player CLI: copre cutscene, dialogo con scelte, condizioni su flag e inventario, azione non ripetibile e scena finale.",
@@ -7,20 +7,40 @@
   "global_style": {
     "image_style_suffix": "acquerello scuro, atmosfera notturna",
     "default_tone": "sobrio, un po' malinconico",
-    "narrator_voice": { "style_prompt": "voce bassa e calma, quasi un sussurro" },
-    "ambient_music_tags": ["taverna", "notte", "pioggia"]
+    "narrator_voice": {
+      "style_prompt": "voce bassa e calma, quasi un sussurro"
+    },
+    "ambient_music_tags": [
+      "taverna",
+      "notte",
+      "pioggia"
+    ]
   },
   "characters": [
     {
       "id": "oste",
       "name": "L'oste",
       "visual_prompt": "uomo tarchiato sulla cinquantina, grembiule macchiato, barba corta",
-      "voice": { "style_prompt": "roco, burbero, leggero accento del nord" }
+      "voice": {
+        "style_prompt": "roco, burbero, leggero accento del nord"
+      }
+    }
+  ],
+  "places": [
+    {
+      "id": "taverna",
+      "name": "La taverna del Cinghiale",
+      "visual_prompt": "sala bassa di legno annerito, camino sul fondo, bancone lungo una parete"
     }
   ],
   "start_scene": "prologo",
-  "state_flags_schema": ["prologo_visto", "oste_parlato"],
-  "inventory_schema": ["chiave"],
+  "state_flags_schema": [
+    "prologo_visto",
+    "oste_parlato"
+  ],
+  "inventory_schema": [
+    "chiave"
+  ],
   "scenes": [
     {
       "id": "prologo",
@@ -30,7 +50,9 @@
         "image_prompt": "strada di campagna sotto la pioggia, notte",
         "ambient_sound_prompt": "pioggia fitta, tuoni lontani"
       },
-      "on_enter_flags_set": ["prologo_visto"],
+      "on_enter_flags_set": [
+        "prologo_visto"
+      ],
       "narration": [
         {
           "text": "La pioggia cade da tre giorni. La strada e' un nastro di fango che nessuno percorre piu' volentieri.",
@@ -46,7 +68,9 @@
         {
           "id": "continua",
           "label": "Continua",
-          "effect": { "goto_scene": "taverna" }
+          "effect": {
+            "goto_scene": "taverna"
+          }
         }
       ]
     },
@@ -56,11 +80,21 @@
       "scene_tone": "caldo ma diffidente",
       "background": {
         "image_prompt": "interno di taverna, camino acceso, tavoli vuoti",
-        "ambient_sound_prompt": "crepitio del fuoco, brusio lontano"
+        "ambient_sound_prompt": "crepitio del fuoco, brusio lontano",
+        "place": "taverna",
+        "characters_in_frame": [
+          "oste"
+        ]
       },
-      "characters": [{ "id": "oste" }],
+      "characters": [
+        {
+          "id": "oste"
+        }
+      ],
       "narration": [
-        { "text": "Dentro fa caldo. L'oste asciuga un bicchiere senza guardarti." }
+        {
+          "text": "Dentro fa caldo. L'oste asciuga un bicchiere senza guardarti."
+        }
       ],
       "dialogue_tree": {
         "start": "d_start",
@@ -69,14 +103,22 @@
             "speaker": "oste",
             "text": "Se cerchi una stanza, sei arrivato tardi.",
             "choices": [
-              { "text": "Non cerco una stanza. Cerco una chiave.", "goto": "d_chiave" },
-              { "text": "Allora non disturbo.", "goto": "d_congedo" }
+              {
+                "text": "Non cerco una stanza. Cerco una chiave.",
+                "goto": "d_chiave"
+              },
+              {
+                "text": "Allora non disturbo.",
+                "goto": "d_congedo"
+              }
             ]
           },
           "d_chiave": {
             "speaker": "oste",
             "text": "Una chiave, dici. Ce n'e' una sul gancio dietro il bancone. Non e' mia, prendila pure.",
-            "effect": { "set_flag": "oste_parlato" },
+            "effect": {
+              "set_flag": "oste_parlato"
+            },
             "next": "d_congedo"
           },
           "d_congedo": {
@@ -91,14 +133,21 @@
           "id": "parla_oste",
           "label": "Parla con l'oste",
           "target": "oste",
-          "aliases": ["chiedi all'oste", "rivolgiti all'oste"],
-          "effect": { "goto_dialogue": "d_start" }
+          "aliases": [
+            "chiedi all'oste",
+            "rivolgiti all'oste"
+          ],
+          "effect": {
+            "goto_dialogue": "d_start"
+          }
         },
         {
           "id": "prendi_chiave",
           "label": "Prendi la chiave dal gancio",
           "target": "ambiente",
-          "condition": { "flag_present": "oste_parlato" },
+          "condition": {
+            "flag_present": "oste_parlato"
+          },
           "repeatable": false,
           "effect": {
             "narration": "La chiave e' fredda e piu' pesante di quanto sembri.",
@@ -109,8 +158,12 @@
         {
           "id": "esci",
           "label": "Esci nella notte",
-          "condition": { "has_item": "chiave" },
-          "effect": { "goto_scene": "finale" }
+          "condition": {
+            "has_item": "chiave"
+          },
+          "effect": {
+            "goto_scene": "finale"
+          }
         }
       ]
     },
@@ -118,9 +171,13 @@
       "id": "finale",
       "title": "Sulla soglia",
       "scene_type": "cutscene",
-      "background": { "image_prompt": "soglia della taverna, pioggia che rallenta" },
+      "background": {
+        "image_prompt": "soglia della taverna, pioggia che rallenta"
+      },
       "narration": [
-        { "text": "Fuori la pioggia sta smettendo. La chiave, in tasca, pesa come una promessa." }
+        {
+          "text": "Fuori la pioggia sta smettendo. La chiave, in tasca, pesa come una promessa."
+        }
       ],
       "actions": []
     }

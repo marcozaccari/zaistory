@@ -1,5 +1,5 @@
 {
-  "ir_version": "1.2.0",
+  "ir_version": "1.3.0",
   "id": "nel-paese-dei-ciechi",
   "title": "Nel paese dei ciechi",
   "description": "Adattamento giocabile del racconto di H.G. Wells: un alpinista precipita in una valle andina dove tutti sono ciechi da quindici generazioni, e scopre che la vista non lo rende re.",
@@ -77,7 +77,7 @@
     },
     {
       "id": "anziano",
-      "name": "Anziano",
+      "name": "L'anziano del consiglio",
       "visual_prompt": "uomo molto vecchio seduto su una panca di pietra, mani ferme sulle ginocchia, palpebre chiuse e incavate",
       "voice": {
         "style_prompt": "voce lenta e paziente, di chi spiega una cosa ovvia a un bambino"
@@ -90,6 +90,33 @@
       "voice": {
         "style_prompt": "voce piatta e paziente, che interroga senza curiosita, come chi ripete una formula gia nota"
       }
+    }
+  ],
+  "places": [
+    {
+      "id": "valle",
+      "name": "Il Paese dei Ciechi",
+      "visual_prompt": "conca chiusa fra pareti di roccia a picco, prati geometrici divisi da canali d'acqua rettilinei, casupole di pietra senza finestre in fila ordinata lungo una strada centrale lastricata, muretti a secco, luce alta e pulita di alta quota"
+    },
+    {
+      "id": "alta_montagna",
+      "name": "La cortina di montagne",
+      "visual_prompt": "quota sopra la valle: roccia grigia spaccata, nevai e cenge esposte, vette che chiudono l'orizzonte da ogni lato, aria rarefatta e luce dura"
+    },
+    {
+      "id": "muro_di_cinta",
+      "name": "Il muro di cinta",
+      "visual_prompt": "muro a secco alto a petto d'uomo che chiude il margine coltivato della valle, sentiero lastricato che lo costeggia, pini radi appena oltre"
+    },
+    {
+      "id": "sala_degli_anziani",
+      "name": "La camera di consiglio",
+      "visual_prompt": "camera di consiglio interrata e senza finestre, buio pieno rotto solo dal riverbero rossastro di un forno di pietra, panche disposte in cerchio, pareti levigate dall uso"
+    },
+    {
+      "id": "casa_di_yacob",
+      "name": "La casa di Yacob",
+      "visual_prompt": "casa di pietra senza finestre della valle: interno di brace e ombra con giacigli bassi e utensili appesi a portata di mano, esterno chiaro con una sola porta stretta"
     }
   ],
   "start_scene": "prologo_la_valle",
@@ -203,7 +230,8 @@
         },
         {
           "text": "Il senso della vista era scemato così gradualmente che quasi non ne avvertirono la perdita. Guidavano i giovinetti orbi qua e là, finché conoscevano la valle a meraviglia; e quando alfine la vista svanì del tutto, la popolazione sopravvisse comunque.",
-          "image_prompt": "bambini ciechi guidati per mano attraverso i prati da bambini che ancora vedono un poco, luce alta di mezzogiorno"
+          "image_prompt": "bambini ciechi guidati per mano attraverso i prati da bambini che ancora vedono un poco, luce alta di mezzogiorno",
+          "place": "valle"
         },
         {
           "text": "Generazione dopo generazione dimenticarono molte cose — e molte ne idearono. I ricordi del mondo più vasto da cui provenivano si tinsero di fiaba e incertezza. Ma in ogni cosa, tranne la vista, restarono forti e abili.",
@@ -211,7 +239,8 @@
         },
         {
           "text": "Generazione seguì a generazione. Generazione seguì a generazione. Finché venne il tempo in cui quindici generazioni separavano il neonato dall'avo che era uscito dalla valle con un lingotto d'argento, per cercare l'aiuto di Dio, e non aveva mai fatto ritorno.",
-          "image_prompt": "la stessa inquadratura fissa in campo lunghissimo sulla valle, ripetuta identica mentre cambia solo la luce, come fotogrammi separati da decenni"
+          "image_prompt": "la stessa inquadratura fissa in campo lunghissimo sulla valle, ripetuta identica mentre cambia solo la luce, come fotogrammi separati da decenni",
+          "place": "valle"
         },
         {
           "text": "Fu allora che un uomo giunse nella comunità dal mondo esterno. E questa è la storia di quell'uomo."
@@ -239,6 +268,7 @@
       "scene_tone": "freddo, fisico, senza retorica: il corpo prima della coscienza",
       "background": {
         "image_prompt": "bivacco di alpinisti su una cengia innevata di notte, vento, respiri visibili, la luce di una sola lanterna",
+        "place": "alta_montagna",
         "ambient_sound_prompt": "vento d'alta quota che copre ogni altro suono"
       },
       "characters": [
@@ -253,11 +283,13 @@
         },
         {
           "text": "Era scivolato sul versante sconosciuto della montagna, travolto da una valanga, fino all'orlo di un precipizio spaventoso. Gli alpinisti videro, in fondo all'abisso, caliginosi per la lontananza, gli alberi di una valle angusta e racchiusa — il perduto Paese dei Ciechi. Ma non lo sapevano. Demoralizzati, abbandonarono le ricerche.",
-          "image_prompt": "campo lunghissimo quasi astratto all'alba: una traccia di slittamento che sparisce oltre l'orlo di un precipizio, in basso una macchia verde velata di foschia"
+          "image_prompt": "campo lunghissimo quasi astratto all'alba: una traccia di slittamento che sparisce oltre l'orlo di un precipizio, in basso una macchia verde velata di foschia",
+          "place": "alta_montagna"
         },
         {
           "text": "Il corpo di Nuñez rotolò per trecento metri, atterrò in un turbinio di neve, rotolò ancora su un pendio più ripido, infine sprofondò immobile. Un lungo silenzio. Poi una mano che si muove.",
           "image_prompt": "un corpo che sprofonda nella neve smossa in un pendio ripido, notte lunare",
+          "place": "alta_montagna",
           "sound_effect_prompt": "tonfo attutito nella neve, poi silenzio assoluto"
         },
         {
@@ -265,7 +297,11 @@
         },
         {
           "text": "Si trascinò, dolente in ogni giuntura, fino a un tratto di terreno erboso sparso di sassi. Cadde più che sedersi accanto a un masso, bevve lunghi sorsi dalla borraccia, e si addormentò di colpo.",
-          "image_prompt": "uomo disteso accanto a un masso al limite inferiore della neve, chiaro di luna, erba rada e sassi"
+          "image_prompt": "uomo disteso accanto a un masso al limite inferiore della neve, chiaro di luna, erba rada e sassi",
+          "place": "alta_montagna",
+          "characters_in_frame": [
+            "nunez"
+          ]
         }
       ],
       "actions": [
@@ -288,6 +324,10 @@
       "title": "L'imbocco della valle",
       "background": {
         "image_prompt": "uomo che sbuca dall'ombra di una gola nella piena luce del sole, davanti a lui una valle di prati geometrici, canali d'acqua regolari, casupole di pietra in fila ordinata lungo una strada centrale",
+        "place": "valle",
+        "characters_in_frame": [
+          "nunez"
+        ],
         "ambient_sound_prompt": "canto di uccelli, acqua corrente nei canali, vento leggero tra i pini"
       },
       "characters": [
@@ -298,7 +338,10 @@
       "narration": [
         {
           "text": "Il canto degli uccelli arriva prima ancora della luce. Nuñez apre gli occhi su un mondo verde e luminoso, incongruo dopo la neve.",
-          "image_prompt": "risveglio all'alba in una gola tra precipizi, prima luce verde tra le rocce"
+          "image_prompt": "risveglio all'alba in una gola tra precipizi, prima luce verde tra le rocce",
+          "characters_in_frame": [
+            "nunez"
+          ]
         },
         {
           "text": "Ha risalito un canalone, una fenditura a camino gocciolante di neve disciolta, un ripido pendio boschivo. Ora la valle si apre davanti a lui, ordinata come nessuna valle di montagna che abbia mai visto."
@@ -374,6 +417,12 @@
       "scene_tone": "stupore che si incrina: il comico dell'equivoco con sotto un fondo di gelo",
       "background": {
         "image_prompt": "sentiero lastricato presso un muro di cinta a petto d'uomo, tre uomini in fila indiana con secchi aggiogati sulle spalle, vestiti di alpaca con berretti muniti di paraorecchi",
+        "place": "muro_di_cinta",
+        "characters_in_frame": [
+          "pedro",
+          "correa",
+          "il_terzo_cieco"
+        ],
         "ambient_sound_prompt": "acqua nei canali, passi lenti su pietra, respiri vicini"
       },
       "characters": [
@@ -513,6 +562,7 @@
       "scene_tone": "buio totale, cortesia aliena: la ragionevolezza altrui che ti dichiara malformato",
       "background": {
         "image_prompt": "interno buio come la pece, solo il bagliore lontano di un fuoco in un forno di pietra, sagome sedute in cerchio appena percettibili",
+        "place": "sala_degli_anziani",
         "ambient_sound_prompt": "voci basse in una stanza chiusa, crepitio lontano di brace"
       },
       "characters": [
@@ -643,6 +693,7 @@
       "scene_tone": "ammirato e inquietante insieme: la perfezione di un mondo che non ha bisogno di te",
       "background": {
         "image_prompt": "primissimo piano di una tacca incisa nella pietra al bordo di un viottolo, un piede che la sfiora senza esitare",
+        "place": "valle",
         "ambient_sound_prompt": "passi sicuri su lastre di pietra, voci che si chiamano da lontano, acqua nei canali"
       },
       "on_enter_flags_set": [
@@ -654,20 +705,27 @@
         },
         {
           "text": "I loro sensi avevano acquistato una meravigliosa acutezza. Erano in grado di udire e giudicare il minimo gesto di un uomo a dieci passi di distanza — di udire, dicevano, perfino il battito del suo cuore.",
-          "image_prompt": "due uomini ciechi a dieci passi l'uno dall'altro in un campo aperto, uno solleva lentamente un braccio, l'altro reagisce sorridendo prima che il gesto sia completo"
+          "image_prompt": "due uomini ciechi a dieci passi l'uno dall'altro in un campo aperto, uno solleva lentamente un braccio, l'altro reagisce sorridendo prima che il gesto sia completo",
+          "place": "valle"
         },
         {
           "text": "L'intonazione della voce aveva da tempo sostituito l'espressione del volto, e il tocco i gesti. Maneggiavano zappa, vanga e forcone con l'agio e la sicurezza di artigiani consumati.",
-          "image_prompt": "primi piani di volti immobili mentre una voce si alza e si abbassa, mani che sfiorano un braccio, un uomo che maneggia una vanga con sicurezza cieca"
+          "image_prompt": "primi piani di volti immobili mentre una voce si alza e si abbassa, mani che sfiorano un braccio, un uomo che maneggia una vanga con sicurezza cieca",
+          "place": "valle"
         },
         {
           "text": "Il senso dell'odorato era in loro di una straordinaria finezza: distinguevano le differenze individuali con la prontezza di un cane, e accudivano i lama con disinvolta, assoluta sicurezza.",
           "image_prompt": "pastore cieco che affonda il viso vicino al collo di un lama tra dozzine, lo riconosce e lo separa dal gregge",
+          "place": "valle",
           "sound_effect_prompt": "belati di lama, zoccoli su pietra"
         },
         {
           "text": "Il pastore si volta, come se avesse sentito qualcosa lontano. È Nuñez, che osserva da un crinale, immobile — l'unico, in tutta la valle, che si muove senza essere notato dagli altri sensi, e che non nota nulla con i propri. Quanto disinvolti e sicuri potessero essere i loro movimenti, lo scoprì solo quando alfine cercò di imporsi.",
-          "image_prompt": "sagoma di un uomo immobile su un crinale erboso, visto di spalle, la valle ordinata sotto di lui"
+          "image_prompt": "sagoma di un uomo immobile su un crinale erboso, visto di spalle, la valle ordinata sotto di lui",
+          "place": "valle",
+          "characters_in_frame": [
+            "nunez"
+          ]
         }
       ],
       "actions": [
@@ -683,6 +741,11 @@
             "goto_scene": "il_re_di_nessuno"
           }
         }
+      ],
+      "characters": [
+        {
+          "id": "nunez"
+        }
       ]
     },
     {
@@ -691,6 +754,10 @@
       "scene_tone": "commedia degli equivoci che scivola nell'umiliazione",
       "background": {
         "image_prompt": "viottoli della valle di notte, un uomo che cammina goffo urtando cose invisibili mentre intorno a lui figure cieche si muovono spedite e sicure",
+        "place": "valle",
+        "characters_in_frame": [
+          "nunez"
+        ],
         "ambient_sound_prompt": "passi sicuri intorno, voci che chiamano nel buio, vento leggero"
       },
       "characters": [
@@ -788,6 +855,7 @@
       "scene_tone": "assedio silenzioso: nessuna corsa, nessun grido, solo un accerchiamento metodico che fiuta l'aria",
       "background": {
         "image_prompt": "campo lunghissimo dall'alto sui prati della valle, una linea di uomini armati di vanghe e bastoni che avanza a raggiera, lenta e metodica, fermandosi a fiutare l'aria",
+        "place": "valle",
         "ambient_sound_prompt": "silenzio teso, passi lenti sull'erba, respiri profondi che annusano"
       },
       "characters": [
@@ -872,6 +940,10 @@
       "scene_tone": "freddo e spoglio: la fame che smonta un uomo pezzo per pezzo",
       "background": {
         "image_prompt": "pendio di pini fuori dal muro di cinta, luce fredda, un uomo infreddolito tra i tronchi, lama che lo guardano da lontano con occhi bruni diffidenti",
+        "place": "muro_di_cinta",
+        "characters_in_frame": [
+          "nunez"
+        ],
         "ambient_sound_prompt": "vento tra i pini, belati lontani, nessuna voce umana"
       },
       "characters": [
@@ -982,6 +1054,11 @@
       "scene_tone": "tenero e sommesso, la sola luce calda della storia",
       "background": {
         "image_prompt": "campo al chiaro di luna, una giovane donna che fila trasformata in figura d'argento dalla luce, un uomo seduto ai suoi piedi",
+        "place": "valle",
+        "characters_in_frame": [
+          "medina_sarote",
+          "nunez"
+        ],
         "ambient_sound_prompt": "flauti lontani, canti sommessi, grilli"
       },
       "characters": [
@@ -1001,7 +1078,11 @@
         },
         {
           "text": "E c'era Medina-saroté, la figlia minore di Yacob — poco apprezzata dai suoi, per un viso dai tratti troppo netti, per lunghe ciglia considerate un difetto, per una voce troppo forte all'orecchio fino dei giovani valligiani. Nessun corteggiatore. Ma Nuñez, fin dal primo sguardo, l'aveva giudicata la cosa più bella dell'intero creato.",
-          "image_prompt": "primo piano del volto di Medina-saroté nella luce del focolare, ciglia lunghissime, palpebre chiuse"
+          "image_prompt": "primo piano del volto di Medina-saroté nella luce del focolare, ciglia lunghissime, palpebre chiuse",
+          "place": "casa_di_yacob",
+          "characters_in_frame": [
+            "medina_sarote"
+          ]
         }
       ],
       "dialogue_tree": {
@@ -1108,6 +1189,11 @@
       "scene_tone": "domestico e crudele senza volerlo: l'affetto che ti classifica come difettoso",
       "background": {
         "image_prompt": "interno buio di una casa di pietra senza finestre, una giovane donna in lacrime sulla spalla di un uomo anziano, luce di brace",
+        "place": "casa_di_yacob",
+        "characters_in_frame": [
+          "medina_sarote",
+          "yacob"
+        ],
         "ambient_sound_prompt": "pianto sommesso, brace che crepita"
       },
       "characters": [
@@ -1130,11 +1216,16 @@
         },
         {
           "text": "Il vecchio Yacob soffriva a vederla inconsolabile — e Nuñez, per più versi, gli piaceva pure. Andava a sedersi nella cieca camera di consiglio, e al momento opportuno diceva la sua: «È migliorato. Un giorno, molto probabilmente, sarà assennato come noi.»",
-          "image_prompt": "uomini seduti in cerchio in una camera buia, invisibili l'uno all'altro, solo sagome appena distinguibili"
+          "image_prompt": "uomini seduti in cerchio in una camera buia, invisibili l'uno all'altro, solo sagome appena distinguibili",
+          "place": "sala_degli_anziani"
         },
         {
           "text": "Un giovane della valle insulta e percuote Nuñez. Per la prima volta la vista, anche nella semioscurità, gli dà un vantaggio nel corpo a corpo: Nuñez restituisce i colpi. Nessuno alzerà più la mano su di lui. Ma continuano a considerare il matrimonio impossibile.",
           "image_prompt": "due uomini che lottano nella semioscurità di un viottolo, uno dei due schiva un colpo che l'altro non poteva vedere arrivare",
+          "place": "valle",
+          "characters_in_frame": [
+            "nunez"
+          ],
           "sound_effect_prompt": "colpi sordi, respiri, un tonfo a terra"
         }
       ],
@@ -1160,6 +1251,7 @@
       "scene_tone": "solo voci nel buio: la proposta di accecarlo deve suonare perfettamente ragionevole, quasi amorevole",
       "background": {
         "image_prompt": "camera di consiglio completamente buia, anziani seduti in cerchio invisibili l'uno all'altro, appena il riverbero rossastro di una brace lontana",
+        "place": "sala_degli_anziani",
         "ambient_sound_prompt": "voci maschili in una stanza chiusa, nessun altro suono"
       },
       "characters": [
@@ -1211,7 +1303,11 @@
       "title": "La buona notizia e la scelta di Medina-saroté",
       "scene_tone": "cortesia affettuosa che apre un abisso: nessuno alza la voce, e tutto si decide",
       "background": {
-        "image_prompt": "esterno della casa di Yacob nella luce piena del giorno, un uomo immobile con il volto che si svuota mentre ascolta",
+        "image_prompt": "esterno nella luce piena del giorno, un uomo immobile con il volto che si svuota mentre ascolta",
+        "place": "casa_di_yacob",
+        "characters_in_frame": [
+          "nunez"
+        ],
         "ambient_sound_prompt": "voci contente in lontananza, vento leggero sui prati"
       },
       "characters": [
@@ -1360,6 +1456,11 @@
       "scene_tone": "tenerezza già postuma: due persone che si salutano sapendo cose diverse",
       "background": {
         "image_prompt": "luce fredda prima dell'alba davanti a una casa di pietra, due figure vicine che si separano",
+        "place": "casa_di_yacob",
+        "characters_in_frame": [
+          "nunez",
+          "medina_sarote"
+        ],
         "ambient_sound_prompt": "silenzio prima dell'alba, un gallo lontano, vento freddo"
       },
       "characters": [
@@ -1379,11 +1480,16 @@
         },
         {
           "text": "«Domani non vedrò più.» — «Cuor mio!» Lei gli stringe le mani con forza. «Ti faranno male, un poco. Questa sofferenza, la patirai per me. Se il cuore e la vita di una donna possono farlo, ti ripagherò. Mio diletto, mio diletto dalla voce così tenera, ti ripagherò.»",
-          "image_prompt": "primo piano di due mani che si stringono con forza, luce fredda dell'alba"
+          "image_prompt": "primo piano di due mani che si stringono con forza, luce fredda dell'alba",
+          "place": "casa_di_yacob"
         },
         {
           "text": "Nuñez la abbraccia, la bacia, la guarda per l'ultima volta con occhi che vedono. «Addio.» Si allontana in silenzio. Lei ascolta i suoi passi svanire — e qualcosa, nel loro ritmo, la fa scoppiare in pianto: forse lo sa già.",
-          "image_prompt": "una donna sola davanti alla porta di casa, il volto rivolto verso il suono dei passi che si allontanano"
+          "image_prompt": "una donna sola davanti alla porta di casa, il volto rivolto verso il suono dei passi che si allontanano",
+          "place": "casa_di_yacob",
+          "characters_in_frame": [
+            "medina_sarote"
+          ]
         }
       ],
       "actions": [
@@ -1408,6 +1514,10 @@
       "scene_tone": "sogno ad occhi aperti: dissolvenze lentissime, quasi immobili, come diapositive che si scaldano e si spengono",
       "background": {
         "image_prompt": "campo lunghissimo su prati in fiore, un uomo che cammina a testa bassa verso una distesa di narcisi bianchi, mattina",
+        "place": "valle",
+        "characters_in_frame": [
+          "nunez"
+        ],
         "ambient_sound_prompt": "silenzio ampio, insetti nel prato, un vento altissimo appena percettibile"
       },
       "characters": [
@@ -1421,7 +1531,8 @@
       "narration": [
         {
           "text": "Cammina verso i narcisi bianchi dove dovrà attendere l'operazione. Poi alza gli occhi. Il mattino esplode di luce sulle vette, come un angelo dall'armatura d'oro che discende dai pendii. Si ferma, folgorato. Gli parve che davanti a questo splendore, lui, e quel cieco mondo nella valle, e il suo amore, e tutto, fossero soltanto una nefandezza.",
-          "image_prompt": "vette innevate incendiate dalla luce del mattino, viste dal basso, come un'armatura d'oro"
+          "image_prompt": "vette innevate incendiate dalla luce del mattino, viste dal basso, come un'armatura d'oro",
+          "place": "alta_montagna"
         },
         {
           "text": "Pensò al mondo grande e libero da cui era separato, il mondo che era il suo. Ebbe una visione di Bogotà — luogo di inebriante bellezza, glorioso di giorno, mistero luminoso di notte.",
@@ -1461,6 +1572,10 @@
       "scene_tone": "lucido e pratico dopo il sogno: un uomo che guarda una parete di roccia come si guarda un problema risolvibile",
       "background": {
         "image_prompt": "pendio roccioso sopra la valle, un uomo di spalle che scruta la cortina di montagne con interesse pratico, luce piena del giorno",
+        "place": "alta_montagna",
+        "characters_in_frame": [
+          "nunez"
+        ],
         "ambient_sound_prompt": "vento sulla roccia, acqua lontana, nessuna voce"
       },
       "characters": [
@@ -1541,6 +1656,7 @@
       "scene_tone": "nessuna euforia da eroe scampato: un uomo pacificato, forse morente, che ha scelto la libertà e la solitudine",
       "background": {
         "image_prompt": "campo lunghissimo dall'alto al tramonto: la valle un miglio più in basso già velata d'ombra e foschia, mentre intorno le vette sono ancora tutte luce e fuoco",
+        "place": "alta_montagna",
         "ambient_sound_prompt": "vento d'alta quota, rarefatto, poi silenzio"
       },
       "characters": [
@@ -1554,15 +1670,24 @@
         },
         {
           "text": "Nelle rocce vicine certi particolari erano intrisi di una delicata bellezza: una vena di minerale verde che affiora nel grigio, lampi di sfaccettature cristalline, un minuscolo lichene aranciato a un palmo dal viso. Nella gola c'erano ombre profonde, di un blu cangiante in violetto, e il violetto in un'oscurità luminosa — e sopra, l'illimitata vastità del cielo.",
-          "image_prompt": "macro su una vena di minerale verde nella roccia grigia, cristalli che catturano la luce, un lichene aranciato"
+          "image_prompt": "macro su una vena di minerale verde nella roccia grigia, cristalli che catturano la luce, un lichene aranciato",
+          "place": "alta_montagna"
         },
         {
           "text": "Ma a queste cose, ormai, non prestava più attenzione. Giaceva immobile, sorridendo — semplicemente soddisfatto di essere scampato dalla valle dei Ciechi, dove aveva creduto di essere re.",
-          "image_prompt": "primo piano del volto immobile di un uomo disteso tra le rocce, gli occhi che non guardano più nulla di preciso"
+          "image_prompt": "primo piano del volto immobile di un uomo disteso tra le rocce, gli occhi che non guardano più nulla di preciso",
+          "place": "alta_montagna",
+          "characters_in_frame": [
+            "nunez"
+          ]
         },
         {
           "text": "Il bagliore del tramonto si spense, e scese la notte. Ed egli giacque contento, pacificato, sotto le fredde stelle.",
           "image_prompt": "dissolvenza lentissima verso il nero, le stelle che si accendono a una a una sopra una sagoma immobile tra le rocce",
+          "place": "alta_montagna",
+          "characters_in_frame": [
+            "nunez"
+          ],
           "sound_effect_prompt": "vento che cala fino al silenzio completo"
         }
       ],

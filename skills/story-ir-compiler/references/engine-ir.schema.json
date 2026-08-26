@@ -11,7 +11,7 @@
       "type": "string",
       "description": "Versione dello schema IR, per compatibilita' futura tra compilatore e player (semver).",
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
-      "examples": ["1.0.0"]
+      "examples": ["1.3.0"]
     },
     "id": {
       "type": "string",
@@ -30,8 +30,13 @@
     },
     "characters": {
       "type": "array",
-      "description": "Anagrafica globale dei personaggi, riusabile in tutte le scene. Le scene possono fare override locali.",
+      "description": "Anagrafica globale dei personaggi, riusabile in tutte le scene. Ci va CHIUNQUE parli, anche una sola volta: e' l'elenco dei parlanti, e il modulo assets assegna il timbro una volta per parlante. Le scene possono fare override locali.",
       "items": { "$ref": "#/$defs/Character" }
+    },
+    "places": {
+      "type": "array",
+      "description": "Anagrafica dei luoghi ricorrenti. Serve alla coerenza visiva: due scene ambientate nello stesso posto devono riferirsi allo stesso Place, altrimenti ogni ritorno genera un luogo diverso. Un'ambientazione che compare una volta sola puo' restare senza Place.",
+      "items": { "$ref": "#/$defs/Place" }
     },
     "start_scene": {
       "type": "string",
@@ -113,6 +118,21 @@
         "name": { "type": "string", "description": "Nome visualizzato, se diverso dall'id." },
         "visual_prompt": { "type": "string", "description": "Prompt per generazione immagine/sprite del personaggio." },
         "voice": { "$ref": "#/$defs/VoiceSpec" }
+      }
+    },
+
+    "Place": {
+      "type": "object",
+      "description": "Un luogo con un'identita' stabile lungo la storia. Il suo visual_prompt descrive il POSTO (com'e' fatto, di che materiali, che luce ha di solito), non una singola inquadratura: le inquadrature restano negli image_prompt che lo referenziano. E' l'equivalente per i luoghi di quello che Character e' per le persone.",
+      "required": ["id", "visual_prompt"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "name": { "type": "string", "description": "Nome visualizzato, se diverso dall'id." },
+        "visual_prompt": {
+          "type": "string",
+          "description": "Descrizione stabile del luogo, riusata come riferimento da ogni inquadratura ambientata li'."
+        }
       }
     },
 
@@ -254,11 +274,21 @@
         "title": { "type": "string", "description": "Titolo/etichetta interna della scena, per editor e debug." },
         "background": {
           "type": "object",
+          "description": "L'inquadratura di base della scena. Come ogni inquadratura puo' dichiarare dove si trova (place) e chi si vede (characters_in_frame): sono i riferimenti su cui il modulo assets aggancia la coerenza visiva.",
           "required": ["image_prompt"],
           "additionalProperties": false,
           "properties": {
-            "image_prompt": { "type": "string" },
-            "ambient_sound_prompt": { "type": "string" }
+            "image_prompt": { "type": "string", "description": "Descrizione di QUESTA inquadratura: taglio, luce, momento. Se c'e' un place, non ripeterne la descrizione: si sommano." },
+            "ambient_sound_prompt": { "type": "string" },
+            "place": {
+              "type": "string",
+              "description": "id di un Place di places[]: dice DOVE siamo, e garantisce che due scene nello stesso posto lo generino uguale."
+            },
+            "characters_in_frame": {
+              "type": "array",
+              "description": "id dei personaggi VISIBILI in questa inquadratura. Diverso da Scene.characters, che elenca chi e' presente nella scena (anche solo come voce): qui vanno solo quelli che si vedono, perche' e' su di loro che la generazione immagine si condiziona per mantenere i volti coerenti. Elencarne di troppi peggiora l'immagine quanto ometterli.",
+              "items": { "type": "string" }
+            }
           }
         },
         "scene_tone": {
@@ -273,7 +303,7 @@
         },
         "characters": {
           "type": "array",
-          "description": "Personaggi presenti in questa scena. Ogni entry referenzia un Character globale per id ed eventualmente ne fa override dei campi visual_prompt/voice.",
+          "description": "Personaggi PRESENTI nella scena — anche solo come voce, anche se non si vedono. Ogni entry referenzia un Character globale per id ed eventualmente ne fa override dei campi visual_prompt/voice. Non dice chi e' inquadrato: per quello c'e' characters_in_frame sulla singola inquadratura.",
           "items": {
             "type": "object",
             "required": ["id"],
@@ -298,6 +328,15 @@
               "image_prompt": {
                 "type": "string",
                 "description": "Prompt immagine per QUESTO beat narrativo, se l'inquadratura cambia rispetto al background della scena (o al beat precedente). Se assente, il player mantiene l'ultima immagine mostrata (background.image_prompt per il primo beat)."
+              },
+              "place": {
+                "type": "string",
+                "description": "id di un Place: dove si svolge questo beat, se ha una sua inquadratura. Vale solo insieme a image_prompt."
+              },
+              "characters_in_frame": {
+                "type": "array",
+                "description": "id dei personaggi visibili in questa inquadratura (stessa semantica di background.characters_in_frame). Vale solo insieme a image_prompt.",
+                "items": { "type": "string" }
               },
               "sound_effect_prompt": {
                 "type": "string",

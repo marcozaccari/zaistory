@@ -10,7 +10,7 @@
  */
 
 import type { Condition, Effect, Scene, Story } from './types.js';
-import { SCENE_CUTSCENE, findScene, sceneHasExit, sceneType } from './types.js';
+import { SCENE_CUTSCENE, displayName, findScene, sceneHasExit, sceneType, shotsOf } from './types.js';
 
 export type Level = 'info' | 'avviso' | 'errore';
 
@@ -324,6 +324,70 @@ class Linter {
     }
   }
 
+  // -------------------------------------------------------- inquadrature
+
+  /**
+   * I riferimenti su cui si regge la coerenza visiva.
+   *
+   * Un'immagine generata senza sapere DOVE si trova e CHI inquadra e' un'
+   * immagine che non puo' essere resa coerente con le altre: il modulo assets
+   * aggancia il ritratto di riferimento di un personaggio e la descrizione
+   * stabile di un luogo proprio a questi due campi. Un riferimento rotto o
+   * mancante non rompe la partita — il player e' testuale — ma rompe la
+   * generazione, ed e' meglio scoprirlo prima di pagare 59 immagini.
+   */
+  checkShots(): void {
+    const roster = new Map<string, string>();
+    for (const c of this.story.characters ?? []) roster.set(c.id, displayName(c));
+    const places = new Set((this.story.places ?? []).map((p) => p.id));
+    const usati = new Set<string>();
+
+    for (const sc of this.story.scenes) {
+      const presenti = new Set((sc.characters ?? []).map((c) => c.id));
+
+      for (const shot of shotsOf(sc)) {
+        if (shot.place) {
+          if (places.has(shot.place)) usati.add(shot.place);
+          else this.add('errore', shot.where, `place punta al luogo inesistente "${shot.place}"`);
+        }
+
+        const inquadrati = new Set(shot.characters_in_frame ?? []);
+        for (const id of inquadrati) {
+          if (!roster.has(id)) {
+            this.add('errore', shot.where, `characters_in_frame cita "${id}", che non e' nella roster globale`);
+          } else if (!presenti.has(id)) {
+            this.add('info', shot.where, `"${id}" e' inquadrato ma non compare fra i presenti della scena`);
+          }
+        }
+
+        // Se il prompt nomina un personaggio ma l'inquadratura non lo dichiara,
+        // quel volto verra' generato senza riferimento — cioe' diverso ogni
+        // volta. E' il caso piu' facile da lasciarsi sfuggire scrivendo l'IR.
+        //
+        // Si guardano solo i presenti nella scena, non tutta la roster: il
+        // confronto e' sui nomi, e i nomi dei personaggi minori tendono a
+        // essere parole comuni ("anziano", "il dottore") che ricorrono nei
+        // prompt parlando di tutt'altro. Ristretto a chi in quella scena c'e'
+        // davvero, l'avviso smette di gridare al lupo.
+        for (const id of presenti) {
+          if (inquadrati.has(id)) continue;
+          const nome = roster.get(id);
+          if (!nome || !mentions(shot.image_prompt, id, nome)) continue;
+          this.add(
+            'avviso',
+            shot.where,
+            `il prompt nomina "${nome}" ma characters_in_frame non lo elenca: il volto sara' generato senza riferimento`,
+          );
+        }
+      }
+    }
+
+    for (const p of this.story.places ?? []) {
+      if (!usati.has(p.id)) this.add('info', '', `luogo "${p.id}" dichiarato in places ma mai referenziato da un'inquadratura`);
+      if (!p.visual_prompt) this.add('errore', '', `luogo "${p.id}" senza visual_prompt: non puo' fare da riferimento`);
+    }
+  }
+
   // ------------------------------------------------------------ personaggi
 
   checkCharacters(): void {
@@ -369,6 +433,30 @@ class Linter {
   }
 }
 
+/**
+ * Dice se il testo di un prompt nomina un personaggio.
+ *
+ * Volutamente grossolano — confronto su minuscole, senza regex: serve a un
+ * avviso, e un falso positivo costa una riga di rumore mentre un falso negativo
+ * costa un volto sbagliato. Si prova il nome intero, il suo primo pezzo e l'id
+ * con gli underscore sciolti, scartando le parole troppo corte per essere
+ * distintive.
+ */
+function mentions(prompt: string, id: string, nome: string): boolean {
+  const testo = prompt.toLowerCase();
+  const forme = new Set<string>();
+  const aggiungi = (v: string) => {
+    if (v.length >= 4) forme.add(v.toLowerCase());
+  };
+  aggiungi(nome);
+  aggiungi(nome.split(/\s+/)[0]);
+  aggiungi(id.replace(/_/g, ' '));
+  for (const f of forme) {
+    if (testo.includes(f)) return true;
+  }
+  return false;
+}
+
 /** Esegue tutti i controlli statici sull'IR. */
 export function lintStory(story: Story): Finding[] {
   const l = new Linter(story);
@@ -376,5 +464,6 @@ export function lintStory(story: Story): Finding[] {
   l.checkReachability();
   l.checkFlagsAndItems();
   l.checkCharacters();
+  l.checkShots();
   return l.findings;
 }

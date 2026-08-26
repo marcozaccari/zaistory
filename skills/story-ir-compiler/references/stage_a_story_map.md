@@ -114,7 +114,22 @@ passare il blocco giusto allo Stadio B.
    Se una voce ti sfugge in questa fase, lo Stadio B la ritrova compilando la
    scena e te la fa aggiungere: meglio recuperarla che lasciarla fuori.
 
-8. **Non includere MAI testo fuori dal JSON**: niente premessa, niente
+8. **Luoghi**: in `places` va ogni ambientazione in cui la storia **torna piu'
+   di una volta** — la casa dove si svolgono tre scene, la piazza, la camera
+   del consiglio, il crinale sopra il paese. Servono alla coerenza visiva: due
+   scene ambientate nello stesso posto devono riferirsi allo stesso `Place`,
+   altrimenti ogni ritorno genera un luogo diverso.
+
+   Il `visual_prompt` di un luogo descrive **il posto**, non un'inquadratura:
+   di che materiali e' fatto, com'e' disposto, che luce ha di solito. Il taglio,
+   il momento e chi c'e' dentro restano negli `image_prompt` delle scene, che si
+   sommano a questo.
+
+   Un'ambientazione che compare una volta sola non ha bisogno di un `Place`: la
+   coerenza fra ritorni e' il problema, non la singola immagine. Non gonfiare
+   l'elenco con un luogo per scena.
+
+9. **Non includere MAI testo fuori dal JSON**: niente premessa, niente
    spiegazioni, niente code fence markdown. Rispondi con il solo oggetto JSON,
    che deve essere direttamente parsabile.
 

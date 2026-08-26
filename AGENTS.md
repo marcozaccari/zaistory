@@ -81,5 +81,6 @@ Toccando lo schema o il player, il playthrough di riferimento va rigiocato.
 ## Riprendere il progetto
 
 Se l'utente chiede di riprendere senza specificare altro, chiedi su quale dei
-tre fronti si lavora: iterare sulla skill del compilatore, costruire il player
-CLI di test, o impostare il generatore ad hoc.
+fronti aperti si lavora: iterare sulla skill del compilatore, estendere il
+player di test (`player/`, già costruito), impostare il modulo assets, o
+impostare il generatore ad hoc.

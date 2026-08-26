@@ -45,7 +45,7 @@ PWA (principale) + eventuale bot Telegram (secondario, testuale)
 ## Il formato IR: decisioni chiave
 
 Schema: `engine-ir.schema.json` (JSON Schema draft 2020-12), versione
-corrente **1.2.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
+corrente **1.3.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
 
 Decisioni di design, con il *perché* (per non riscoprirle da capo):
 
@@ -82,9 +82,9 @@ Decisioni di design, con il *perché* (per non riscoprirle da capo):
   Le scene continuano a poter fare override locali di `visual_prompt`/`voice`:
   quello che non possono più fare è essere l'unico posto dove un parlante
   esiste. Come prima, è un vincolo di *comportamento del compilatore*, non
-  dello schema dati — lo schema non è cambiato, e infatti l'IR resta 1.2.0;
-  a farlo rispettare è il linter, che segnala come errore ogni `speaker`
-  fuori dalla roster.
+  dello schema dati: lo schema permetteva già entrambe le cose, cambia la guida
+  su come usarlo. A farlo rispettare è il linter, che segnala come errore ogni
+  `speaker` fuori dalla roster.
 - **Niente proprietà non previste, in nessun oggetto dell'IR** — vincolo
   architetturale forte: ogni oggetto dell'IR ammette solo i campi definiti,
   nessuno extra. Motivazione: rete di sicurezza contro derive/allucinazioni
@@ -102,6 +102,36 @@ Decisioni di design, con il *perché* (per non riscoprirle da capo):
   vive in un **file separato gestito dal modulo assets**. Motivazione:
   cambiare provider TTS o modello di immagini non deve toccare l'IR, che e'
   il contratto stabile tra compilatore e player.
+- **La coerenza visiva si ottiene con ancore, non con il contesto** (1.3.0).
+  I volti devono restare gli stessi lungo 59 immagini e i luoghi devono restare
+  gli stessi fra un ritorno e l'altro. La strada sbagliata sarebbe generare
+  l'immagine N avendo in contesto la N-1: renderebbe la generazione
+  ordine-dipendente, non riproducibile, non parallelizzabile, e farebbe
+  accumulare la deriva. La strada scelta e' la stessa gia' adottata per la voce:
+  si fissa un riferimento **una volta per entita'**, poi ogni immagine si genera
+  in modo indipendente condizionata su quei riferimenti.
+
+  Perche' funzioni, l'IR deve dire *a quali entita'* un'inquadratura si
+  riferisce, e da 1.3.0 lo dice:
+  - **`places[]`** da un'identita' ai luoghi, come `characters[]` la da alle
+    persone. Il `visual_prompt` di un `Place` descrive il posto; l'`image_prompt`
+    di chi lo referenzia descrive l'inquadratura. Solo i luoghi in cui si torna:
+    per un'ambientazione che compare una volta non c'e' niente da tenere
+    coerente.
+  - **`characters_in_frame`** su `background` e su ogni beat con immagine dice
+    chi si **vede**. Non e' `Scene.characters`, che dice chi e' *presente*: una
+    camera buia in cui parlano tre anziani ha tre presenti e nessuno inquadrato,
+    e una voce oltre il muro e' presente e fuori campo. Condizionare su tutti i
+    presenti peggiora l'immagine quanto non condizionare affatto.
+
+  Nota sulle chiavi, che e' dove si sbaglia facilmente: le **ancore** si
+  indicizzano per *identita'* (`nunez`), le singole generazioni per *contenuto*.
+  Se leghi il ritratto all'hash del suo `visual_prompt`, una ricompilazione che
+  ne cambia due parole cambia la faccia in tutta la storia.
+
+  Il linter fa rispettare tutto questo: `place` e `characters_in_frame` verso id
+  inesistenti sono errori, e un prompt che nomina un personaggio presente senza
+  dichiararlo inquadrato e' un avviso.
 - **Riferimenti a scene esterne** (una scena come file separato, per storie
   molto grandi) sono previsti concettualmente ma non ancora affrontati nel
   dettaglio — oggi si lavora solo con IR a scene inline in un unico
@@ -145,15 +175,23 @@ in un generatore.
 ## Modulo assets: decisioni di design (non ancora implementate in codice)
 
 - **Estrazione come passo concettualmente separato dalla generazione**:
-  prima si attraversa l'intero IR raccogliendo ogni prompt (immagini di
-  personaggi/sfondi/beat di narrazione, voci, effetti sonori, musica),
-  deduplicando per contenuto identico, POI si chiamano i provider esterni.
-  Evita di rigenerare due volte lo stesso asset se due scene riusano lo
-  stesso prompt (es. il ritratto di un personaggio).
-- **Voce a due livelli, non uno**: (1) *assegnazione* — una volta per
-  parlante nell'intera storia, uno stile testuale diventa un timbro/voice_id
-  stabile; (2) *sintesi* — per ogni battuta, quel timbro più il testo
-  producono l'audio. Motivazione: un personaggio deve suonare sempre uguale
+  prima si attraversa l'intero IR raccogliendo ogni risorsa da produrre, POI si
+  chiamano i provider esterni. Attenzione a non sopravvalutare la deduplica per
+  contenuto identico: misurata sull'IR di riferimento non risparmia niente (59
+  immagini, 59 distinte; 30 suoni, 30 distinti). Il motivo vero per separare i
+  due passi e' un altro — l'estrazione risolve le **ancore** (ritratti di
+  riferimento, timbri, luoghi) di cui la generazione ha bisogno, e permette di
+  generare ogni risorsa in modo indipendente, riprendibile e cacheabile.
+- **Le risorse non sono solo prompt.** Il grosso del lavoro sono le battute da
+  sintetizzare — 111 sull'IR di riferimento, ~24 minuti di audio, l'82% del
+  narratore — e il loro testo sta in `DialogueNode.text`, `narration[].text` e
+  `Effect.narration`, che prompt non sono. Un manifesto "lista dei prompt"
+  lascerebbe fuori la parte piu' costosa.
+- **Due livelli, non uno — per la voce come per le immagini**: (1)
+  *assegnazione* — una volta per entita' nell'intera storia, uno stile testuale
+  diventa un timbro/voice_id stabile e un `visual_prompt` diventa un ritratto o
+  una veduta di riferimento; (2) *generazione* — per ogni battuta o
+  inquadratura, quell'ancora più il contenuto producono l'asset. Motivazione: un personaggio deve suonare sempre uguale
   lungo tutta la storia — se si risolve lo stile riga per riga invece che
   una volta per personaggio, provider come ElevenLabs possono restituire
   timbri leggermente diversi ad ogni chiamata anche con lo stesso stile

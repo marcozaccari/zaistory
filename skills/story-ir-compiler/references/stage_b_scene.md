@@ -185,7 +185,43 @@ lì, con eventuali override locali di `visual_prompt`/`voice` quando in quella
 scena il personaggio appare o suona diverso. Se non c'è niente da
 sovrascrivere, basta `{"id": "..."}`.
 
-### 7. scene_tone
+### 7. Dove siamo e chi si vede (ogni inquadratura)
+
+Ogni punto in cui si genera un'immagine — `background` e ogni beat di
+`narration[]` che ha un suo `image_prompt` — puo' dichiarare due cose oltre al
+prompt:
+
+- **`place`**: l'id di un `Place` di `story_context.places`, se la scena si
+  svolge in un luogo che la storia rivede altrove. Quando lo metti, **non
+  ripetere nell'`image_prompt` la descrizione del posto**: i due testi si
+  sommano, e l'`image_prompt` deve restare la descrizione di *questa*
+  inquadratura — taglio, luce, momento.
+- **`characters_in_frame`**: gli id dei personaggi che si **vedono** in
+  quell'inquadratura.
+
+Perche' servono: il modulo assets genera le immagini condizionandole sul
+riferimento del luogo e sul ritratto dei personaggi inquadrati. E' cosi' che la
+casa resta la stessa casa e un volto resta lo stesso volto lungo tutta la
+storia. Un'inquadratura che non li dichiara viene generata senza riferimenti, e
+sara' diversa da tutte le altre.
+
+**`characters_in_frame` non e' `characters` della scena.** `Scene.characters`
+elenca chi e' *presente* — anche solo come voce, anche al buio, anche fuori
+campo. `characters_in_frame` elenca chi e' *inquadrato*. Una camera di consiglio
+buia in cui parlano tre anziani ha tre presenti e nessuno inquadrato; una voce
+che chiama da dietro un muro e' presente e non inquadrata.
+
+Elencarne troppi peggiora l'immagine quanto ometterli: metti chi e' il soggetto
+riconoscibile dello scatto — anche di spalle, perche' il riferimento ancora
+anche corporatura e vestiario — e lascia fuori le figure anonime e le sagome
+indistinte.
+
+Se durante la compilazione ti accorgi che una scena si svolge in un luogo
+ricorrente che la story map non ha previsto, comportati come per i parlanti:
+usalo e aggiungi la sua scheda a `new_places`, con la stessa struttura di
+`new_characters`.
+
+### 8. scene_tone
 
 Se il tono di questa scena differisce da `global_style.default_tone` (es. una
 scena di sollievo comico in una storia cupa, o una sequenza onirica), 

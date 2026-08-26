@@ -25,6 +25,7 @@ import {
   describeCondition,
   describeEffect,
   findCharacter,
+  findPlace,
   sceneType,
   speakerName,
   toneOf,
@@ -228,6 +229,16 @@ export class WebUI implements PlayerUI {
       }
     }
 
+    // I luoghi: come i personaggi, hanno un prompt che vale da riferimento
+    // stabile per ogni inquadratura ambientata li'.
+    if (st.places?.length) {
+      cover.append(el('h3', undefined, `luoghi (${st.places.length})`));
+      for (const pl of st.places) {
+        const box = promptGroup(`places.${pl.id}`, [['visual_prompt', pl.visual_prompt, 'image']], pl.name);
+        if (box) cover.append(box);
+      }
+    }
+
     // Gli elenchi documentali: non fanno niente in gioco, ma dicono cosa
     // l'autore si aspettava che la storia usasse — e il linter li confronta.
     const list = (title: string, values?: string[]) => {
@@ -281,8 +292,18 @@ export class WebUI implements PlayerUI {
     const bg = promptGroup('background', [
       ['image_prompt', scene.background?.image_prompt, 'image'],
       ['ambient_sound_prompt', scene.background?.ambient_sound_prompt, 'sound'],
+      ['place', scene.background?.place, 'none'],
+      ['characters_in_frame', scene.background?.characters_in_frame?.join(', '), 'none'],
     ]);
     if (bg) card.append(bg);
+
+    // Il luogo dell'inquadratura, risolto: e' il riferimento che tiene uguale
+    // questo posto fra le scene in cui ci si torna.
+    const luogo = scene.background?.place ? findPlace(this.story, scene.background.place) : undefined;
+    if (luogo) {
+      const box = promptGroup(`places.${luogo.id}`, [['visual_prompt', luogo.visual_prompt, 'image']], luogo.name);
+      if (box) card.append(box);
+    }
 
     // Aspetto e voce di chi e' in scena: l'override locale se c'e', altrimenti
     // quello della roster globale. Marcare quale dei due si sta guardando conta
@@ -318,8 +339,15 @@ export class WebUI implements PlayerUI {
 
   async beat(scene: Scene, b: NarrationBeat, index: number, total: number): Promise<void> {
     this.scene = scene;
+    // Il prompt del luogo si mostra una volta per scena: qui torna solo se il
+    // beat si sposta altrove rispetto all'inquadratura di base.
+    const altrove = b.place && b.place !== scene.background?.place;
+    const luogo = altrove ? findPlace(this.story, b.place!) : undefined;
     this.assets([
       ['image_prompt', b.image_prompt, 'image'],
+      ['place', b.place, 'none'],
+      [`places.${b.place}.visual_prompt`, luogo?.visual_prompt, 'image'],
+      ['characters_in_frame', b.characters_in_frame?.join(', '), 'none'],
       ['sound_effect_prompt', b.sound_effect_prompt, 'sound'],
       ['voice.style_prompt', b.voice?.style_prompt, 'voice'],
     ]);

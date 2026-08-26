@@ -30,6 +30,7 @@ import {
   describeCondition,
   describeEffect,
   findCharacter,
+  findPlace,
   isRepeatable,
   sceneLabel,
   sceneType,
@@ -188,8 +189,19 @@ export class TermUI implements PlayerUI {
       }
     }
 
+    // I luoghi: come i personaggi, hanno un prompt che vale da riferimento
+    // stabile per ogni inquadratura ambientata li'.
+    if (st.places?.length) {
+      this.out();
+      this.out(this.t.dim(`  luoghi (${st.places.length}):`));
+      for (const pl of st.places) {
+        this.group(`places.${pl.id}`, [['visual_prompt', pl.visual_prompt, 'image']], pl.name);
+      }
+    }
+
     // Gli elenchi documentali: non fanno niente in gioco, ma dicono cosa
     // l'autore si aspettava che la storia usasse — e il linter li confronta.
+    this.out();
     this.param('state_flags_schema', st.state_flags_schema?.join(', '));
     this.param('inventory_schema', st.inventory_schema?.join(', '));
 
@@ -212,6 +224,13 @@ export class TermUI implements PlayerUI {
     this.lastScene = scene;
     this.dbg(`beat ${index + 1}/${total}`);
     this.param('image_prompt', b.image_prompt, 'image');
+    this.param('place', b.place);
+    // Il prompt del luogo si mostra una volta per scena: qui torna solo se il
+    // beat si sposta altrove rispetto all'inquadratura di base.
+    if (b.place && b.place !== scene.background?.place) {
+      this.param(`places.${b.place}.visual_prompt`, findPlace(this.story, b.place)?.visual_prompt, 'image');
+    }
+    this.param('characters_in_frame', b.characters_in_frame?.join(', '));
     this.param('sound_effect_prompt', b.sound_effect_prompt, 'sound');
     this.param('voice.style_prompt', b.voice?.style_prompt, 'voice');
     this.para(this.t.italic(b.text), '  ');
@@ -549,7 +568,16 @@ export class TermUI implements PlayerUI {
     this.group('background', [
       ['image_prompt', sc.background?.image_prompt, 'image'],
       ['ambient_sound_prompt', sc.background?.ambient_sound_prompt, 'sound'],
+      ['place', sc.background?.place, 'none'],
+      ['characters_in_frame', sc.background?.characters_in_frame?.join(', '), 'none'],
     ]);
+
+    // Il luogo dell'inquadratura, risolto: e' il riferimento che tiene uguale
+    // questo posto fra le scene in cui ci si torna.
+    const luogo = sc.background?.place ? findPlace(this.story, sc.background.place) : undefined;
+    if (luogo) {
+      this.group(`places.${luogo.id}`, [['visual_prompt', luogo.visual_prompt, 'image']], luogo.name);
+    }
 
     // Aspetto e voce di chi e' in scena: l'override locale se c'e', altrimenti
     // quello della roster globale. Marcare quale dei due si sta guardando conta

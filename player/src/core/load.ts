@@ -39,6 +39,7 @@ type SpecName =
   | 'GlobalStyle'
   | 'VoiceSpec'
   | 'Character'
+  | 'Place'
   | 'Condition'
   | 'Effect'
   | 'DialogueChoice'
@@ -66,6 +67,7 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       language: 'string',
       global_style: { obj: 'GlobalStyle' },
       characters: { arr: 'Character' },
+      places: { arr: 'Place' },
       start_scene: 'string',
       state_flags_schema: 'string[]',
       inventory_schema: 'string[]',
@@ -93,6 +95,10 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       visual_prompt: 'string',
       voice: { obj: 'VoiceSpec' },
     },
+  },
+  Place: {
+    required: ['id'],
+    fields: { id: 'string', name: 'string', visual_prompt: 'string' },
   },
   Condition: {
     required: [],
@@ -165,12 +171,19 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       text: 'string',
       voice: { obj: 'VoiceSpec' },
       image_prompt: 'string',
+      place: 'string',
+      characters_in_frame: 'string[]',
       sound_effect_prompt: 'string',
     },
   },
   Background: {
     required: ['image_prompt'],
-    fields: { image_prompt: 'string', ambient_sound_prompt: 'string' },
+    fields: {
+      image_prompt: 'string',
+      ambient_sound_prompt: 'string',
+      place: 'string',
+      characters_in_frame: 'string[]',
+    },
   },
   // Stessa scelta di Action per `background` e `actions`: mancanti sono
   // segnalazioni del linter, non errori di caricamento.
