@@ -54,6 +54,8 @@ interface Session {
   findings: Finding[];
   engine: Engine;
   ui: WebUI;
+  /** La partita e' guidata da uno script di playthrough. */
+  scripted: boolean;
 }
 
 // --------------------------------------------------------------- pannello
@@ -76,6 +78,39 @@ function panelContext(s: Session): PanelContext {
 function refreshPanel(): void {
   if (panel.hidden || !session) return;
   renderPanel(panelBody, tab, panelContext(session));
+}
+
+// ----------------------------------------------------------- barra in testa
+
+/**
+ * La riga sotto il titolo: che cosa si sta giocando (IR, linter, script) e a
+ * che punto si e' arrivati (scena, beat).
+ *
+ * La scena porta il suo numero d'ordine in `scenes[]`, non quante se ne sono
+ * viste: e' la stessa base del totale che le sta accanto, e resta vera anche
+ * ripassando da una scena gia' visitata. Prima che la partita cominci — cioe'
+ * sulla copertina — non c'e' nessuna scena corrente e resta il solo totale.
+ */
+function refreshHeader(): void {
+  if (!session) return;
+  const { story, findings, ui, scripted } = session;
+  const parti = [`IR ${story.ir_version}`];
+
+  const i = ui.scene ? story.scenes.findIndex((s) => s.id === ui.scene?.id) : -1;
+  parti.push(i >= 0 ? `scena ${i + 1}/${story.scenes.length}` : `${story.scenes.length} scene`);
+  if (ui.beatCorrente && ui.beatTotali) parti.push(`beat ${ui.beatCorrente}/${ui.beatTotali}`);
+
+  const { errors, warnings } = countFindings(findings);
+  if (errors || warnings) parti.push(`linter: ${errors} errori, ${warnings} avvisi`);
+  if (scripted) parti.push('script');
+
+  $('#story-meta').textContent = parti.join(' · ');
+}
+
+/** Stato e scena sono cambiati: si aggiornano insieme la barra e il pannello. */
+function refresh(): void {
+  refreshHeader();
+  refreshPanel();
 }
 
 function openPanel(): void {
@@ -114,15 +149,14 @@ function start(story: Story, findings: Finding[], script?: ScriptDriver): void {
   clear(transcript);
   clear(dock);
 
-  const ui = new WebUI({ story, transcript, dock, onUpdate: refreshPanel, script });
+  const ui = new WebUI({ story, transcript, dock, onUpdate: refresh, script });
   const engine = new Engine(story, ui);
-  session = { story, findings, engine, ui };
+  session = { story, findings, engine, ui, scripted: !!script };
 
   $('#story-title').textContent = story.title;
-  const { errors, warnings } = countFindings(findings);
-  const lint = errors || warnings ? ` · linter: ${errors} errori, ${warnings} avvisi` : '';
-  $('#story-meta').textContent = `IR ${story.ir_version} · ${story.scenes.length} scene${lint}${script ? ' · script' : ''}`;
+  refreshHeader();
 
+  const { errors, warnings } = countFindings(findings);
   if (errors || warnings) {
     lintBadge.hidden = false;
     lintBadge.textContent = String(errors || warnings);

@@ -46,8 +46,10 @@ function etichettaLuogo(id: string, nome?: string): string {
 /**
  * [nome del campo nell'IR, valore, tipo di media, ereditato?]
  *
- * `ereditato` marca un valore che l'inquadratura non definisce ma riceve dalla
- * scena: si mostra su una riga sola, troncata, e si apre toccandola.
+ * `ereditato` marca un valore gia' scritto per intero piu' su nel transcript —
+ * perche' l'inquadratura lo riceve dalla scena, o perche' e' la stessa
+ * descrizione gia' letta a una comparsa precedente: si mostra su una riga sola,
+ * troncata, e si apre toccandola.
  */
 type PromptRow = [string, string | undefined, Media, boolean?];
 
@@ -58,10 +60,11 @@ function promptRow([label, value, media, ereditato]: [string, string, Media, boo
     return row;
   }
 
-  // Ereditato: il testo per intero e' gia' nella scheda di scena, ma un blocco
-  // che non contiene tutti i suoi ingredienti costringe a risalire per sapere
-  // cosa verra' generato. Una riga sola lo ricorda senza allagare la pagina —
-  // il paragrafo di un luogo tornerebbe fino a cinque volte nella stessa scena.
+  // Ereditato: il testo per intero e' gia' passato piu' su, ma un blocco che non
+  // contiene tutti i suoi ingredienti costringe a risalire per sapere cosa
+  // verra' generato. Una riga sola lo ricorda senza allagare la pagina — il
+  // paragrafo di un luogo tornerebbe fino a cinque volte nella stessa scena, e
+  // quello di un protagonista una volta per ogni scena in cui compare.
   const row = el('button', `prompt m-${media} ereditato`);
   row.type = 'button';
   row.setAttribute('aria-expanded', 'false');
@@ -131,6 +134,21 @@ export class WebUI implements PlayerUI {
   private pending?: { rows: PromptRow[]; texts: string[]; changes: string[] };
   /** Un tocco e' in corso: il dock e' fermo finche' non finisce. */
   private pressing = false;
+  /** Il beat di narrazione mostrato per ultimo e quanti ne ha la scena, per la
+   * barra in testa. `beatCorrente` resta `undefined` finche' il primo beat non
+   * e' comparso — un contatore che parte da 0/N direbbe una cosa falsa — e poi
+   * si ferma sull'ultimo: a narrazione finita `10/10` significa "li hai visti
+   * tutti", che e' esattamente quello che si vuole sapere restando fermi. */
+  beatCorrente?: number;
+  beatTotali?: number;
+  /** I prompt di personaggio gia' letti per intero in una scena precedente,
+   * per chiave `id campo testo`. Serve a collassarli dalla comparsa
+   * successiva in poi, come si fa con il luogo ereditato da un beat. Il testo
+   * sta nella chiave apposta: un override locale e' un valore diverso da quello
+   * della roster, quindi torna a mostrarsi per intero la prima volta che compare
+   * — che e' esattamente quando va letto. Vive quanto la partita: `main.start`
+   * costruisce una WebUI nuova a ogni ricominciata. */
+  private personaggiVisti = new Set<string>();
 
   constructor(o: WebUIOptions) {
     this.story = o.story;
@@ -343,6 +361,10 @@ export class WebUI implements PlayerUI {
   sceneEnter(state: GameState, scene: Scene): void {
     this.state = state;
     this.scene = scene;
+    // Il contatore dei beat riparte da capo: quanti ne ha questa scena si sa
+    // subito, a quale si sia arrivati solo quando il primo compare.
+    this.beatTotali = scene.narration?.length || undefined;
+    this.beatCorrente = undefined;
 
     // La scheda porta i parametri descrittivi della scena con il nome che
     // hanno nell'IR: sono quelli che si guardano leggendo, senza dover aprire
@@ -387,11 +409,23 @@ export class WebUI implements PlayerUI {
     // una svista si vede solo se si distingue dall'ereditata.
     for (const c of scene.characters ?? []) {
       const g = findCharacter(this.story, c.id);
+      const aspetto = c.visual_prompt ?? g?.visual_prompt;
+      const voce = c.voice?.style_prompt ?? g?.voice?.style_prompt;
       const box = promptGroup(
         `characters.${c.id}`,
         [
-          [`visual_prompt${c.visual_prompt ? ' (override)' : ''}`, c.visual_prompt ?? g?.visual_prompt, 'image'],
-          [`voice.style_prompt${c.voice?.style_prompt ? ' (override)' : ''}`, c.voice?.style_prompt ?? g?.voice?.style_prompt, 'voice'],
+          [
+            `visual_prompt${c.visual_prompt ? ' (override)' : ''}`,
+            aspetto,
+            'image',
+            this.giaLetto(c.id, 'visual_prompt', aspetto),
+          ],
+          [
+            `voice.style_prompt${c.voice?.style_prompt ? ' (override)' : ''}`,
+            voce,
+            'voice',
+            this.giaLetto(c.id, 'voice.style_prompt', voce),
+          ],
         ],
         g?.name,
       );
@@ -412,6 +446,25 @@ export class WebUI implements PlayerUI {
     this.dbg(meta.join('\n'));
 
     this.onUpdate();
+  }
+
+  /**
+   * true se questo prompt di personaggio e' gia' stato mostrato per intero in
+   * una scena precedente, e da qui in poi va collassato.
+   *
+   * La copertina non conta, di proposito: li' la roster si legge per capire
+   * *quale* IR si sta giocando, non per guardare in faccia qualcuno. Il momento
+   * in cui serve leggere com'e' fatto un personaggio e' quando entra in scena
+   * la prima volta, ed e' quello che resta aperto.
+   *
+   * Registra al primo passaggio: va chiamata una volta sola per riga.
+   */
+  private giaLetto(id: string, campo: string, valore?: string): boolean {
+    if (!valore) return false;
+    const chiave = `${id} ${campo} ${valore}`;
+    if (this.personaggiVisti.has(chiave)) return true;
+    this.personaggiVisti.add(chiave);
+    return false;
   }
 
   async beat(scene: Scene, b: NarrationBeat, index: number, total: number): Promise<void> {
@@ -435,8 +488,14 @@ export class WebUI implements PlayerUI {
     this.dbg(`beat ${index + 1}/${total}`);
     // Un beat e' un blocco a se': senza un segno, due paragrafi in corsivo di
     // seguito sembrano lo stesso testo e non si capisce cosa abbia aggiunto il
-    // tocco su "continua". Il numero del beat lo direbbe, ma vive nel debug.
+    // tocco su "continua". Il numero del beat lo dice, ma sta in testa alla
+    // pagina: qui serve un confine visibile dentro al testo.
     this.push(el('hr', 'beat-sep'));
+    // Prima dell'attesa: dopo, la barra si aggiornerebbe solo al tocco, cioe'
+    // mostrerebbe sempre il beat precedente a quello che si sta leggendo.
+    this.beatCorrente = index + 1;
+    this.beatTotali = total;
+    this.onUpdate();
     await this.waitContinue(index + 1 < total ? 'continua' : 'avanti');
   }
 
