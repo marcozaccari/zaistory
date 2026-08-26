@@ -18,6 +18,10 @@ description: >-
 
 # Story IR Compiler
 
+**Versione di questo compilatore: 1.0.0.** Va riportata in `generated_by` di
+ogni IR prodotto (passo 6); alzala quando cambi le regole di compilazione, non
+a ogni ritocco di forma.
+
 Compila una sceneggiatura in markdown libero nel formato IR (`story.ir.json`)
 conforme a `references/engine-ir.schema.json`. Replica in conversazione la
 pipeline a due stadi del progetto CLI (Stadio A: story map, Stadio B: scena
@@ -101,7 +105,12 @@ compilatore CLI, non riscrivere la scena da zero per un errore di schema.
 
 ```json
 {
-  "ir_version": "1.3.0",
+  "ir_version": "1.4.0",
+  "generated_by": {
+    "compiler": "story-ir-compiler",
+    "compiler_version": "<la versione dichiarata in cima a questo file>",
+    "model": "<il modello con cui stai girando, es. claude-opus-5>"
+  },
   "id": "<story_map.id>",
   "title": "<story_map.title>",
   "language": "<story_map.language o \"it\">",
@@ -114,6 +123,20 @@ compilatore CLI, non riscrivere la scena da zero per un errore di schema.
   "scenes": ["<tutte le Scene compilate, nell'ordine dei segmenti>"]
 }
 ```
+
+Su `generated_by`: serve a sapere, riaprendo l'IR fra sei mesi, con cosa e'
+stato prodotto — domanda tutt'altro che oziosa, visto che questo compilatore
+non e' deterministico fra sessioni e due compilazioni della stessa
+sceneggiatura non coincidono. **Se non sei certo dell'identificatore del
+modello con cui stai girando, ometti `model` invece di tirare a indovinare**:
+una provenienza inventata e' peggio di una provenienza assente, perche' porta
+a cercare differenze dove non ce ne sono.
+
+Non e' una violazione della regola "l'IR non nomina mai un generatore": quella
+riguarda il binding ai generatori di *asset* (TTS, immagini), che nessun
+consumatore deve trovare nell'IR perche' cambiarli non deve toccarlo. Qui si
+tratta di una firma in calce al documento, che nessuno legge per decidere cosa
+fare.
 
 ### 7. Valida l'intera Story e controlla i riferimenti pendenti
 

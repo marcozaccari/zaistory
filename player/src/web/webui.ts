@@ -257,6 +257,13 @@ export class WebUI implements PlayerUI {
       if (v) dl.append(el('dt', undefined, k), el('dd', undefined, v));
     };
     meta('ir_version', st.ir_version);
+    // La provenienza sta con gli altri dati d'identita' del file, non sotto il
+    // debug: e' la prima cosa da guardare quando due IR della stessa storia non
+    // coincidono.
+    if (st.generated_by) {
+      const g = st.generated_by;
+      meta('generated_by', `${g.compiler} ${g.compiler_version}${g.model ? ` · ${g.model}` : ''}`);
+    }
     meta('id', st.id);
     meta('language', st.language);
     meta('scenes', `${st.scenes.length}`);

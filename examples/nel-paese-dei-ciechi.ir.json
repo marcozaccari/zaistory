@@ -1,5 +1,9 @@
 {
-  "ir_version": "1.3.0",
+  "ir_version": "1.4.0",
+  "generated_by": {
+    "compiler": "story-ir-compiler",
+    "compiler_version": "1.0.0"
+  },
   "id": "nel-paese-dei-ciechi",
   "title": "Nel paese dei ciechi",
   "description": "Adattamento giocabile del racconto di H.G. Wells: un alpinista precipita in una valle andina dove tutti sono ciechi da quindici generazioni, e scopre che la vista non lo rende re.",

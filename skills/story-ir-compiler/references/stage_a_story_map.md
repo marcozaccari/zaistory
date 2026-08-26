@@ -129,7 +129,11 @@ passare il blocco giusto allo Stadio B.
    coerenza fra ritorni e' il problema, non la singola immagine. Non gonfiare
    l'elenco con un luogo per scena.
 
-9. **Non includere MAI testo fuori dal JSON**: niente premessa, niente
+9. **La story map non porta la provenienza.** `generated_by` (compilatore,
+   versione, modello) viene apposto in fase di assemblaggio, al passo 6 di
+   `SKILL.md`: qui non serve e non va inventato.
+
+10. **Non includere MAI testo fuori dal JSON**: niente premessa, niente
    spiegazioni, niente code fence markdown. Rispondi con il solo oggetto JSON,
    che deve essere direttamente parsabile.
 

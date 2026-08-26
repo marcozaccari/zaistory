@@ -11,7 +11,10 @@
       "type": "string",
       "description": "Versione dello schema IR, per compatibilita' futura tra compilatore e player (semver).",
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
-      "examples": ["1.3.0"]
+      "examples": ["1.4.0"]
+    },
+    "generated_by": {
+      "$ref": "#/$defs/Provenance"
     },
     "id": {
       "type": "string",
@@ -74,6 +77,29 @@
   },
 
   "$defs": {
+
+    "Provenance": {
+      "type": "object",
+      "description": "Chi ha prodotto questo IR. E' un dato di sola tracciabilita': serve a sapere, riaprendo un file mesi dopo, con quale compilatore e con quale modello e' stato ottenuto, e a spiegare perche' due compilazioni della stessa sceneggiatura non sono identiche. NESSUN consumatore deve cambiare comportamento in base a questi campi: non e' il binding a un generatore (quello resta fuori dall'IR, nel file di mapping del modulo assets), e' l'equivalente di una firma in calce.",
+      "required": ["compiler", "compiler_version"],
+      "additionalProperties": false,
+      "properties": {
+        "compiler": {
+          "type": "string",
+          "description": "Quale compilatore, non quale versione: oggi la skill 'story-ir-compiler', domani il generatore ad hoc. Senza questo, 'versione 1.2' non dice versione di cosa.",
+          "examples": ["story-ir-compiler"]
+        },
+        "compiler_version": {
+          "type": "string",
+          "description": "Versione del compilatore, come dichiarata dal compilatore stesso."
+        },
+        "model": {
+          "type": "string",
+          "description": "Identificatore del modello che ha eseguito la compilazione, quando ce n'e' stato uno. Va omesso se il compilatore e' deterministico (nessun modello coinvolto) oppure se il modello non e' determinabile con certezza: una provenienza inventata e' peggio di una provenienza assente.",
+          "examples": ["claude-opus-5"]
+        }
+      }
+    },
 
     "GlobalStyle": {
       "type": "object",

@@ -36,6 +36,7 @@ type FieldType =
 
 type SpecName =
   | 'Story'
+  | 'Provenance'
   | 'GlobalStyle'
   | 'VoiceSpec'
   | 'Character'
@@ -61,6 +62,7 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
     required: ['ir_version', 'id', 'title', 'start_scene', 'scenes'],
     fields: {
       ir_version: 'string',
+      generated_by: { obj: 'Provenance' },
       id: 'string',
       title: 'string',
       description: 'string',
@@ -73,6 +75,10 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       inventory_schema: 'string[]',
       scenes: { arr: 'Scene' },
     },
+  },
+  Provenance: {
+    required: ['compiler', 'compiler_version'],
+    fields: { compiler: 'string', compiler_version: 'string', model: 'string' },
   },
   GlobalStyle: {
     required: [],

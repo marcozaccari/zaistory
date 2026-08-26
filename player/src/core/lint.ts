@@ -324,6 +324,30 @@ class Linter {
     }
   }
 
+  // --------------------------------------------------------- provenienza
+
+  /**
+   * Da dove viene questo file.
+   *
+   * Non incide sulla giocabilita', per questo e' un avviso e non un errore. Ma
+   * un IR senza provenienza e' un file di cui, fra sei mesi, non si sapra' se
+   * va ricompilato, con cosa, e perche' differisce da un altro: il compilatore
+   * non e' deterministico fra sessioni, e senza firma non c'e' modo di
+   * ricostruirlo.
+   */
+  checkProvenance(): void {
+    const g = this.story.generated_by;
+    if (!g) {
+      this.add('avviso', '', 'manca generated_by: non si sa quale compilatore abbia prodotto questo IR');
+      return;
+    }
+    if (!g.compiler) this.add('errore', '', 'generated_by senza compiler');
+    if (!g.compiler_version) this.add('errore', '', 'generated_by senza compiler_version');
+    if (!g.model) {
+      this.add('info', '', 'generated_by senza model: compilatore deterministico, o modello non determinabile');
+    }
+  }
+
   // -------------------------------------------------------- inquadrature
 
   /**
@@ -465,5 +489,6 @@ export function lintStory(story: Story): Finding[] {
   l.checkFlagsAndItems();
   l.checkCharacters();
   l.checkShots();
+  l.checkProvenance();
   return l.findings;
 }

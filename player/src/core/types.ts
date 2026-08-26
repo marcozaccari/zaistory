@@ -16,6 +16,23 @@ export interface VoiceSpec {
   style_prompt?: string;
 }
 
+/**
+ * Chi ha prodotto questo IR.
+ *
+ * E' tracciabilita' e basta: serve a sapere, riaprendo un file mesi dopo, con
+ * quale compilatore e con quale modello e' stato ottenuto — domanda tutt'altro
+ * che oziosa, visto che il compilatore non e' deterministico fra sessioni.
+ *
+ * Non e' il binding a un generatore, che resta fuori dall'IR: nessun
+ * consumatore deve cambiare comportamento leggendo questi campi. Il player,
+ * infatti, li mostra e nient'altro.
+ */
+export interface Provenance {
+  compiler: string;
+  compiler_version: string;
+  model?: string;
+}
+
 export interface GlobalStyle {
   image_style_suffix?: string;
   narrator_voice?: VoiceSpec;
@@ -143,6 +160,7 @@ export interface Scene {
 
 export interface Story {
   ir_version: string;
+  generated_by?: Provenance;
   id: string;
   title: string;
   description?: string;

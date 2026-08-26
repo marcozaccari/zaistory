@@ -161,6 +161,10 @@ export class TermUI implements PlayerUI {
     this.out();
 
     this.param('ir_version', st.ir_version);
+    if (st.generated_by) {
+      const g = st.generated_by;
+      this.param('generated_by', `${g.compiler} ${g.compiler_version}${g.model ? ` · ${g.model}` : ''}`);
+    }
     this.param('id', st.id);
     this.param('language', st.language);
     this.param('scenes', `${st.scenes.length}`);

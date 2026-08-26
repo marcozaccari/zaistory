@@ -1,5 +1,10 @@
 {
-  "ir_version": "1.3.0",
+  "ir_version": "1.4.0",
+  "generated_by": {
+    "compiler": "story-ir-compiler",
+    "compiler_version": "1.0.0",
+    "model": "claude-opus-5"
+  },
   "id": "mini-taverna",
   "title": "La chiave perduta (fixture)",
   "description": "Storia giocattolo usata dai test del player CLI: copre cutscene, dialogo con scelte, condizioni su flag e inventario, azione non ripetibile e scena finale.",

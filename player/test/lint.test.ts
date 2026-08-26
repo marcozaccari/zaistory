@@ -39,6 +39,7 @@ test('una storia rotta produce tutti i difetti attesi', () => {
     ['speaker fuori dalla roster globale', 'errore', 'lo speaker "voce"'],
     ['place verso un luogo inesistente', 'errore', 'luogo_inesistente'],
     ['characters_in_frame fuori dalla roster', 'errore', 'fantasma'],
+    ['provenienza assente', 'avviso', 'generated_by'],
   ];
   for (const [nome, level, frag] of casi) {
     assert.ok(has(fs, level, frag), `il linter non ha trovato: ${nome} (cercavo "${frag}" come ${level})`);

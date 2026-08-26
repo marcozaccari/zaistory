@@ -45,7 +45,7 @@ PWA (principale) + eventuale bot Telegram (secondario, testuale)
 ## Il formato IR: decisioni chiave
 
 Schema: `engine-ir.schema.json` (JSON Schema draft 2020-12), versione
-corrente **1.3.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
+corrente **1.4.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
 
 Decisioni di design, con il *perché* (per non riscoprirle da capo):
 
@@ -132,6 +132,24 @@ Decisioni di design, con il *perché* (per non riscoprirle da capo):
   Il linter fa rispettare tutto questo: `place` e `characters_in_frame` verso id
   inesistenti sono errori, e un prompt che nomina un personaggio presente senza
   dichiararlo inquadrato e' un avviso.
+- **`generated_by`: la provenienza sta nell'IR, il binding no** (1.4.0). Il
+  file dichiara quale compilatore lo ha prodotto, in che versione e con quale
+  modello. Il motivo e' pratico: il compilatore non e' deterministico fra
+  sessioni, quindi riaprendo un IR mesi dopo — o confrontandone due della
+  stessa sceneggiatura — la prima domanda e' *con cosa e' stato fatto*, e senza
+  firma non c'e' modo di rispondere.
+
+  Sembra contraddire la regola qui sopra, e va detto perche' non la contraddice:
+  li' si parla del binding ai generatori di **asset**, che deve stare fuori
+  dall'IR perche' cambiare provider TTS non deve toccare il contratto. Qui si
+  parla della **firma di chi ha scritto il documento**. La differenza operativa
+  e' netta: nessun consumatore puo' cambiare comportamento leggendo
+  `generated_by` — il player lo mostra e nient'altro. Se un giorno qualcosa
+  ramificasse su quel campo, sarebbe quella la violazione, non il campo.
+
+  Corollario, scritto nelle istruzioni del compilatore: `model` va **omesso**
+  quando non e' determinabile con certezza. Una provenienza inventata e' peggio
+  di una assente, perche' fa cercare differenze dove non ce ne sono.
 - **Riferimenti a scene esterne** (una scena come file separato, per storie
   molto grandi) sono previsti concettualmente ma non ancora affrontati nel
   dettaglio — oggi si lavora solo con IR a scene inline in un unico
