@@ -43,6 +43,12 @@ import { Theme, rule, wrap } from './term.js';
  * web: cambia solo come la si dipinge. */
 type Media = 'image' | 'sound' | 'voice' | 'music' | 'none';
 
+/** Il riferimento a un luogo, con il suo nome quando ne ha uno: l'id serve a
+ * ritrovarlo nel JSON, il nome a sapere di cosa si parla. */
+function etichettaLuogo(id: string, nome?: string): string {
+  return nome ? `${id} — ${nome}` : id;
+}
+
 export interface TermOptions {
   story: Story;
   resolver: Resolver;
@@ -223,14 +229,16 @@ export class TermUI implements PlayerUI {
   async beat(scene: Scene, b: NarrationBeat, index: number, total: number): Promise<void> {
     this.lastScene = scene;
     this.dbg(`beat ${index + 1}/${total}`);
-    this.param('image_prompt', b.image_prompt, 'image');
-    this.param('place', b.place);
+    // Stesso ordine della scheda di scena: prima i riferimenti che questa
+    // inquadratura eredita (dove, chi), poi cio' che vale solo per lei.
+    this.param('place', b.place ? etichettaLuogo(b.place, findPlace(this.story, b.place)?.name) : undefined);
     // Il prompt del luogo si mostra una volta per scena: qui torna solo se il
     // beat si sposta altrove rispetto all'inquadratura di base.
     if (b.place && b.place !== scene.background?.place) {
       this.param(`places.${b.place}.visual_prompt`, findPlace(this.story, b.place)?.visual_prompt, 'image');
     }
     this.param('characters_in_frame', b.characters_in_frame?.join(', '));
+    this.param('image_prompt', b.image_prompt, 'image');
     this.param('sound_effect_prompt', b.sound_effect_prompt, 'sound');
     this.param('voice.style_prompt', b.voice?.style_prompt, 'voice');
     this.para(this.t.italic(b.text), '  ');
@@ -565,19 +573,17 @@ export class TermUI implements PlayerUI {
     this.param('scene_type', sceneType(sc));
     const globale = toneOf(this.story, sc);
     this.param('scene_tone', sc.scene_tone || (globale ? `${globale} (default globale)` : undefined));
+    // L'ordine e' quello con cui si costruisce l'immagine mentale scendendo:
+    // il tono, poi l'inquadratura — dove siamo, chi ci sta dentro, cosa si
+    // vede — e infine chi c'e', con aspetto e voce.
+    const luogo = sc.background?.place ? findPlace(this.story, sc.background.place) : undefined;
     this.group('background', [
+      ['place', sc.background?.place ? etichettaLuogo(sc.background.place, luogo?.name) : undefined, 'none'],
+      [`places.${sc.background?.place}.visual_prompt`, luogo?.visual_prompt, 'image'],
+      ['characters_in_frame', sc.background?.characters_in_frame?.join(', '), 'none'],
       ['image_prompt', sc.background?.image_prompt, 'image'],
       ['ambient_sound_prompt', sc.background?.ambient_sound_prompt, 'sound'],
-      ['place', sc.background?.place, 'none'],
-      ['characters_in_frame', sc.background?.characters_in_frame?.join(', '), 'none'],
     ]);
-
-    // Il luogo dell'inquadratura, risolto: e' il riferimento che tiene uguale
-    // questo posto fra le scene in cui ci si torna.
-    const luogo = sc.background?.place ? findPlace(this.story, sc.background.place) : undefined;
-    if (luogo) {
-      this.group(`places.${luogo.id}`, [['visual_prompt', luogo.visual_prompt, 'image']], luogo.name);
-    }
 
     // Aspetto e voce di chi e' in scena: l'override locale se c'e', altrimenti
     // quello della roster globale. Marcare quale dei due si sta guardando conta

@@ -37,12 +37,44 @@ import { clear, el } from './dom.js';
  * `none` e' per i parametri che non sono prompt di generazione (il tono). */
 export type Media = 'image' | 'sound' | 'voice' | 'music' | 'none';
 
-/** [nome del campo nell'IR, valore, tipo di media] */
-type PromptRow = [string, string | undefined, Media];
+/** Il riferimento a un luogo, con il suo nome quando ne ha uno: l'id serve a
+ * ritrovarlo nel JSON, il nome a sapere di cosa si parla. */
+function etichettaLuogo(id: string, nome?: string): string {
+  return nome ? `${id} — ${nome}` : id;
+}
 
-function promptRow([label, value, media]: [string, string, Media]): HTMLElement {
-  const row = el('span', `prompt m-${media}`);
-  row.append(el('span', 'label', label), document.createTextNode(value));
+/**
+ * [nome del campo nell'IR, valore, tipo di media, ereditato?]
+ *
+ * `ereditato` marca un valore che l'inquadratura non definisce ma riceve dalla
+ * scena: si mostra su una riga sola, troncata, e si apre toccandola.
+ */
+type PromptRow = [string, string | undefined, Media, boolean?];
+
+function promptRow([label, value, media, ereditato]: [string, string, Media, boolean?]): HTMLElement {
+  if (!ereditato) {
+    const row = el('span', `prompt m-${media}`);
+    row.append(el('span', 'label', label), document.createTextNode(value));
+    return row;
+  }
+
+  // Ereditato: il testo per intero e' gia' nella scheda di scena, ma un blocco
+  // che non contiene tutti i suoi ingredienti costringe a risalire per sapere
+  // cosa verra' generato. Una riga sola lo ricorda senza allagare la pagina —
+  // il paragrafo di un luogo tornerebbe fino a cinque volte nella stessa scena.
+  const row = el('button', `prompt m-${media} ereditato`);
+  row.type = 'button';
+  row.setAttribute('aria-expanded', 'false');
+  // Il triangolino sta prima del testo: in coda se lo mangerebbe il
+  // troncamento, cioe' sparirebbe esattamente quando serve a dire "c'e'
+  // dell'altro, toccami".
+  const caret = el('span', 'caret', '▸');
+  row.append(el('span', 'label', label), caret, document.createTextNode(value));
+  row.onclick = () => {
+    const aperto = row.classList.toggle('aperto');
+    row.setAttribute('aria-expanded', String(aperto));
+    caret.textContent = aperto ? '▾' : '▸';
+  };
   return row;
 }
 
@@ -56,7 +88,7 @@ function promptRow([label, value, media]: [string, string, Media]): HTMLElement 
  * mancano. `who` e' il nome umano, quando l'entita' ne ha uno.
  */
 function promptGroup(name: string, rows: PromptRow[], who?: string): HTMLElement | undefined {
-  const present = rows.filter((r): r is [string, string, Media] => !!r[1]);
+  const present = rows.filter((r): r is [string, string, Media, boolean?] => !!r[1]);
   if (present.length === 0) return undefined;
   const box = el('div', 'group');
   const head = el('span', 'gname', name);
@@ -161,7 +193,7 @@ export class WebUI implements PlayerUI {
    * nome vorrebbe dire sbagliare il giorno che lo schema cambia.
    */
   private assets(rows: PromptRow[]): void {
-    const present = rows.filter((r): r is [string, string, Media] => !!r[1]);
+    const present = rows.filter((r): r is [string, string, Media, boolean?] => !!r[1]);
     if (present.length === 0) return;
     const box = el('div', 'assets');
     for (const row of present) box.append(promptRow(row));
@@ -213,8 +245,14 @@ export class WebUI implements PlayerUI {
 
     // La roster globale: qui stanno i prompt dei personaggi *come sono
     // definiti*. Nelle scene si vedra' quello che vale li', override compresi.
+    // Anagrafiche ed elenchi documentali sono materiale da ispezione, non da
+    // copertina: chi apre una storia vuole sapere che storia e', non l'elenco
+    // dei suoi flag. Restano nel documento e compaiono col debug, come tutto
+    // il resto della diagnostica.
+    const dettagli = el('div', 'only-debug');
+
     if (st.characters?.length) {
-      cover.append(el('h3', undefined, `personaggi (${st.characters.length})`));
+      dettagli.append(el('h3', undefined, `personaggi (${st.characters.length})`));
       for (const c of st.characters) {
         const box = promptGroup(
           `characters.${c.id}`,
@@ -224,18 +262,18 @@ export class WebUI implements PlayerUI {
           ],
           c.name,
         );
-        if (box) cover.append(box);
-        else cover.append(el('span', 'gname', `characters.${c.id}`));
+        if (box) dettagli.append(box);
+        else dettagli.append(el('span', 'gname', `characters.${c.id}`));
       }
     }
 
     // I luoghi: come i personaggi, hanno un prompt che vale da riferimento
     // stabile per ogni inquadratura ambientata li'.
     if (st.places?.length) {
-      cover.append(el('h3', undefined, `luoghi (${st.places.length})`));
+      dettagli.append(el('h3', undefined, `luoghi (${st.places.length})`));
       for (const pl of st.places) {
         const box = promptGroup(`places.${pl.id}`, [['visual_prompt', pl.visual_prompt, 'image']], pl.name);
-        if (box) cover.append(box);
+        if (box) dettagli.append(box);
       }
     }
 
@@ -243,20 +281,22 @@ export class WebUI implements PlayerUI {
     // l'autore si aspettava che la storia usasse — e il linter li confronta.
     const list = (title: string, values?: string[]) => {
       if (!values?.length) return;
-      cover.append(el('h3', undefined, `${title} (${values.length})`));
+      dettagli.append(el('h3', undefined, `${title} (${values.length})`));
       const box = el('div', 'chips');
       for (const v of values) box.append(el('span', 'chip', v));
-      cover.append(box);
+      dettagli.append(box);
     };
     list('state_flags_schema', st.state_flags_schema);
     list('inventory_schema', st.inventory_schema);
+
+    if (dettagli.childElementCount) cover.append(dettagli);
 
     // La copertina si legge dall'inizio, non dal fondo: e' l'unico punto del
     // transcript dove inseguire l'ultima riga sarebbe sbagliato.
     this.anchor = 'top';
     this.push(cover);
     try {
-      await this.waitContinue('comincia');
+      await this.waitContinue('comincia', 'start');
     } finally {
       this.anchor = 'end';
     }
@@ -285,25 +325,25 @@ export class WebUI implements PlayerUI {
 
     const param = (label: string, value: string | undefined, media: Media) => {
       if (!value) return;
-      card.append(promptRow([label, value, media]));
+      card.append(promptRow([label, value, media, false]));
     };
+    // L'ordine e' quello con cui si costruisce l'immagine mentale scendendo:
+    // il tono della scena, poi l'inquadratura — dove siamo, chi ci sta dentro,
+    // cosa si vede — e infine chi c'e', con il suo aspetto e la sua voce.
+    // Dentro l'inquadratura vale la stessa regola: il luogo e il cast sono
+    // riferimenti ereditati, l'image_prompt e' l'unica cosa che vale solo qui.
+    // E' anche l'impaginazione dei beat, che sono inquadrature come questa.
     param('scene_tone', scene.scene_tone || toneOf(this.story, scene), 'none');
 
+    const luogo = scene.background?.place ? findPlace(this.story, scene.background.place) : undefined;
     const bg = promptGroup('background', [
+      ['place', scene.background?.place && etichettaLuogo(scene.background.place, luogo?.name), 'none'],
+      [`places.${scene.background?.place}.visual_prompt`, luogo?.visual_prompt, 'image'],
+      ['characters_in_frame', scene.background?.characters_in_frame?.join(', '), 'none'],
       ['image_prompt', scene.background?.image_prompt, 'image'],
       ['ambient_sound_prompt', scene.background?.ambient_sound_prompt, 'sound'],
-      ['place', scene.background?.place, 'none'],
-      ['characters_in_frame', scene.background?.characters_in_frame?.join(', '), 'none'],
     ]);
     if (bg) card.append(bg);
-
-    // Il luogo dell'inquadratura, risolto: e' il riferimento che tiene uguale
-    // questo posto fra le scene in cui ci si torna.
-    const luogo = scene.background?.place ? findPlace(this.story, scene.background.place) : undefined;
-    if (luogo) {
-      const box = promptGroup(`places.${luogo.id}`, [['visual_prompt', luogo.visual_prompt, 'image']], luogo.name);
-      if (box) card.append(box);
-    }
 
     // Aspetto e voce di chi e' in scena: l'override locale se c'e', altrimenti
     // quello della roster globale. Marcare quale dei due si sta guardando conta
@@ -321,6 +361,7 @@ export class WebUI implements PlayerUI {
       );
       if (box) card.append(box);
     }
+
     this.push(card);
 
     const meta = [
@@ -339,15 +380,18 @@ export class WebUI implements PlayerUI {
 
   async beat(scene: Scene, b: NarrationBeat, index: number, total: number): Promise<void> {
     this.scene = scene;
-    // Il prompt del luogo si mostra una volta per scena: qui torna solo se il
-    // beat si sposta altrove rispetto all'inquadratura di base.
-    const altrove = b.place && b.place !== scene.background?.place;
-    const luogo = altrove ? findPlace(this.story, b.place!) : undefined;
+    // Il luogo si mostra sempre: per intero quando il beat si sposta altrove
+    // rispetto all'inquadratura di base, in una riga sola apribile quando lo
+    // eredita dalla scena.
+    const luogo = b.place ? findPlace(this.story, b.place) : undefined;
+    const ereditato = !!b.place && b.place === scene.background?.place;
+    // Stesso ordine della scheda di scena: prima i riferimenti che questa
+    // inquadratura eredita (dove, chi), poi cio' che vale solo per lei.
     this.assets([
-      ['image_prompt', b.image_prompt, 'image'],
-      ['place', b.place, 'none'],
-      [`places.${b.place}.visual_prompt`, luogo?.visual_prompt, 'image'],
+      ['place', b.place && etichettaLuogo(b.place, findPlace(this.story, b.place)?.name), 'none'],
+      [`places.${b.place}.visual_prompt`, luogo?.visual_prompt, 'image', ereditato],
       ['characters_in_frame', b.characters_in_frame?.join(', '), 'none'],
+      ['image_prompt', b.image_prompt, 'image'],
       ['sound_effect_prompt', b.sound_effect_prompt, 'sound'],
       ['voice.style_prompt', b.voice?.style_prompt, 'voice'],
     ]);
@@ -556,14 +600,20 @@ export class WebUI implements PlayerUI {
     });
   }
 
-  /** Tap-to-continue. In modalita' script non c'e' nessuno da aspettare. */
-  private waitContinue(label: string): Promise<void> {
+  /**
+   * Tap-to-continue. In modalita' script non c'e' nessuno da aspettare.
+   *
+   * `start` e' il bottone che apre la partita: pieno invece che delineato,
+   * perche' e' l'unico della sua specie e non deve somigliare ai "continua"
+   * che poi si toccano decine di volte.
+   */
+  private waitContinue(label: string, variant?: 'start'): Promise<void> {
     if (this.script) return Promise.resolve();
     if (this.dead) return Promise.reject(new QuitError());
     return new Promise<void>((resolve, reject) => {
       this.abort = reject;
       clear(this.dock);
-      const b = el('button', 'choice continue', `▸ ${label}`);
+      const b = el('button', `choice continue${variant === 'start' ? ' start' : ''}`, `▸ ${label}`);
       const go = () => {
         this.abort = undefined;
         clear(this.dock);

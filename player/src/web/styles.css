@@ -202,7 +202,7 @@ button {
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--bg);
 }
 
 .hint {
@@ -574,6 +574,30 @@ button {
   color: var(--fg-dim);
 }
 
+/* Un valore ereditato dalla scena: sta su una riga sola e si apre toccandolo.
+   E' un bottone vero, non un finto: si raggiunge col tab e risponde a invio. */
+.prompt.ereditato {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prompt.ereditato .caret {
+  margin-right: 4px;
+  color: var(--fg-dim);
+  font-size: 10px;
+}
+
+.prompt.ereditato.aperto {
+  white-space: normal;
+  overflow: visible;
+}
+
 /* Righe di debug: sempre nel DOM, mostrate solo quando il debug e' acceso.
    Cosi' accendendolo si vede anche quello che e' gia' passato. */
 .dbg {
@@ -592,6 +616,18 @@ button {
 
 body.debug .dbg {
   display: block;
+}
+
+/* Contenuti che stanno nel documento ma si guardano solo ispezionando. A
+   differenza di `.dbg` non hanno un aspetto proprio: sono normali, solo
+   nascosti. */
+.only-debug {
+  display: none;
+}
+
+body.debug .only-debug {
+  display: grid;
+  gap: 10px;
 }
 
 /* ------------------------------------------------------------------ dock */
@@ -633,6 +669,19 @@ body.debug .dbg {
   border-color: var(--accent);
   color: var(--accent);
   font-weight: 600;
+}
+
+/* Il bottone che apre la partita: pieno, cosi' non si confonde con i
+   "continua". Il testo prende il colore del fondo pagina invece di un bianco
+   fisso — su accento chiaro in tema scuro il bianco sarebbe illeggibile. */
+.choice.continue.start {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.choice.continue.start:active {
+  background: var(--fg);
+  border-color: var(--fg);
 }
 
 .choice.hidden-act {
