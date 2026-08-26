@@ -247,7 +247,11 @@ export class TermUI implements PlayerUI {
     this.param('voice.style_prompt', b.voice?.style_prompt, 'voice');
     this.para(this.t.italic(b.text), '  ');
     this.out();
-    await this.pause();
+    // Come nel player web: ci si ferma fra un beat e l'altro, non dopo
+    // l'ultimo. Quell'invio non portava niente di nuovo — quello che viene dopo,
+    // azioni della scena o unica azione di prosecuzione di una cutscene, e' gia'
+    // pronto da stampare.
+    if (index + 1 < total) await this.pause();
   }
 
   async line(scene: Scene, nodeId: string, n: DialogueNode): Promise<void> {

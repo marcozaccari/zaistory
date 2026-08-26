@@ -30,7 +30,7 @@ import {
   speakerName,
   toneOf,
 } from '../core/index.js';
-import { clear, el } from './dom.js';
+import { clear, el, premi } from './dom.js';
 
 /** Il tipo di risorsa che un prompt descrive: da' il colore all'etichetta, e
  * basta scorrere il transcript per vedere dove mancano le immagini o i suoni.
@@ -130,6 +130,20 @@ export class WebUI implements PlayerUI {
   private dead = false;
   /** Dove riportare la vista quando arriva testo nuovo. */
   private anchor: 'end' | 'top' = 'end';
+  /**
+   * Il primo blocco uscito dall'ultima cosa che ha fatto il giocatore.
+   *
+   * Un tocco puo' produrre molto piu' di uno schermo in una volta — la riga
+   * dell'azione scelta, la narrazione del suo effetto, la scheda della scena
+   * nuova, il primo beat — e inseguire il fondo scavalca proprio la parte che
+   * risponde alla domanda "cos'e' successo?". Si atterra quindi in cima al
+   * blocco nuovo e si legge in giu'. Quando il blocco e' corto la posizione
+   * viene comunque limitata dal fondo del transcript, cioe' si torna a
+   * comportarsi come prima senza doverlo scrivere da nessuna parte.
+   */
+  private landing?: HTMLElement;
+  /** Il prossimo blocco stampato apre un turno nuovo: e' lui l'atterraggio. */
+  private wantLanding = false;
   /** Esito dell'`Effect` in corso, in attesa di essere disposto. */
   private pending?: { rows: PromptRow[]; texts: string[]; changes: string[] };
   /** Un tocco e' in corso: il dock e' fermo finche' non finisce. */
@@ -142,7 +156,8 @@ export class WebUI implements PlayerUI {
   beatCorrente?: number;
   beatTotali?: number;
   /** I prompt di personaggio gia' letti per intero in una scena precedente,
-   * per chiave `id campo testo`. Serve a collassarli dalla comparsa
+   * per chiave `id NUL campo NUL testo` — un separatore che non puo'
+   * comparire dentro nessuno dei tre pezzi. Serve a collassarli dalla comparsa
    * successiva in poi, come si fa con il luogo ereditato da un beat. Il testo
    * sta nella chiave apposta: un override locale e' un valore diverso da quello
    * della roster, quindi torna a mostrarsi per intero la prima volta che compare
@@ -169,25 +184,24 @@ export class WebUI implements PlayerUI {
   }
 
   /**
-   * Trattiene il bottone premuto quanto basta a vederlo.
+   * Il tocco su una chip del dock: la trattenuta condivisa (`premi`) piu' cio'
+   * che riguarda solo il gioco.
    *
-   * Senza questa pausa il tocco non si percepisce affatto: il dock viene
-   * svuotato nello stesso istante del click, quindi lo stato premuto vive
-   * qualche millisecondo e sparisce insieme al bottone. Non e' quindi una
-   * questione di durata dell'animazione — e' che non c'era niente da animare.
-   *
-   * Il ritardo si paga a ogni interazione, per questo resta corto: giusto il
-   * tempo che la campitura arrivi a fondo. Durante l'attesa il dock e' inerte,
-   * cosi' un secondo tocco non fa partire due azioni.
+   * Quello che aggiunge rispetto a `premi`: durante l'attesa il dock e'
+   * inerte, cosi' un secondo tocco non fa partire due azioni — che qui
+   * sarebbero due passi di storia, non due click a vuoto.
    *
    * Ritorna false se un tocco era gia' in corso: chi chiama deve fermarsi.
    */
   private async press(b: HTMLButtonElement): Promise<boolean> {
     if (this.pressing || this.dead) return false;
+    // Il tocco e' stato accolto: da qui comincia un turno, e il primo blocco
+    // che ne esce e' dove riportare la lettura. Sta qui e non nei singoli
+    // gestori perche' questa e' l'unica strada per cui passano tutti i tocchi.
+    this.nuovoTurno();
     this.pressing = true;
     this.dock.classList.add('bloccato');
-    b.classList.add('premuto');
-    await new Promise((r) => setTimeout(r, 140));
+    await premi(b);
     this.pressing = false;
     this.dock.classList.remove('bloccato');
     return !this.dead;
@@ -198,20 +212,50 @@ export class WebUI implements PlayerUI {
   private push(node: Node): void {
     if (this.dead) return;
     this.transcript.append(node);
+    if (this.wantLanding && node instanceof HTMLElement) {
+      this.landing = node;
+      this.wantLanding = false;
+    }
     this.scrollEnd();
   }
 
   /**
-   * Riporta in vista il punto che conta: normalmente il fondo, perche' e' li'
-   * che arriva il testo nuovo; la copertina invece si legge dall'inizio.
+   * Riporta in vista il punto che conta: l'inizio di cio' che e' appena
+   * arrivato, o il fondo finche' non c'e' un blocco nuovo da leggere; la
+   * copertina invece si legge dall'inizio.
+   *
+   * `scrollTop` viene limitato dal browser al massimo consentito, ed e' quello
+   * che rende la regola una sola: se il blocco nuovo entra tutto nello schermo,
+   * la posizione richiesta ricade sul fondo da se'.
    *
    * Il secondo giro dentro `requestAnimationFrame` serve perche' il dock
    * cresce dopo il transcript (le chip si costruiscono per ultime): senza,
    * l'ultima riga resta nascosta sotto i bottoni.
    */
+  /**
+   * Comincia un turno: l'atterraggio vecchio non vale piu' e il prossimo blocco
+   * stampato prende il suo posto.
+   *
+   * Azzerarlo conta quanto assegnarlo. Un tocco puo' non produrre nessun blocco
+   * — l'ultima battuta di un dialogo lineare porta solo al nodo dopo — e
+   * senza azzeramento la vista resterebbe ancorata al turno precedente, con il
+   * testo appena letto sopra lo schermo. Senza atterraggio si torna al fondo,
+   * che in quel caso e' proprio il punto giusto.
+   */
+  private nuovoTurno(): void {
+    this.landing = undefined;
+    this.wantLanding = true;
+  }
+
   private scrollEnd(): void {
     const go = () => {
-      this.transcript.scrollTop = this.anchor === 'top' ? 0 : this.transcript.scrollHeight;
+      if (this.anchor === 'top') {
+        this.transcript.scrollTop = 0;
+        return;
+      }
+      this.transcript.scrollTop = this.landing
+        ? this.landing.offsetTop - this.transcript.offsetTop
+        : this.transcript.scrollHeight;
     };
     go();
     requestAnimationFrame(go);
@@ -461,7 +505,7 @@ export class WebUI implements PlayerUI {
    */
   private giaLetto(id: string, campo: string, valore?: string): boolean {
     if (!valore) return false;
-    const chiave = `${id} ${campo} ${valore}`;
+    const chiave = `${id}\u0000${campo}\u0000${valore}`;
     if (this.personaggiVisti.has(chiave)) return true;
     this.personaggiVisti.add(chiave);
     return false;
@@ -496,7 +540,17 @@ export class WebUI implements PlayerUI {
     this.beatCorrente = index + 1;
     this.beatTotali = total;
     this.onUpdate();
-    await this.waitContinue(index + 1 < total ? 'continua' : 'avanti');
+    // Si aspetta solo se c'e' un altro beat. Dopo l'ultimo, quello che viene
+    // dopo — le azioni della scena, o l'unica azione di prosecuzione di una
+    // cutscene — e' gia' pronto da mostrare: un tocco che non porta niente di
+    // nuovo sullo schermo e' solo un tocco in piu', e in fondo a una cutscene
+    // di nove beat diventa "avanti" seguito da "Continua", due bottoni di fila
+    // che dicono la stessa cosa.
+    //
+    // Non e' logica di flusso che il player si inventa: le azioni disponibili e
+    // le transizioni restano quelle dell'IR, cambia solo il momento in cui le
+    // chip compaiono, che e' impaginazione.
+    if (index + 1 < total) await this.waitContinue('continua');
   }
 
   async line(scene: Scene, nodeId: string, n: DialogueNode): Promise<void> {
@@ -585,6 +639,7 @@ export class WebUI implements PlayerUI {
     if (this.script) {
       const cmd = this.script.chooseAction(p);
       const a = p.available.find((x) => x.id === cmd.actionId);
+      this.nuovoTurno();
       this.entry('picked', `▸ ${a?.label ?? cmd.actionId} [${cmd.actionId}]`);
       return Promise.resolve(cmd);
     }
@@ -632,6 +687,7 @@ export class WebUI implements PlayerUI {
 
     if (this.script) {
       const cmd = this.script.chooseChoice(p);
+      this.nuovoTurno();
       this.entry('picked', `▸ ${p.available[cmd.choiceIndex ?? 0]?.text ?? ''}`);
       return Promise.resolve(cmd);
     }
@@ -705,7 +761,13 @@ export class WebUI implements PlayerUI {
    * che poi si toccano decine di volte.
    */
   private waitContinue(label: string, variant?: 'start'): Promise<void> {
-    if (this.script) return Promise.resolve();
+    // Sotto script non c'e' un tocco da cui far partire il turno, ma chi guarda
+    // rigiocare una traccia legge come chiunque altro: il turno lo apre il
+    // ritorno da qui.
+    if (this.script) {
+      this.nuovoTurno();
+      return Promise.resolve();
+    }
     if (this.dead) return Promise.reject(new QuitError());
     return new Promise<void>((resolve, reject) => {
       this.abort = reject;

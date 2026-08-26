@@ -680,13 +680,20 @@ body.debug .only-debug {
 
 /* Il tocco si vede mentre il dito e' giu' (`:active`) e resta visibile dopo,
    perche' il bottone viene trattenuto un istante prima di sparire. La
-   transizione fa arrivare la campitura invece di farla apparire di scatto. */
-.choice {
+   transizione fa arrivare la campitura invece di farla apparire di scatto.
+
+   Vale per le chip di gioco e per i bottoni del pannello insieme: sono tutti
+   cose che si toccano, e due grammatiche del tocco nella stessa applicazione
+   si notano. */
+.choice,
+.btn {
   transition: background-color 100ms ease, border-color 100ms ease, transform 100ms ease;
 }
 
 .choice:active,
-.choice.premuto {
+.choice.premuto,
+.btn:active,
+.btn.premuto {
   background: var(--accent-soft);
   border-color: var(--accent);
   transform: scale(0.98);
@@ -719,8 +726,14 @@ body.debug .only-debug {
   color: var(--bg);
 }
 
+/* I due bottoni pieni — "inizia" e "rigioca" — non possono usare la campitura
+   d'accento degli altri: il loro fondo e' gia' d'accento, quindi non
+   cambierebbe niente. Passano al colore del testo, che fa da contrario
+   dell'accento in tutti e due i temi (scuro su chiaro, chiaro su scuro). */
 .choice.continue.start:active,
-.choice.continue.start.premuto {
+.choice.continue.start.premuto,
+.btn.primary:active,
+.btn.primary.premuto {
   background: var(--fg);
   border-color: var(--fg);
 }

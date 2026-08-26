@@ -20,7 +20,7 @@ import {
   sceneType,
   toneOf,
 } from '../core/index.js';
-import { clear, el, kv } from './dom.js';
+import { clear, el, kv, premi } from './dom.js';
 import type { WebUI } from './webui.js';
 
 export type Tab = 'stato' | 'scena' | 'linter' | 'traccia';
@@ -186,6 +186,11 @@ function renderTraccia(body: HTMLElement, ctx: PanelContext): void {
   const btns = el('div', 'rowbtns');
   const copy = el('button', 'btn', 'copia');
   copy.onclick = async () => {
+    // Qui la pressione non si aspetta: scrivere negli appunti richiede che il
+    // gesto dell'utente sia ancora "fresco", e mettere un timer davanti alla
+    // chiamata basta a farla rifiutare. Il bottone resta al suo posto, quindi
+    // il tocco si vede lo stesso.
+    void premi(copy).then(() => copy.classList.remove('premuto'));
     try {
       await navigator.clipboard.writeText(trace.join('\n'));
       copy.textContent = 'copiata';
@@ -194,10 +199,18 @@ function renderTraccia(body: HTMLElement, ctx: PanelContext): void {
       copy.textContent = 'selezionala a mano';
     }
   };
+  // Questi tre invece rifanno il pannello sotto le proprie dita: senza la
+  // trattenuta il tocco non si vedrebbe affatto, come per le chip del dock.
   const restart = el('button', 'btn', 'ricomincia');
-  restart.onclick = ctx.onRestart;
+  restart.onclick = async () => {
+    await premi(restart);
+    ctx.onRestart();
+  };
   const other = el('button', 'btn', 'cambia IR');
-  other.onclick = ctx.onLoadOther;
+  other.onclick = async () => {
+    await premi(other);
+    ctx.onLoadOther();
+  };
   btns.append(copy, restart, other);
   body.append(btns);
 
@@ -210,6 +223,9 @@ function renderTraccia(body: HTMLElement, ctx: PanelContext): void {
   body.append(ta);
   const go = el('button', 'btn primary', 'rigioca');
   go.style.marginTop = '8px';
-  go.onclick = () => ctx.onReplay(ta.value);
+  go.onclick = async () => {
+    await premi(go);
+    ctx.onReplay(ta.value);
+  };
   body.append(go);
 }

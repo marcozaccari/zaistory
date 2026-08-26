@@ -293,6 +293,18 @@ Vite sono soli strumenti di build).
   battute di dialogo con `speaker`, scelte di dialogo disponibili, azioni
   contestuali della scena. Le scelte e le azioni non disponibili (condizione
   `Condition` non soddisfatta) restano nascoste come in un player reale.
+- **Il tap-to-continue sta *fra* i beat, non dopo l'ultimo.** Finito l'ultimo
+  beat di `narration[]` non si chiede un tocco per scoprire cosa c'è dopo: le
+  azioni della scena — o l'unica azione di prosecuzione di una cutscene —
+  compaiono insieme a quel beat. Il motivo è che quel tocco non portava niente
+  di nuovo sullo schermo: in fondo a una cutscene diventava un "avanti" seguito
+  subito da "Continua", due bottoni di fila che dicono la stessa cosa, e in una
+  scena interattiva serviva solo a far comparire delle chip già pronte. Non è
+  una deroga alla regola "il player non aggiunge logica narrativa": le azioni
+  disponibili e le transizioni restano esattamente quelle dell'IR, cambia il
+  momento in cui si vedono, che è impaginazione. Vale per entrambe le facce —
+  web e CLI si fermano negli stessi punti, perché una differenza di ritmo fra
+  le due renderebbe il collaudo su una non trasferibile all'altra.
 - **Modalità debug** (comando dedicato, es. `:debug`, oppure il tasto `debug`
   nel player web): mostra quello che i prompt di scena non dicono già — `id`,
   conteggi, personaggi presenti, `on_enter_flags_set` — e **tutte** le azioni
