@@ -1,0 +1,1549 @@
+{
+  "ir_version": "1.2.0",
+  "id": "nel-paese-dei-ciechi",
+  "title": "Nel paese dei ciechi",
+  "description": "Adattamento giocabile del racconto di H.G. Wells: un alpinista precipita in una valle andina dove tutti sono ciechi da quindici generazioni, e scopre che la vista non lo rende re.",
+  "language": "it",
+  "global_style": {
+    "image_style_suffix": "pittura digitale cinematografica, luce naturale contrastata, palette fredda di roccia e neve con improvvisi verdi di valle, grana fotografica, illustrazione editoriale",
+    "default_tone": "contemplativo, asciutto, con un'ironia amara; lo stupore che si rovescia lentamente in umiliazione",
+    "narrator_voice": {
+      "style_prompt": "voce maschile calma e bassa, ritmo lento da racconto orale, nessuna enfasi drammatica"
+    },
+    "ambient_music_tags": [
+      "ande",
+      "flauto andino",
+      "droni bassi",
+      "minimale",
+      "malinconico"
+    ]
+  },
+  "characters": [
+    {
+      "id": "nunez",
+      "name": "Nuñez",
+      "visual_prompt": "uomo di trent'anni, guida alpina sudamericana, viso segnato dal sole, sguardo acuto e mobile, giacca ruvida da montagna, barba non rasata",
+      "voice": {
+        "style_prompt": "voce sicura e calda, che nel corso della storia si incrina e si fa roca"
+      }
+    },
+    {
+      "id": "medina_sarote",
+      "name": "Medina-saroté",
+      "visual_prompt": "giovane donna dai tratti netti e ciglia lunghissime, palpebre chiuse e incavate, capelli scuri raccolti, veste di alpaca chiara",
+      "voice": {
+        "style_prompt": "voce piena, un poco troppo forte per l'orecchio fino dei valligiani, dolce nelle pause"
+      }
+    },
+    {
+      "id": "yacob",
+      "name": "Yacob",
+      "visual_prompt": "uomo anziano robusto, palpebre chiuse e incavate, mani grandi da lavoro, mantello di alpaca scuro",
+      "voice": {
+        "style_prompt": "voce bonaria e pratica, che si indurisce quando viene contrariata"
+      }
+    },
+    {
+      "id": "pedro",
+      "name": "Pedro",
+      "visual_prompt": "uomo giovane, berretto di alpaca con paraorecchi, secchio aggiogato sulle spalle, palpebre chiuse",
+      "voice": {
+        "style_prompt": "voce curiosa e prudente, che assaggia le parole nuove"
+      }
+    },
+    {
+      "id": "il_dottore",
+      "name": "Il dottore cieco",
+      "visual_prompt": "uomo magro dalle dita lunghissime e sensibili, tunica scura, volto immobile e compiaciuto",
+      "voice": {
+        "style_prompt": "voce didattica ed entusiasta, come chi annuncia una buona notizia"
+      }
+    }
+  ],
+  "start_scene": "prologo_la_valle",
+  "state_flags_schema": [
+    "addio_dato",
+    "amore_dichiarato",
+    "anziani_incontrati",
+    "consenso_dato",
+    "contatto_stabilito",
+    "cura_proposta",
+    "felce_assaggiata",
+    "opposizione_nota",
+    "prologo_visto",
+    "rivolta_fallita",
+    "sensi_dei_ciechi_compresi",
+    "sospetto_cecita",
+    "sottomesso",
+    "storia_della_valle_nota",
+    "valle_osservata",
+    "vanga_impugnata",
+    "via_di_fuga_studiata",
+    "visione_avuta",
+    "vista_derisa"
+  ],
+  "inventory_schema": [
+    "fronda_di_felce",
+    "vanga"
+  ],
+  "scenes": [
+    {
+      "id": "prologo_la_valle",
+      "title": "Prologo — la valle chiusa",
+      "scene_type": "cutscene",
+      "scene_tone": "epico e remoto, come una leggenda raccontata a voce bassa attorno a un fuoco",
+      "background": {
+        "image_prompt": "ripresa aerea che sale dal verde della giungla fino alle nevi del Chimborazo e del Cotopaxi, poi scende verso una fenditura nascosta tra due pareti di roccia",
+        "ambient_sound_prompt": "vento d'alta quota, lontano stormire di foresta"
+      },
+      "on_enter_flags_set": [
+        "prologo_visto"
+      ],
+      "narration": [
+        {
+          "text": "Trecento miglia e più dal Chimborazo, un centinaio dalle nevi del Cotopaxi, tra le più selvagge solitudini delle Ande ecuadoriane, giace una valle separata dal mondo degli uomini. Il Paese dei Ciechi."
+        },
+        {
+          "text": "Un tempo la valle era aperta al mondo, quel tanto che bastava a chi sapeva attraversare gole spaventose e valicare un passo gelato. E qualcuno arrivava — famiglie di sangue misto, in fuga dalla tirannia di un signore spagnolo.",
+          "image_prompt": "una famiglia a piedi, fagotti sulle spalle, che risale un sentiero stretto tra pareti a strapiombo, luce polverosa e quasi sabbiata"
+        },
+        {
+          "text": "Poi venne l'eruzione prodigiosa del Mindobamba. A Quito fu notte per diciassette giorni. A Yaguachi l'acqua ribolliva. Fino a Guayaquil galleggiavano pesci morti e morenti. Sulle pendici verso il Pacifico ci furono frane, disgeli improvvisi, inondazioni.",
+          "image_prompt": "montaggio quasi biblico: cielo nero a mezzogiorno sopra una città coloniale, l'acqua di un fiume che ribolle, migliaia di pesci morti che galleggiano verso la costa",
+          "sound_effect_prompt": "boato sordo e prolungato di eruzione lontana"
+        },
+        {
+          "text": "Un intero fianco dell'antica giogaia smottò con un boato, e chiuse per sempre il Paese dei Ciechi all'esplorazione degli uomini.",
+          "image_prompt": "un intero fianco di montagna che frana sollevando una nube di polvere che oscura l'inquadratura",
+          "sound_effect_prompt": "frana immane, rocce che si spezzano, poi silenzio"
+        },
+        {
+          "text": "Uno degli abitanti della valle si trovava, in quel momento, al di qua delle gole. Dovette dimenticare la moglie, il figlioletto, gli amici, i beni lasciati lassù. E ricominciare la vita, daccapo, nel mondo più in basso.",
+          "image_prompt": "un uomo solo, immobile davanti a una montagna di roccia e detriti dove un tempo c'era un varco, campo lunghissimo che lo rimpicciolisce nel paesaggio"
+        },
+        {
+          "text": "La ricominciò male. La cecità lo colse, e morì di tribolazioni nelle miniere. Ma prima di morire, raccontò. E ciò che raccontò generò una leggenda che sussiste ancor oggi in tutta la Cordigliera delle Ande.",
+          "image_prompt": "lo stesso uomo invecchiato precocemente, occhi opachi, che lavora a tentoni tra altri minatori, luce di lanterne e polvere in sospensione"
+        },
+        {
+          "text": "Aveva raccontato di una valle che aveva tutto ciò che un cuore umano può desiderare: acqua dolce, pascoli, un clima costante, arbusti da frutto, grandi boschi di pini che trattenevano le valanghe. Non pioveva, non nevicava mai: sorgenti copiose alimentavano i prati, e il bestiame prosperava insieme alla gente.",
+          "image_prompt": "il minatore più giovane, seduto vicino a un fuoco davanti a un prete che ascolta attento e un poco incredulo, mani febbrili, l'orlo del cappello stretto tra le dita"
+        },
+        {
+          "text": "Ma una cosa guastava quella felicità, e la guastava gravemente: uno strano morbo aveva preso ad affliggerli, che rendeva ciechi tutti i neonati, e molti dei più grandicelli. Non pensavano a germi o infezioni, ma a peccati. Volevano un tempio, reliquie, preghiere potenti. «Nella valle, argento, non ce n'è», disse il minatore, con l'insistenza di un mentitore inesperto, posando sul tavolo un lingotto d'argento grezzo.",
+          "image_prompt": "primo piano di un lingotto d'argento grezzo posato su un tavolo di legno, la mano del prete ferma a mezz'aria"
+        },
+        {
+          "text": "Lo si immagina, quel giovane montanaro debole d'occhi, munito di rimedi pii e infallibili contro il morbo — e lo sgomento infinito davanti all'immane rovina, dove prima c'era lo sbocco della gola. Il suo racconto balbettato si è sviluppato, nei secoli, nel mito di un popolo di ciechi che abita «su di là».",
+          "image_prompt": "uomo con un fagotto di oggetti sacri legato in spalla, fermo davanti a una parete di roccia dove prima c'era un passaggio, campo che si allarga fino a inghiottirlo"
+        }
+      ],
+      "actions": [
+        {
+          "id": "continua",
+          "label": "Continua",
+          "aliases": [
+            "vai avanti",
+            "prosegui",
+            "avanti"
+          ],
+          "effect": {
+            "goto_scene": "quindici_generazioni"
+          }
+        }
+      ]
+    },
+    {
+      "id": "quindici_generazioni",
+      "title": "Quindici generazioni",
+      "scene_type": "cutscene",
+      "scene_tone": "lento, quasi documentaristico; il tempo che passa senza che nessuno se ne accorga",
+      "background": {
+        "image_prompt": "dissolvenza lentissima su un anziano che tocca le pareti di casa sua per orientarsi, si ferma, sorride e prosegue senza più esitare",
+        "ambient_sound_prompt": "acqua di canali, belati lontani di lama, nessuna voce"
+      },
+      "on_enter_flags_set": [
+        "storia_della_valle_nota"
+      ],
+      "narration": [
+        {
+          "text": "Nella valle isolata e dimenticata, il morbo continuò il suo corso. I vecchi diventavano quasi ciechi e brancolavano; i giovani vedevano appena, confusamente; i neonati non vedevano affatto. Ma la vita era facile, in quella conca orlata di nevi, senza rovi né spine, senza insetti nocivi né altri animali che la razza mite dei lama."
+        },
+        {
+          "text": "Il senso della vista era scemato così gradualmente che quasi non ne avvertirono la perdita. Guidavano i giovinetti orbi qua e là, finché conoscevano la valle a meraviglia; e quando alfine la vista svanì del tutto, la popolazione sopravvisse comunque.",
+          "image_prompt": "bambini ciechi guidati per mano attraverso i prati da bambini che ancora vedono un poco, luce alta di mezzogiorno"
+        },
+        {
+          "text": "Generazione dopo generazione dimenticarono molte cose — e molte ne idearono. I ricordi del mondo più vasto da cui provenivano si tinsero di fiaba e incertezza. Ma in ogni cosa, tranne la vista, restarono forti e abili.",
+          "image_prompt": "mani che modellano un attrezzo nuovo per arare al buio, un cerchio di persone che canta con le orecchie tese, un vecchio che racconta una storia ai bambini"
+        },
+        {
+          "text": "Generazione seguì a generazione. Generazione seguì a generazione. Finché venne il tempo in cui quindici generazioni separavano il neonato dall'avo che era uscito dalla valle con un lingotto d'argento, per cercare l'aiuto di Dio, e non aveva mai fatto ritorno.",
+          "image_prompt": "la stessa inquadratura fissa in campo lunghissimo sulla valle, ripetuta identica mentre cambia solo la luce, come fotogrammi separati da decenni"
+        },
+        {
+          "text": "Fu allora che un uomo giunse nella comunità dal mondo esterno. E questa è la storia di quell'uomo."
+        }
+      ],
+      "actions": [
+        {
+          "id": "continua",
+          "label": "Continua",
+          "aliases": [
+            "vai avanti",
+            "prosegui",
+            "avanti"
+          ],
+          "effect": {
+            "goto_scene": "la_caduta"
+          }
+        }
+      ]
+    },
+    {
+      "id": "la_caduta",
+      "title": "La caduta di Nuñez",
+      "scene_type": "cutscene",
+      "scene_tone": "freddo, fisico, senza retorica: il corpo prima della coscienza",
+      "background": {
+        "image_prompt": "bivacco di alpinisti su una cengia innevata di notte, vento, respiri visibili, la luce di una sola lanterna",
+        "ambient_sound_prompt": "vento d'alta quota che copre ogni altro suono"
+      },
+      "characters": [
+        {
+          "id": "nunez"
+        }
+      ],
+      "narration": [
+        {
+          "text": "«Nuñez! Nuñez!» Gli alpinisti inglesi dormivano avvolti nei sacchi. Una delle guide non c'era più. Silenzio. Fischi nel buio. Nessuna risposta.",
+          "sound_effect_prompt": "richiamo lontano inghiottito dal vento"
+        },
+        {
+          "text": "Era scivolato sul versante sconosciuto della montagna, travolto da una valanga, fino all'orlo di un precipizio spaventoso. Gli alpinisti videro, in fondo all'abisso, caliginosi per la lontananza, gli alberi di una valle angusta e racchiusa — il perduto Paese dei Ciechi. Ma non lo sapevano. Demoralizzati, abbandonarono le ricerche.",
+          "image_prompt": "campo lunghissimo quasi astratto all'alba: una traccia di slittamento che sparisce oltre l'orlo di un precipizio, in basso una macchia verde velata di foschia"
+        },
+        {
+          "text": "Il corpo di Nuñez rotolò per trecento metri, atterrò in un turbinio di neve, rotolò ancora su un pendio più ripido, infine sprofondò immobile. Un lungo silenzio. Poi una mano che si muove.",
+          "image_prompt": "un corpo che sprofonda nella neve smossa in un pendio ripido, notte lunare",
+          "sound_effect_prompt": "tonfo attutito nella neve, poi silenzio assoluto"
+        },
+        {
+          "text": "Riemerse dalla neve respirando a fatica. Si tastò le membra: mancavano dei bottoni, la giacca era rovesciata sopra la testa, mancava il coltello, mancava il cappello — legato sotto il mento eppure sparito — mancava la piccozza. «Devo essere caduto», disse sottovoce, a se stesso. Guardò la parete che l'aveva generato, immensa nella luce spettrale della luna nascente, e scoppiò in una risata convulsa."
+        },
+        {
+          "text": "Si trascinò, dolente in ogni giuntura, fino a un tratto di terreno erboso sparso di sassi. Cadde più che sedersi accanto a un masso, bevve lunghi sorsi dalla borraccia, e si addormentò di colpo.",
+          "image_prompt": "uomo disteso accanto a un masso al limite inferiore della neve, chiaro di luna, erba rada e sassi"
+        }
+      ],
+      "actions": [
+        {
+          "id": "continua",
+          "label": "Continua",
+          "aliases": [
+            "vai avanti",
+            "prosegui",
+            "avanti"
+          ],
+          "effect": {
+            "goto_scene": "arrivo_alla_valle"
+          }
+        }
+      ]
+    },
+    {
+      "id": "arrivo_alla_valle",
+      "title": "L'imbocco della valle",
+      "background": {
+        "image_prompt": "uomo che sbuca dall'ombra di una gola nella piena luce del sole, davanti a lui una valle di prati geometrici, canali d'acqua regolari, casupole di pietra in fila ordinata lungo una strada centrale",
+        "ambient_sound_prompt": "canto di uccelli, acqua corrente nei canali, vento leggero tra i pini"
+      },
+      "characters": [
+        {
+          "id": "nunez"
+        }
+      ],
+      "narration": [
+        {
+          "text": "Il canto degli uccelli arriva prima ancora della luce. Nuñez apre gli occhi su un mondo verde e luminoso, incongruo dopo la neve.",
+          "image_prompt": "risveglio all'alba in una gola tra precipizi, prima luce verde tra le rocce"
+        },
+        {
+          "text": "Ha risalito un canalone, una fenditura a camino gocciolante di neve disciolta, un ripido pendio boschivo. Ora la valle si apre davanti a lui, ordinata come nessuna valle di montagna che abbia mai visto."
+        }
+      ],
+      "actions": [
+        {
+          "id": "assaggia_felce",
+          "label": "Stacca una fronda della strana felce e rosicchiane il picciolo",
+          "target": "ambiente",
+          "aliases": [
+            "mangia la felce",
+            "prova la pianta",
+            "raccogli la felce"
+          ],
+          "repeatable": false,
+          "effect": {
+            "narration": "Tra le rocce una felce dalle mani verdissime sembra annaspare fuori dai crepacci. Ne stacca una fronda e rosicchia il picciolo: lo trova giovevole. Ne mette da parte un pezzo.",
+            "add_inventory": "fronda_di_felce",
+            "set_flag": "felce_assaggiata"
+          }
+        },
+        {
+          "id": "bevi_alla_sorgiva",
+          "label": "Riempi la borraccia alla sorgiva e riposa all'ombra del macigno",
+          "target": "ambiente",
+          "aliases": [
+            "bevi",
+            "riposa",
+            "riempi la borraccia"
+          ],
+          "effect": {
+            "narration": "Siede all'ombra di un macigno, riempie la borraccia a una sorgiva, beve a lungo. Per la prima volta da quando è caduto, il corpo smette di fargli male dappertutto insieme.",
+            "play_sound_prompt": "acqua di sorgente che scorre su pietra"
+          }
+        },
+        {
+          "id": "osserva_la_valle",
+          "label": "Osserva la valle e le case senza finestre",
+          "target": "ambiente",
+          "aliases": [
+            "guarda la valle",
+            "studia le case",
+            "osserva il villaggio"
+          ],
+          "effect": {
+            "narration": "Una prateria rigogliosa, irrigata con grande sapienza, mietuta sistematicamente pezzo a pezzo. Un canale maggiore corre lungo l'asse centrale, chiuso da muriccioli a petto d'uomo; i viottoli sono lastricati di pietre bianche e nere, ciascuno bordato da un piccolo cordolo. Le case sono schierate in fila continua, dipinte a chiazze irregolari di grigio, beige, ardesia, bruno scuro, forate qua e là da una porta — ma non una finestra rompe il loro prospetto uniforme. «Il brav'uomo che ha fatto questa roba doveva essere cieco come una talpa», pensa ad alta voce. Non sa ancora quanto ha ragione.",
+            "set_flag": "valle_osservata"
+          }
+        },
+        {
+          "id": "scendi_verso_il_muro",
+          "label": "Scendi il pendio verso il muro di cinta",
+          "target": "ambiente",
+          "aliases": [
+            "scendi nella valle",
+            "vai verso il muro",
+            "avvicinati alle case"
+          ],
+          "condition": {
+            "flag_present": "valle_osservata"
+          },
+          "effect": {
+            "narration": "Scende il pendio verso il muro. Più si avvicina, più la valle gli sembra bizzarra.",
+            "goto_scene": "primo_contatto"
+          }
+        }
+      ]
+    },
+    {
+      "id": "primo_contatto",
+      "title": "Il primo contatto",
+      "scene_tone": "stupore che si incrina: il comico dell'equivoco con sotto un fondo di gelo",
+      "background": {
+        "image_prompt": "sentiero lastricato presso un muro di cinta a petto d'uomo, tre uomini in fila indiana con secchi aggiogati sulle spalle, vestiti di alpaca con berretti muniti di paraorecchi",
+        "ambient_sound_prompt": "acqua nei canali, passi lenti su pietra, respiri vicini"
+      },
+      "characters": [
+        {
+          "id": "nunez"
+        },
+        {
+          "id": "pedro"
+        },
+        {
+          "id": "correa",
+          "visual_prompt": "uomo dalle mani morbide e curiose, palpebre chiuse e incavate, tunica di alpaca chiara",
+          "voice": {
+            "style_prompt": "voce lenta e ragionevole, che spiega l'assurdo con perfetta calma"
+          }
+        },
+        {
+          "id": "il_terzo_cieco",
+          "visual_prompt": "uomo più anziano, secchio ancora sulle spalle, testa inclinata all'ascolto",
+          "voice": {
+            "style_prompt": "voce ferma, poche parole"
+          }
+        }
+      ],
+      "narration": [
+        {
+          "text": "Tre uomini in fila indiana risalgono il sentiero, secchi aggiogati sulle spalle, camminando lentamente e sbadigliando come chi non ha dormito."
+        }
+      ],
+      "dialogue_tree": {
+        "start": "d_incontro",
+        "nodes": {
+          "d_incontro": {
+            "speaker": "pedro",
+            "text": "Un uomo... un uomo o uno spirito, sceso dalle rocce.",
+            "choices": [
+              {
+                "text": "Vengo da oltre i monti. Dal paese di là, dove gli uomini possono vedere.",
+                "goto": "d_vista"
+              },
+              {
+                "text": "Vengo da Bogotà, dove ci sono centomila persone e la città si estende a perdita d'occhio.",
+                "goto": "d_vista"
+              },
+              {
+                "text": "Restare immobile e lasciarsi avvicinare.",
+                "goto": "d_esame"
+              }
+            ]
+          },
+          "d_vista": {
+            "speaker": "pedro",
+            "text": "Vista...?",
+            "next": "d_esame"
+          },
+          "d_esame": {
+            "speaker": "correa",
+            "text": "Che creatura curiosa, Pedro. Senti quanto è rozzo il pelo, come il pelo di un lama. È ruvido come le rocce che l'hanno generato. Forse si affinerà.",
+            "choices": [
+              {
+                "text": "Toccarsi un occhio con un dito, per indicarlo.",
+                "goto": "d_occhi"
+              },
+              {
+                "text": "«Piano!»",
+                "goto": "d_creatura"
+              }
+            ]
+          },
+          "d_occhi": {
+            "speaker": "il_terzo_cieco",
+            "text": "I tre sussultano, come davanti a una stranezza sgradevole, e lo tastano di nuovo proprio lì. «Parla. È certamente un uomo.»",
+            "next": "d_creatura"
+          },
+          "d_creatura": {
+            "speaker": "correa",
+            "text": "I nostri padri ci hanno detto che gli uomini possono essere creati dalla natura. È il calore delle cose e l'umidità, e la putrefazione... la putrefazione.",
+            "next": "d_agli_anziani"
+          },
+          "d_agli_anziani": {
+            "speaker": "pedro",
+            "text": "Portiamolo dagli anziani. Ma prima gridiamo, perché i bambini non si spaventino. Questo è un caso prodigioso.",
+            "effect": {
+              "set_flag": "contatto_stabilito",
+              "goto_scene": "sala_degli_anziani"
+            },
+            "end": true
+          }
+        }
+      },
+      "actions": [
+        {
+          "id": "grida_dal_masso",
+          "label": "Piàzzati in vista su un masso e lancia un grido possente",
+          "target": "ambiente",
+          "aliases": [
+            "grida",
+            "urla",
+            "chiamali",
+            "fatti sentire"
+          ],
+          "repeatable": false,
+          "effect": {
+            "narration": "Il grido echeggia per la valle. I tre si fermano e girano la testa verso il suono — non verso di lui. Nuñez gesticola profusamente: nessuna reazione ai gesti. Poi si dirigono verso le montagne lontane, gridando come in risposta a qualcun altro. «Quei balordi devono essere ciechi», dice tra sé.",
+            "set_flag": "sospetto_cecita",
+            "play_sound_prompt": "grido umano che echeggia tra pareti di roccia"
+          }
+        },
+        {
+          "id": "osserva_le_palpebre",
+          "label": "Osserva da vicino i loro volti",
+          "target": "ambiente",
+          "aliases": [
+            "guarda i loro occhi",
+            "studia i loro volti",
+            "osservali"
+          ],
+          "effect": {
+            "narration": "Stanno stretti l'uno all'altro come impauriti, le orecchie tese verso di lui. Le palpebre sono chiuse e incavate, come se sotto, i globi oculari fossero disseccati e svaniti."
+          }
+        },
+        {
+          "id": "lasciati_avvicinare",
+          "label": "Lasciali avvicinare e parlare con loro",
+          "target": "pedro",
+          "aliases": [
+            "parla con loro",
+            "avvicinati",
+            "rispondi",
+            "presentati"
+          ],
+          "condition": {
+            "flag_present": "sospetto_cecita"
+          },
+          "effect": {
+            "narration": "I tre si avvicinano insieme, mani protese. Nuñez arretra d'istinto — poi si lascia toccare: viso, capelli, mento non rasato, giacca ruvida. Lo esaminano come si esamina una creatura nuova.",
+            "goto_dialogue": "d_incontro"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sala_degli_anziani",
+      "title": "La sala degli anziani",
+      "scene_tone": "buio totale, cortesia aliena: la ragionevolezza altrui che ti dichiara malformato",
+      "background": {
+        "image_prompt": "interno buio come la pece, solo il bagliore lontano di un fuoco in un forno di pietra, sagome sedute in cerchio appena percettibili",
+        "ambient_sound_prompt": "voci basse in una stanza chiusa, crepitio lontano di brace"
+      },
+      "characters": [
+        {
+          "id": "nunez"
+        },
+        {
+          "id": "anziano",
+          "visual_prompt": "uomo molto vecchio seduto su una panca di pietra, mani ferme sulle ginocchia, palpebre chiuse e incavate",
+          "voice": {
+            "style_prompt": "voce lenta e paziente, di chi spiega una cosa ovvia a un bambino"
+          }
+        }
+      ],
+      "narration": [
+        {
+          "text": "Nuñez inciampa nell'ingresso e cade sui piedi di un anziano seduto. Grida, mani che lo afferrano al buio. «Sono caduto», dice. «Non ci vedevo, in questo buio fitto.»"
+        },
+        {
+          "text": "«È formato soltanto da poco», dice una voce anziana. «Inciampa quando cammina, e mescola nel suo parlare parole senza senso.»"
+        }
+      ],
+      "dialogue_tree": {
+        "start": "d_spiegazione",
+        "nodes": {
+          "d_spiegazione": {
+            "speaker": "anziano",
+            "text": "Racconta, creatura. Da dove saresti venuto?",
+            "choices": [
+              {
+                "text": "Parlare del cielo, delle montagne, del mondo là fuori.",
+                "goto": "d_cosmogonia"
+              },
+              {
+                "text": "Parlare della vista: dire che si possono conoscere le cose lontane senza toccarle.",
+                "goto": "d_cosmogonia"
+              }
+            ]
+          },
+          "d_cosmogonia": {
+            "speaker": "anziano",
+            "text": "Il mondo — la nostra valle — fu prima una cavità vuota nella roccia. Poi vennero le cose senza tatto, poi i lama e le altre creature di poco senno, poi gli uomini, e infine gli angeli, che si sentono cantare e frullare per l'aria, ma non si possono toccare.",
+            "choices": [
+              {
+                "text": "Capire di colpo: sta parlando degli uccelli. Tacere.",
+                "goto": "d_tempo"
+              },
+              {
+                "text": "Insistere: «Gli angeli sono uccelli. Se aveste occhi li vedreste.»",
+                "goto": "d_tempo"
+              }
+            ]
+          },
+          "d_tempo": {
+            "speaker": "anziano",
+            "text": "Il tempo è diviso in caldo e freddo. È bene dormire durante il caldo, lavorare durante il freddo. Tu sei stato creato apposta per imparare la sapienza che noi abbiamo acquisita. Ora è l'ora di dormire.",
+            "effect": {
+              "set_flag": "anziani_incontrati"
+            },
+            "end": true
+          }
+        }
+      },
+      "actions": [
+        {
+          "id": "parla_agli_anziani",
+          "label": "Prova a spiegare agli anziani da dove vieni",
+          "target": "anziano",
+          "aliases": [
+            "parla con gli anziani",
+            "spiega",
+            "raccontati"
+          ],
+          "effect": {
+            "goto_dialogue": "d_spiegazione"
+          }
+        },
+        {
+          "id": "tasta_il_buio",
+          "label": "Tasta il buio intorno a te",
+          "target": "ambiente",
+          "aliases": [
+            "guarda nel buio",
+            "cerca una luce",
+            "orientati"
+          ],
+          "effect": {
+            "narration": "Non c'è una finestra, non c'è una lampada. Solo il bagliore lontano di un forno di pietra, e il suono di molti respiri intorno a lui. Per la prima volta è lui, qui dentro, il cieco."
+          }
+        },
+        {
+          "id": "accetta_il_cibo",
+          "label": "Accetta il latte di lama e il pane salato",
+          "target": "ambiente",
+          "aliases": [
+            "mangia",
+            "bevi il latte",
+            "accetta la ciotola"
+          ],
+          "condition": {
+            "flag_present": "anziani_incontrati"
+          },
+          "repeatable": false,
+          "effect": {
+            "narration": "Gli portano latte di lama in una ciotola e rozzo pane salato, e lo conducono in un luogo appartato, fuori portata d'orecchio, perché mangi e dorma da solo."
+          }
+        },
+        {
+          "id": "resta_sveglio",
+          "label": "Resta sveglio a rimuginare",
+          "target": "ambiente",
+          "aliases": [
+            "non dormire",
+            "pensa",
+            "rimugina",
+            "aspetta"
+          ],
+          "condition": {
+            "flag_present": "anziani_incontrati"
+          },
+          "effect": {
+            "narration": "Non chiude occhio. Resta seduto, a rigirare nella mente l'imprevedibile: ride, ora divertito, ora furioso. «Mente mal formata... sensi ancora imperfetti... Non sanno di aver insultato il loro re, mandato dal cielo. Vedo che dovrò ridurli a ragione.» Poi guarda il tramonto incendiare i ghiacciai intorno alla valle — bellezza sconfinata che nessuno, lì, vedrà mai — e un'onda improvvisa di gratitudine lo attraversa.",
+            "goto_scene": "mondo_dei_sensi"
+          }
+        }
+      ]
+    },
+    {
+      "id": "mondo_dei_sensi",
+      "title": "Un mondo fatto di tatto, udito, odorato",
+      "scene_type": "cutscene",
+      "scene_tone": "ammirato e inquietante insieme: la perfezione di un mondo che non ha bisogno di te",
+      "background": {
+        "image_prompt": "primissimo piano di una tacca incisa nella pietra al bordo di un viottolo, un piede che la sfiora senza esitare",
+        "ambient_sound_prompt": "passi sicuri su lastre di pietra, voci che si chiamano da lontano, acqua nei canali"
+      },
+      "on_enter_flags_set": [
+        "sensi_dei_ciechi_compresi"
+      ],
+      "narration": [
+        {
+          "text": "Mirabile era la sicurezza con cui si muovevano nel loro mondo ordinato. Ogni viottolo formava con gli altri un angolo costante, contrassegnato da una tacca sul bordo. Ogni irregolarità di campi e strade era stata eliminata da tempo. Ogni metodo scaturiva naturalmente dai loro bisogni."
+        },
+        {
+          "text": "I loro sensi avevano acquistato una meravigliosa acutezza. Erano in grado di udire e giudicare il minimo gesto di un uomo a dieci passi di distanza — di udire, dicevano, perfino il battito del suo cuore.",
+          "image_prompt": "due uomini ciechi a dieci passi l'uno dall'altro in un campo aperto, uno solleva lentamente un braccio, l'altro reagisce sorridendo prima che il gesto sia completo"
+        },
+        {
+          "text": "L'intonazione della voce aveva da tempo sostituito l'espressione del volto, e il tocco i gesti. Maneggiavano zappa, vanga e forcone con l'agio e la sicurezza di artigiani consumati.",
+          "image_prompt": "primi piani di volti immobili mentre una voce si alza e si abbassa, mani che sfiorano un braccio, un uomo che maneggia una vanga con sicurezza cieca"
+        },
+        {
+          "text": "Il senso dell'odorato era in loro di una straordinaria finezza: distinguevano le differenze individuali con la prontezza di un cane, e accudivano i lama con disinvolta, assoluta sicurezza.",
+          "image_prompt": "pastore cieco che affonda il viso vicino al collo di un lama tra dozzine, lo riconosce e lo separa dal gregge",
+          "sound_effect_prompt": "belati di lama, zoccoli su pietra"
+        },
+        {
+          "text": "Il pastore si volta, come se avesse sentito qualcosa lontano. È Nuñez, che osserva da un crinale, immobile — l'unico, in tutta la valle, che si muove senza essere notato dagli altri sensi, e che non nota nulla con i propri. Quanto disinvolti e sicuri potessero essere i loro movimenti, lo scoprì solo quando alfine cercò di imporsi.",
+          "image_prompt": "sagoma di un uomo immobile su un crinale erboso, visto di spalle, la valle ordinata sotto di lui"
+        }
+      ],
+      "actions": [
+        {
+          "id": "continua",
+          "label": "Continua",
+          "aliases": [
+            "vai avanti",
+            "prosegui",
+            "avanti"
+          ],
+          "effect": {
+            "goto_scene": "il_re_di_nessuno"
+          }
+        }
+      ]
+    },
+    {
+      "id": "il_re_di_nessuno",
+      "title": "Il re di nessuno",
+      "scene_tone": "commedia degli equivoci che scivola nell'umiliazione",
+      "background": {
+        "image_prompt": "viottoli della valle di notte, un uomo che cammina goffo urtando cose invisibili mentre intorno a lui figure cieche si muovono spedite e sicure",
+        "ambient_sound_prompt": "passi sicuri intorno, voci che chiamano nel buio, vento leggero"
+      },
+      "characters": [
+        {
+          "id": "nunez"
+        }
+      ],
+      "narration": [
+        {
+          "text": "«Bogotà! Vieni qui!» Per loro è giorno di lavoro; per lui è notte fitta, e cammina goffo, urtando cose che non vede."
+        }
+      ],
+      "actions": [
+        {
+          "id": "sfuggi_alla_chiamata",
+          "label": "Scostati furtivo dal sentiero per sfuggire alla chiamata",
+          "target": "ambiente",
+          "aliases": [
+            "nasconditi",
+            "sgattaiola via",
+            "scappa dal sentiero"
+          ],
+          "effect": {
+            "narration": "«Non calpestare l'erba, Bogotà. Non è permesso.» Nuñez si blocca, stupefatto: non ha sentito il rumore dei propri passi. Il cieco lo ha comunque trovato. «Io lo vedo», dice ostinato. «Vedere è una parola che non esiste. Cessa questa follia, e segui il suono dei miei piedi.»",
+            "set_flag": "vista_derisa"
+          }
+        },
+        {
+          "id": "annuncia_l_uomo_lontano",
+          "label": "Annuncia l'arrivo di un uomo che vedi su un sentiero lontano",
+          "target": "ambiente",
+          "aliases": [
+            "dimostra la vista",
+            "annuncia chi arriva",
+            "predici"
+          ],
+          "effect": {
+            "narration": "Lo riconosce a vista, lo annuncia ad alta voce — e quello svolta su un altro sentiero. Ridono di lui. La vista, qui, non è nemmeno un vantaggio: è una vanteria che sbaglia.",
+            "set_flag": "vista_derisa"
+          }
+        },
+        {
+          "id": "chiedi_di_salire_al_muro",
+          "label": "Chiedi di salire al muro esterno per raccontare tutto ciò che accade",
+          "target": "ambiente",
+          "aliases": [
+            "proponi di fare la guardia",
+            "offri di guardare per loro"
+          ],
+          "effect": {
+            "narration": "Vuole descrivere tutto ciò che accade tra le case. Ma ciò che agli abitanti interessa avviene dentro le case senza finestre — e lì Nuñez non vede nulla."
+          }
+        },
+        {
+          "id": "impugna_la_vanga",
+          "label": "Impugna una vanga, deciso a dimostrare il vantaggio della vista",
+          "target": "ambiente",
+          "aliases": [
+            "prendi la vanga",
+            "arma la mano",
+            "minacciali"
+          ],
+          "condition": {
+            "flag_present": "vista_derisa"
+          },
+          "repeatable": false,
+          "effect": {
+            "narration": "La solleva, decidendo di colpire qualcuno per dimostrare che chi vede è più forte — e scopre, con sorpresa di se stesso, di non riuscire a colpire un cieco a sangue freddo. La vanga resta sospesa in aria. I ciechi, immobili, hanno già capito che l'ha impugnata: tendono l'orecchio verso di lui. «Posa quella vanga.»",
+            "add_inventory": "vanga",
+            "set_flag": "vanga_impugnata"
+          }
+        },
+        {
+          "id": "rifiuta_di_posare_la_vanga",
+          "label": "Non posare la vanga",
+          "target": "ambiente",
+          "aliases": [
+            "tieni la vanga",
+            "rifiuta",
+            "ribellati"
+          ],
+          "condition": {
+            "has_item": "vanga"
+          },
+          "effect": {
+            "narration": "Non la posa. E in quel momento, senza che nessuno abbia alzato la voce, la valle intera comincia a muoversi verso di lui.",
+            "goto_scene": "il_colpo_di_stato"
+          }
+        }
+      ]
+    },
+    {
+      "id": "il_colpo_di_stato",
+      "title": "Il colpo di stato",
+      "scene_tone": "assedio silenzioso: nessuna corsa, nessun grido, solo un accerchiamento metodico che fiuta l'aria",
+      "background": {
+        "image_prompt": "campo lunghissimo dall'alto sui prati della valle, una linea di uomini armati di vanghe e bastoni che avanza a raggiera, lenta e metodica, fermandosi a fiutare l'aria",
+        "ambient_sound_prompt": "silenzio teso, passi lenti sull'erba, respiri profondi che annusano"
+      },
+      "characters": [
+        {
+          "id": "nunez"
+        }
+      ],
+      "narration": [
+        {
+          "text": "Ha spinto un cieco contro un muro ed è fuggito. Ora, fermo sull'erba, guarda la formazione avvicinarsi. Ride, la prima volta. Non ride più, la seconda."
+        }
+      ],
+      "actions": [
+        {
+          "id": "osserva_l_accerchiamento",
+          "label": "Osserva la linea che si stringe",
+          "target": "ambiente",
+          "aliases": [
+            "guarda",
+            "studia la formazione",
+            "osservali"
+          ],
+          "effect": {
+            "narration": "Avanzano lenti, a raggiera, fermandosi a fiutare l'aria. Nessuno corre, nessuno grida. È un accerchiamento silenzioso e implacabile, molto più inquietante di qualsiasi inseguimento."
+          }
+        },
+        {
+          "id": "grida_la_verita",
+          "label": "Grida che loro sono ciechi e tu ci vedi",
+          "target": "ambiente",
+          "aliases": [
+            "urla la verità",
+            "spiegati",
+            "dì che ci vedi"
+          ],
+          "effect": {
+            "narration": "«Non capite! Voi siete ciechi, e io ci vedo! Lasciatemi in pace!» La risposta arriva con il tono grottesco di un rimprovero domestico: «Bogotà! Metti giù quella vanga, e vieni via dall'erba!»",
+            "set_flag": "rivolta_fallita"
+          }
+        },
+        {
+          "id": "minaccia_di_far_male",
+          "label": "Minacciali con la vanga",
+          "target": "ambiente",
+          "aliases": [
+            "minaccia",
+            "alza la vanga",
+            "spaventali"
+          ],
+          "condition": {
+            "has_item": "vanga"
+          },
+          "effect": {
+            "narration": "«Vi farò male! Perdìo, vi farò male!» La linea non rallenta di un passo. Si stringe soltanto, al suono della sua voce.",
+            "set_flag": "rivolta_fallita"
+          }
+        },
+        {
+          "id": "cerca_un_varco",
+          "label": "Corri a cercare un varco nella linea",
+          "target": "ambiente",
+          "aliases": [
+            "scappa",
+            "fuggi",
+            "corri via",
+            "sfonda la linea"
+          ],
+          "condition": {
+            "flag_present": "rivolta_fallita"
+          },
+          "effect": {
+            "narration": "Corre. Trova un varco. Gli uomini ai lati si serrano al suono dei suoi passi. Balzo. Un colpo di vanga, sordo, su un braccio. Un grido di dolore — e Nuñez passa. Attraversa il ponte incespicando, si arrampica tra le rocce, spaventa un giovane lama, si getta a terra ansimante. Fuori. Così ebbe termine il suo colpo di stato.",
+            "play_sound_prompt": "colpo sordo di legno su un braccio, respiro affannoso",
+            "goto_scene": "la_resa"
+          }
+        }
+      ]
+    },
+    {
+      "id": "la_resa",
+      "title": "La resa",
+      "scene_tone": "freddo e spoglio: la fame che smonta un uomo pezzo per pezzo",
+      "background": {
+        "image_prompt": "pendio di pini fuori dal muro di cinta, luce fredda, un uomo infreddolito tra i tronchi, lama che lo guardano da lontano con occhi bruni diffidenti",
+        "ambient_sound_prompt": "vento tra i pini, belati lontani, nessuna voce umana"
+      },
+      "characters": [
+        {
+          "id": "nunez"
+        }
+      ],
+      "narration": [
+        {
+          "text": "Due giorni fuori dal muro. Non ha armi. Non ha, in pratica, un modo per soggiogare quella gente. E il cancro della civiltà, arrivato fin nella sua Bogotà, non gli permette di sentirsi capace di assassinare un cieco nel sonno — anche se questo, forse, gli consentirebbe di dettare condizioni."
+        },
+        {
+          "text": "Ma prima o poi dovrà pur dormire."
+        }
+      ],
+      "dialogue_tree": {
+        "start": "d_domanda",
+        "nodes": {
+          "d_domanda": {
+            "speaker": "voce_cieca",
+            "text": "Credi ancora di poter vedere?",
+            "choices": [
+              {
+                "text": "«No. Era una follia. Questa parola non significa niente... meno di niente.»",
+                "goto": "d_tetto"
+              },
+              {
+                "text": "Restare in silenzio e piangere.",
+                "goto": "d_tetto"
+              }
+            ]
+          },
+          "d_tetto": {
+            "speaker": "voce_cieca",
+            "text": "E che c'è, dunque, lassù, sopra il mondo?",
+            "choices": [
+              {
+                "text": "«Un tetto... di roccia... molto, molto liscio.»",
+                "goto": "d_fame"
+              }
+            ]
+          },
+          "d_fame": {
+            "speaker": "nunez",
+            "text": "Prima di farmi altre domande, datemi da mangiare, o morirò.",
+            "effect": {
+              "narration": "Lo frustarono, e lo assegnarono al lavoro più semplice e pesante di tutti. Lui, non vedendo altro modo di vivere, fece docilmente ciò che gli ordinavano. Fu malato per alcuni giorni, e lo assistettero amorevolmente — ciò rifinì la sua sottomissione. Vennero filosofi ciechi a parlargli della perversa leggerezza della sua mente, tanto da indurlo quasi a domandarsi se il coperchio di roccia del cielo non fosse davvero lì, e lui a non vederlo per allucinazione.",
+              "set_flag": "sottomesso",
+              "goto_scene": "medina_sarote"
+            },
+            "end": true
+          }
+        }
+      },
+      "actions": [
+        {
+          "id": "tenta_di_catturare_un_lama",
+          "label": "Tenta di catturare un lama",
+          "target": "ambiente",
+          "aliases": [
+            "prendi un lama",
+            "caccia",
+            "cerca cibo"
+          ],
+          "repeatable": false,
+          "effect": {
+            "narration": "I lama lo guardano con diffidenti occhi bruni e gli sputano addosso al suo avvicinarsi. Resta a mani vuote, tremando di freddo.",
+            "play_sound_prompt": "sputo e belato irritato di lama, passi che scivolano su aghi di pino"
+          }
+        },
+        {
+          "id": "resta_tra_i_pini",
+          "label": "Resta tra i pini ad aspettare",
+          "target": "ambiente",
+          "aliases": [
+            "aspetta",
+            "nasconditi",
+            "resisti"
+          ],
+          "effect": {
+            "narration": "Un'altra notte. Brividi, freddo, fame. Nessuno viene a cercarlo: non ne hanno bisogno. Sanno benissimo dove finisce la valle."
+          }
+        },
+        {
+          "id": "torna_al_muro",
+          "label": "Trascinati fino al muro e chiedi perdono",
+          "target": "ambiente",
+          "aliases": [
+            "arrenditi",
+            "torna indietro",
+            "chiedi aiuto",
+            "scusati"
+          ],
+          "effect": {
+            "narration": "Si trascina lungo il canale, la voce roca. «Sono stato un pazzo. Ma ero creato da poco.» Posa la vanga a terra. Due ciechi escono e lo ascoltano. Lui piange — sinceramente, perché è debole e sta male. Loro lo interpretano come un segno favorevole.",
+            "remove_inventory": "vanga",
+            "goto_dialogue": "d_domanda"
+          }
+        }
+      ]
+    },
+    {
+      "id": "medina_sarote",
+      "title": "Medina-saroté",
+      "scene_tone": "tenero e sommesso, la sola luce calda della storia",
+      "background": {
+        "image_prompt": "campo al chiaro di luna, una giovane donna che fila trasformata in figura d'argento dalla luce, un uomo seduto ai suoi piedi",
+        "ambient_sound_prompt": "flauti lontani, canti sommessi, grilli"
+      },
+      "characters": [
+        {
+          "id": "nunez"
+        },
+        {
+          "id": "medina_sarote"
+        },
+        {
+          "id": "yacob"
+        }
+      ],
+      "narration": [
+        {
+          "text": "Nuñez divenne cittadino del Paese dei Ciechi. E quella gente cessò di essere un insieme indistinto: c'era Yacob, il suo padrone, bonario quando non contrariato. C'era Pedro, suo nipote."
+        },
+        {
+          "text": "E c'era Medina-saroté, la figlia minore di Yacob — poco apprezzata dai suoi, per un viso dai tratti troppo netti, per lunghe ciglia considerate un difetto, per una voce troppo forte all'orecchio fino dei giovani valligiani. Nessun corteggiatore. Ma Nuñez, fin dal primo sguardo, l'aveva giudicata la cosa più bella dell'intero creato.",
+          "image_prompt": "primo piano del volto di Medina-saroté nella luce del focolare, ciglia lunghissime, palpebre chiuse"
+        }
+      ],
+      "dialogue_tree": {
+        "start": "d_apertura",
+        "nodes": {
+          "d_apertura": {
+            "speaker": "medina_sarote",
+            "text": "Dicono che parli come chi sogna da sveglio. A me non dispiace ascoltarti.",
+            "choices": [
+              {
+                "text": "«Ti amo. Mi sembri bellissima.»",
+                "goto": "d_silenzio"
+              },
+              {
+                "text": "«Lascia che ti racconti delle stelle, e dei monti.»",
+                "goto": "d_stelle"
+              }
+            ]
+          },
+          "d_stelle": {
+            "speaker": "medina_sarote",
+            "text": "Le stelle. La tua stessa dolce bellezza luminosa. Non ti credo, e non posso capirti fino in fondo — ma non ho mai sentito niente di più bello. Raccontamene ancora.",
+            "choices": [
+              {
+                "text": "«Ti amo. Mi sembri bellissima.»",
+                "goto": "d_silenzio"
+              }
+            ]
+          },
+          "d_silenzio": {
+            "speaker": "narrator",
+            "text": "Lei non risponde con parole precise. Ma è chiaro, dal suo silenzio, che le parole le piacciono. Il suo amore perde la timorosa riverenza, e prende coraggio.",
+            "effect": {
+              "set_flag": "amore_dichiarato"
+            },
+            "end": true
+          }
+        }
+      },
+      "actions": [
+        {
+          "id": "posa_la_mano_sulla_sua",
+          "label": "Posa la mano sulla sua, alla riunione notturna",
+          "target": "medina_sarote",
+          "aliases": [
+            "prendile la mano",
+            "toccala",
+            "avvicinati a lei"
+          ],
+          "repeatable": false,
+          "effect": {
+            "narration": "Due sagome sedute fianco a fianco sotto le stelle. Nessuna parola. La mano di Nuñez si posa su quella di Medina-saroté, esitante. Lei ricambia, delicatamente."
+          }
+        },
+        {
+          "id": "parla_con_medina",
+          "label": "Parla con Medina-saroté al chiaro di luna",
+          "target": "medina_sarote",
+          "aliases": [
+            "parlale",
+            "dille qualcosa",
+            "raccontale"
+          ],
+          "effect": {
+            "goto_dialogue": "d_apertura"
+          }
+        },
+        {
+          "id": "lavora_in_silenzio",
+          "label": "Torna al lavoro più semplice e pesante di tutti",
+          "target": "ambiente",
+          "aliases": [
+            "lavora",
+            "obbedisci",
+            "fai il tuo turno"
+          ],
+          "effect": {
+            "narration": "Zappa al buio, con gli altri, al ritmo delle loro voci. Ha imparato a farlo quasi bene. Nessuno, qui, ha bisogno che lui veda."
+          }
+        },
+        {
+          "id": "chiedi_medina_in_sposa",
+          "label": "Chiedi a Yacob la mano di Medina-saroté",
+          "target": "yacob",
+          "aliases": [
+            "chiedila in sposa",
+            "parla con il padre",
+            "chiedi il matrimonio"
+          ],
+          "condition": {
+            "flag_present": "amore_dichiarato"
+          },
+          "effect": {
+            "narration": "Yacob ascolta in silenzio. Poi va a sedersi nella cieca camera di consiglio, come si fa per le cose serie.",
+            "goto_scene": "casa_di_yacob"
+          }
+        }
+      ]
+    },
+    {
+      "id": "casa_di_yacob",
+      "title": "L'opposizione",
+      "scene_type": "cutscene",
+      "scene_tone": "domestico e crudele senza volerlo: l'affetto che ti classifica come difettoso",
+      "background": {
+        "image_prompt": "interno buio di una casa di pietra senza finestre, una giovane donna in lacrime sulla spalla di un uomo anziano, luce di brace",
+        "ambient_sound_prompt": "pianto sommesso, brace che crepita"
+      },
+      "characters": [
+        {
+          "id": "yacob"
+        },
+        {
+          "id": "medina_sarote"
+        },
+        {
+          "id": "nunez"
+        }
+      ],
+      "on_enter_flags_set": [
+        "opposizione_nota"
+      ],
+      "narration": [
+        {
+          "text": "«Capisci, mia cara: è un idiota. Delira. Non sa far nulla come si deve.» — «Lo so», piange lei. «Ma è migliorato, e va migliorando. È forte, padre caro, e buono — più forte e più buono di ogni altro uomo al mondo. E mi ama. E io lo amo.»"
+        },
+        {
+          "text": "Il vecchio Yacob soffriva a vederla inconsolabile — e Nuñez, per più versi, gli piaceva pure. Andava a sedersi nella cieca camera di consiglio, e al momento opportuno diceva la sua: «È migliorato. Un giorno, molto probabilmente, sarà assennato come noi.»",
+          "image_prompt": "uomini seduti in cerchio in una camera buia, invisibili l'uno all'altro, solo sagome appena distinguibili"
+        },
+        {
+          "text": "Un giovane della valle insulta e percuote Nuñez. Per la prima volta la vista, anche nella semioscurità, gli dà un vantaggio nel corpo a corpo: Nuñez restituisce i colpi. Nessuno alzerà più la mano su di lui. Ma continuano a considerare il matrimonio impossibile.",
+          "image_prompt": "due uomini che lottano nella semioscurità di un viottolo, uno dei due schiva un colpo che l'altro non poteva vedere arrivare",
+          "sound_effect_prompt": "colpi sordi, respiri, un tonfo a terra"
+        }
+      ],
+      "actions": [
+        {
+          "id": "continua",
+          "label": "Continua",
+          "aliases": [
+            "vai avanti",
+            "prosegui",
+            "avanti"
+          ],
+          "effect": {
+            "goto_scene": "la_cura_proposta"
+          }
+        }
+      ]
+    },
+    {
+      "id": "la_cura_proposta",
+      "title": "La cura",
+      "scene_type": "cutscene",
+      "scene_tone": "solo voci nel buio: la proposta di accecarlo deve suonare perfettamente ragionevole, quasi amorevole",
+      "background": {
+        "image_prompt": "camera di consiglio completamente buia, anziani seduti in cerchio invisibili l'uno all'altro, appena il riverbero rossastro di una brace lontana",
+        "ambient_sound_prompt": "voci maschili in una stanza chiusa, nessun altro suono"
+      },
+      "characters": [
+        {
+          "id": "il_dottore"
+        },
+        {
+          "id": "yacob"
+        }
+      ],
+      "on_enter_flags_set": [
+        "cura_proposta"
+      ],
+      "narration": [
+        {
+          "text": "IL DOTTORE: «Ho esaminato Bogotà. Il caso mi è più chiaro. Penso che si potrebbe guarirlo.» — YACOB: «È quello che ho sempre sperato.»"
+        },
+        {
+          "text": "IL DOTTORE: «Il suo cervello è turbato.» — YACOB: «Ah!... Da cosa?»"
+        },
+        {
+          "text": "IL DOTTORE: «Da questo: le strane cose che ha nel volto, che esistono per formare una soffice depressione — e che chiamano occhi — sono, nel suo caso, malate a tal punto da danneggiare il cervello. Sono assai gonfie. Le palpebre, munite di ciglia, si muovono di continuo. Il suo cervello ne è in stato di perenne irritazione e logoramento.»"
+        },
+        {
+          "text": "IL DOTTORE: «E io penso di poter dire, con ragionevole certezza, che per guarirlo completamente non occorre altro che una semplice, facile operazione chirurgica: asportare, cioè, questi corpi irritanti.» — YACOB: «E poi sarà assennato?» — IL DOTTORE: «Perfettamente. Un cittadino esemplare.»"
+        },
+        {
+          "text": "YACOB: «Sia ringraziato il Cielo per la scienza!»",
+          "sound_effect_prompt": "un lungo respiro di sollievo in una stanza buia"
+        }
+      ],
+      "actions": [
+        {
+          "id": "continua",
+          "label": "Continua",
+          "aliases": [
+            "vai avanti",
+            "prosegui",
+            "avanti"
+          ],
+          "effect": {
+            "goto_scene": "la_buona_notizia"
+          }
+        }
+      ]
+    },
+    {
+      "id": "la_buona_notizia",
+      "title": "La buona notizia e la scelta di Medina-saroté",
+      "scene_tone": "cortesia affettuosa che apre un abisso: nessuno alza la voce, e tutto si decide",
+      "background": {
+        "image_prompt": "esterno della casa di Yacob nella luce piena del giorno, un uomo immobile con il volto che si svuota mentre ascolta",
+        "ambient_sound_prompt": "voci contente in lontananza, vento leggero sui prati"
+      },
+      "characters": [
+        {
+          "id": "nunez"
+        },
+        {
+          "id": "yacob"
+        },
+        {
+          "id": "medina_sarote"
+        }
+      ],
+      "narration": [
+        {
+          "text": "«Presto sarai guarito, figliolo!» Yacob è raggiante. Il volto di Nuñez si svuota mentre ascolta la buona notizia."
+        }
+      ],
+      "dialogue_tree": {
+        "start": "d_yacob",
+        "nodes": {
+          "d_yacob": {
+            "speaker": "yacob",
+            "text": "Presto sarai guarito, figliolo! Il dottore dice che basta una piccola operazione.",
+            "choices": [
+              {
+                "text": "Restare in silenzio.",
+                "goto": "d_delusione"
+              },
+              {
+                "text": "«Non voglio essere guarito.»",
+                "goto": "d_delusione"
+              }
+            ]
+          },
+          "d_delusione": {
+            "speaker": "yacob",
+            "text": "Dal tuo tono, verrebbe da pensare che non vuoi bene a mia figlia.",
+            "end": true
+          },
+          "d_medina_apertura": {
+            "speaker": "medina_sarote",
+            "text": "Sono venuta a dirtelo io. Domani ti guariranno.",
+            "choices": [
+              {
+                "text": "«Almeno tu non vorrai che io perda il dono di vedere? La vista è il mio mondo.»",
+                "goto": "d_medina_risposta"
+              }
+            ]
+          },
+          "d_medina_risposta": {
+            "speaker": "medina_sarote",
+            "text": "Ci sono tante belle cose, piccole cose belle: i fiori, i licheni tra le rocce, i chiaroscuri su un pezzo di pelliccia, il cielo lontano con la sua lanugine di nuvole, i tramonti, le stelle. E ci sei tu. Per te soltanto è un bene avere la vista. Ma sono questi occhi che tu hai conquistato — questi occhi che ti legano a me — gli occhi che vogliono quegli idioti. Dovrei io, invece, toccarti, udirti, e non vederti mai più. Dovrei venire sotto quel tetto di roccia e tenebra... Non desidererai che io faccia questo?",
+            "choices": [
+              {
+                "text": "Tacere. Un dubbio gelido si insinua.",
+                "goto": "d_dubbio"
+              },
+              {
+                "text": "«Se io acconsentissi?»",
+                "goto": "d_consenso"
+              }
+            ]
+          },
+          "d_dubbio": {
+            "speaker": "medina_sarote",
+            "text": "Certe volte vorrei... che tu non parlassi così.",
+            "choices": [
+              {
+                "text": "«Adesso?»",
+                "goto": "d_silenzio_di_lei"
+              }
+            ]
+          },
+          "d_silenzio_di_lei": {
+            "speaker": "narrator",
+            "text": "Silenzio di lei. Nuñez capisce: agli occhi di chi ama, i suoi occhi sono la malattia.",
+            "choices": [
+              {
+                "text": "«Se io acconsentissi?», con voce dolce, arresa.",
+                "goto": "d_consenso"
+              }
+            ]
+          },
+          "d_consenso": {
+            "speaker": "medina_sarote",
+            "text": "Oh, se tu volessi... se solo tu volessi!",
+            "effect": {
+              "narration": "Lei gli getta le braccia al collo, piangendo di sollievo.",
+              "set_flag": "consenso_dato",
+              "goto_scene": "ultimo_giorno"
+            },
+            "end": true
+          }
+        }
+      },
+      "actions": [
+        {
+          "id": "ascolta_yacob",
+          "label": "Ascolta Yacob che ti annuncia la guarigione",
+          "target": "yacob",
+          "aliases": [
+            "parla con yacob",
+            "ascolta",
+            "rispondi a yacob"
+          ],
+          "effect": {
+            "goto_dialogue": "d_yacob"
+          }
+        },
+        {
+          "id": "guarda_le_tue_mani",
+          "label": "Guardati le mani, alla luce, come per l'ultima volta",
+          "target": "ambiente",
+          "aliases": [
+            "guarda le mani",
+            "osserva la luce",
+            "guardati intorno"
+          ],
+          "effect": {
+            "narration": "Le vene, la sporcizia sotto le unghie, il modo in cui la luce si posa sulle nocche. Nessuno, qui, sa che esiste una cosa simile. Domani non lo saprà più nemmeno lui."
+          }
+        },
+        {
+          "id": "cerca_medina",
+          "label": "Cerca Medina-saroté e parlale della cura",
+          "target": "medina_sarote",
+          "aliases": [
+            "parla con medina",
+            "vai da lei",
+            "cercala"
+          ],
+          "condition": {
+            "flag_present": "cura_proposta"
+          },
+          "effect": {
+            "goto_dialogue": "d_medina_apertura"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ultimo_giorno",
+      "title": "L'ultimo giorno",
+      "scene_type": "cutscene",
+      "scene_tone": "tenerezza già postuma: due persone che si salutano sapendo cose diverse",
+      "background": {
+        "image_prompt": "luce fredda prima dell'alba davanti a una casa di pietra, due figure vicine che si separano",
+        "ambient_sound_prompt": "silenzio prima dell'alba, un gallo lontano, vento freddo"
+      },
+      "characters": [
+        {
+          "id": "nunez"
+        },
+        {
+          "id": "medina_sarote"
+        }
+      ],
+      "on_enter_flags_set": [
+        "addio_dato"
+      ],
+      "narration": [
+        {
+          "text": "Nella settimana precedente all'operazione, Nuñez non dormì mai. Durante le ore calde, mentre gli altri erano assopiti, vagava senza meta cercando di concentrarsi sul suo dilemma. Aveva dato il suo consenso. Eppure non era sicuro."
+        },
+        {
+          "text": "«Domani non vedrò più.» — «Cuor mio!» Lei gli stringe le mani con forza. «Ti faranno male, un poco. Questa sofferenza, la patirai per me. Se il cuore e la vita di una donna possono farlo, ti ripagherò. Mio diletto, mio diletto dalla voce così tenera, ti ripagherò.»",
+          "image_prompt": "primo piano di due mani che si stringono con forza, luce fredda dell'alba"
+        },
+        {
+          "text": "Nuñez la abbraccia, la bacia, la guarda per l'ultima volta con occhi che vedono. «Addio.» Si allontana in silenzio. Lei ascolta i suoi passi svanire — e qualcosa, nel loro ritmo, la fa scoppiare in pianto: forse lo sa già.",
+          "image_prompt": "una donna sola davanti alla porta di casa, il volto rivolto verso il suono dei passi che si allontanano"
+        }
+      ],
+      "actions": [
+        {
+          "id": "continua",
+          "label": "Continua",
+          "aliases": [
+            "vai avanti",
+            "prosegui",
+            "avanti"
+          ],
+          "effect": {
+            "goto_scene": "la_visione"
+          }
+        }
+      ]
+    },
+    {
+      "id": "la_visione",
+      "title": "La visione",
+      "scene_type": "cutscene",
+      "scene_tone": "sogno ad occhi aperti: dissolvenze lentissime, quasi immobili, come diapositive che si scaldano e si spengono",
+      "background": {
+        "image_prompt": "campo lunghissimo su prati in fiore, un uomo che cammina a testa bassa verso una distesa di narcisi bianchi, mattina",
+        "ambient_sound_prompt": "silenzio ampio, insetti nel prato, un vento altissimo appena percettibile"
+      },
+      "characters": [
+        {
+          "id": "nunez"
+        }
+      ],
+      "on_enter_flags_set": [
+        "visione_avuta"
+      ],
+      "narration": [
+        {
+          "text": "Cammina verso i narcisi bianchi dove dovrà attendere l'operazione. Poi alza gli occhi. Il mattino esplode di luce sulle vette, come un angelo dall'armatura d'oro che discende dai pendii. Si ferma, folgorato. Gli parve che davanti a questo splendore, lui, e quel cieco mondo nella valle, e il suo amore, e tutto, fossero soltanto una nefandezza.",
+          "image_prompt": "vette innevate incendiate dalla luce del mattino, viste dal basso, come un'armatura d'oro"
+        },
+        {
+          "text": "Pensò al mondo grande e libero da cui era separato, il mondo che era il suo. Ebbe una visione di Bogotà — luogo di inebriante bellezza, glorioso di giorno, mistero luminoso di notte.",
+          "image_prompt": "città immaginata di palazzi, fontane e statue, case bianche disposte a mezza altezza su un pendio, luci accese nella notte"
+        },
+        {
+          "text": "Pensò al viaggio sul fiume, giorno dopo giorno, dalla grande Bogotà al mondo vasto ancora oltre — finché le sponde si dileguavano, e i grandi piroscafi solcavano i flutti.",
+          "image_prompt": "piroscafo visto dall'alto che scende un grande fiume tra città e villaggi, le sponde che si allontanano"
+        },
+        {
+          "text": "Si era giunti al mare. Al mare sconfinato, con le sue mille isole, le sue migliaia di isole, e le navi intraviste lontano, nei loro viaggi incessanti in giro per il mondo.",
+          "image_prompt": "orizzonte marino sconfinato con centinaia di isole e navi lontanissime, minuscole sagome nere sull'azzurro"
+        },
+        {
+          "text": "E là, non ingabbiato dai monti, si vedeva il cielo. Il cielo — non un disco, come appariva qui, ma un arco azzurro immenso, un abisso di abissi, in cui si libravano ruotando le stelle.",
+          "image_prompt": "campo totale di cielo notturno senza alcun bordo di montagna, un arco immenso di stelle che sembrano ruotare lentamente"
+        }
+      ],
+      "actions": [
+        {
+          "id": "continua",
+          "label": "Continua",
+          "aliases": [
+            "vai avanti",
+            "prosegui",
+            "avanti"
+          ],
+          "effect": {
+            "goto_scene": "la_scelta_finale"
+          }
+        }
+      ]
+    },
+    {
+      "id": "la_scelta_finale",
+      "title": "La scelta finale",
+      "scene_tone": "lucido e pratico dopo il sogno: un uomo che guarda una parete di roccia come si guarda un problema risolvibile",
+      "background": {
+        "image_prompt": "pendio roccioso sopra la valle, un uomo di spalle che scruta la cortina di montagne con interesse pratico, luce piena del giorno",
+        "ambient_sound_prompt": "vento sulla roccia, acqua lontana, nessuna voce"
+      },
+      "characters": [
+        {
+          "id": "nunez"
+        }
+      ],
+      "narration": [
+        {
+          "text": "La visione si dissolve. Siamo di nuovo sulla valle, e i suoi occhi tornano a scrutare — questa volta con interesse pratico — la cortina di montagne."
+        }
+      ],
+      "actions": [
+        {
+          "id": "studia_il_canalone",
+          "label": "Studia il canalone che risale verso il camino di roccia",
+          "target": "ambiente",
+          "aliases": [
+            "cerca una via",
+            "studia la parete",
+            "guarda le montagne"
+          ],
+          "effect": {
+            "narration": "Andando da quella parte, su per quel canalone, fino a quel camino, si poteva sbucare tra i pini nani che formavano come una mensola circolare, e salivano fin sopra la gola. E poi? Quella scarpata era superabile. E poi si sarebbe trovato sul tratto di neve ambrata di luce, a mezza via verso la cresta di quelle supreme desolazioni.",
+            "set_flag": "via_di_fuga_studiata"
+          }
+        },
+        {
+          "id": "guarda_il_villaggio",
+          "label": "Voltati a guardare il villaggio, a lungo",
+          "target": "ambiente",
+          "aliases": [
+            "guarda la valle",
+            "pensa a medina",
+            "voltati"
+          ],
+          "effect": {
+            "narration": "Pensò a Medina-saroté — ed era diventata piccola e remota."
+          }
+        },
+        {
+          "id": "scendi_verso_i_narcisi",
+          "label": "Scendi verso i narcisi bianchi, dove ti aspettano",
+          "target": "ambiente",
+          "aliases": [
+            "vai all'operazione",
+            "arrenditi",
+            "scendi"
+          ],
+          "effect": {
+            "narration": "Fa qualche passo verso il basso, dove il prato si apre bianco di narcisi e dove, tra poco, mani abilissime lo aspettano al buio. Poi si ferma. Non è ancora l'ora, si dice — e sa di mentire."
+          }
+        },
+        {
+          "id": "comincia_la_scalata",
+          "label": "Voltati verso la parete e comincia ad arrampicarti",
+          "target": "ambiente",
+          "aliases": [
+            "scala la parete",
+            "fuggi",
+            "arrampicati",
+            "vai via"
+          ],
+          "condition": {
+            "flag_present": "via_di_fuga_studiata"
+          },
+          "effect": {
+            "narration": "Si volta di nuovo verso la parete di roccia. Con cautela, comincia ad arrampicarsi.",
+            "goto_scene": "finale_alta_montagna"
+          }
+        }
+      ]
+    },
+    {
+      "id": "finale_alta_montagna",
+      "title": "Finale — sotto le fredde stelle",
+      "scene_type": "cutscene",
+      "scene_tone": "nessuna euforia da eroe scampato: un uomo pacificato, forse morente, che ha scelto la libertà e la solitudine",
+      "background": {
+        "image_prompt": "campo lunghissimo dall'alto al tramonto: la valle un miglio più in basso già velata d'ombra e foschia, mentre intorno le vette sono ancora tutte luce e fuoco",
+        "ambient_sound_prompt": "vento d'alta quota, rarefatto, poi silenzio"
+      },
+      "characters": [
+        {
+          "id": "nunez"
+        }
+      ],
+      "narration": [
+        {
+          "text": "Nuñez è fermo, i vestiti laceri, le membra segnate di sangue e lividi. Ma sul volto, un sorriso."
+        },
+        {
+          "text": "Nelle rocce vicine certi particolari erano intrisi di una delicata bellezza: una vena di minerale verde che affiora nel grigio, lampi di sfaccettature cristalline, un minuscolo lichene aranciato a un palmo dal viso. Nella gola c'erano ombre profonde, di un blu cangiante in violetto, e il violetto in un'oscurità luminosa — e sopra, l'illimitata vastità del cielo.",
+          "image_prompt": "macro su una vena di minerale verde nella roccia grigia, cristalli che catturano la luce, un lichene aranciato"
+        },
+        {
+          "text": "Ma a queste cose, ormai, non prestava più attenzione. Giaceva immobile, sorridendo — semplicemente soddisfatto di essere scampato dalla valle dei Ciechi, dove aveva creduto di essere re.",
+          "image_prompt": "primo piano del volto immobile di un uomo disteso tra le rocce, gli occhi che non guardano più nulla di preciso"
+        },
+        {
+          "text": "Il bagliore del tramonto si spense, e scese la notte. Ed egli giacque contento, pacificato, sotto le fredde stelle.",
+          "image_prompt": "dissolvenza lentissima verso il nero, le stelle che si accendono a una a una sopra una sagoma immobile tra le rocce",
+          "sound_effect_prompt": "vento che cala fino al silenzio completo"
+        }
+      ],
+      "actions": []
+    }
+  ]
+}

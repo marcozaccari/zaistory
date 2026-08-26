@@ -1,0 +1,85 @@
+# Playthrough completo di "Nel paese dei ciechi", dal prologo al finale.
+# Rigiocalo con:  zaplay -script playthrough_completo.txt nel-paese-dei-ciechi.ir.json
+# Le azioni si indicano con l'id, le scelte di dialogo con l'id del nodo di destinazione (c:).
+
+# prologo_la_valle / quindici_generazioni / la_caduta (cutscene)
+continua
+continua
+continua
+
+# arrivo_alla_valle — la felce, l'acqua, la valle, poi si scende
+assaggia_felce
+bevi_alla_sorgiva
+osserva_la_valle
+scendi_verso_il_muro
+
+# primo_contatto — il grido, l'esame, il dialogo con i tre
+grida_dal_masso
+osserva_le_palpebre
+lasciati_avvicinare
+c:d_vista
+c:d_occhi
+
+# sala_degli_anziani — la cosmogonia dei ciechi
+parla_agli_anziani
+c:d_cosmogonia
+c:d_tempo
+accetta_il_cibo
+resta_sveglio
+
+# mondo_dei_sensi (cutscene)
+continua
+
+# il_re_di_nessuno — i tentativi falliti e la vanga
+sfuggi_alla_chiamata
+annuncia_l_uomo_lontano
+chiedi_di_salire_al_muro
+impugna_la_vanga
+rifiuta_di_posare_la_vanga
+
+# il_colpo_di_stato — l'accerchiamento e la fuga
+osserva_l_accerchiamento
+grida_la_verita
+minaccia_di_far_male
+cerca_un_varco
+
+# la_resa — la fame, il ritorno al muro, l'abiura
+tenta_di_catturare_un_lama
+resta_tra_i_pini
+torna_al_muro
+c:d_tetto
+c:d_fame
+
+# medina_sarote — la mano, le stelle, la richiesta a Yacob
+posa_la_mano_sulla_sua
+lavora_in_silenzio
+parla_con_medina
+c:d_stelle
+c:d_silenzio
+chiedi_medina_in_sposa
+
+# casa_di_yacob / la_cura_proposta (cutscene)
+continua
+continua
+
+# la_buona_notizia — la cura annunciata e la scelta di Medina-saroté
+ascolta_yacob
+c:d_delusione
+guarda_le_tue_mani
+cerca_medina
+c:d_medina_risposta
+c:d_dubbio
+c:d_silenzio_di_lei
+c:d_consenso
+
+# ultimo_giorno / la_visione (cutscene)
+continua
+continua
+
+# la_scelta_finale — la valle diventa piccola e remota
+guarda_il_villaggio
+scendi_verso_i_narcisi
+studia_il_canalone
+comincia_la_scalata
+
+# finale_alta_montagna: nessuna azione, la storia finisce qui

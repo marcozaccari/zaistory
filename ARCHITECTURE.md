@@ -6,11 +6,12 @@
 > stesse cose. Le decisioni qui sotto sono già prese e motivate: vanno
 > rimesse in discussione solo se emerge un caso concreto che non coprono
 > bene — è così che è nato `scene_type`, testando su materiale reale invece
-> che discutendo in astratto. Regole operative per gli agenti: `AGENTS.md`. Il lavoro attivo oggi è solo sulla
-> skill `skills/story-ir-compiler`, che applica queste regole direttamente in
-> conversazione. In futuro queste stesse regole verranno implementate in un
-> generatore dedicato (non ancora iniziato, nessuna scelta di linguaggio/
-> stack presa).
+> che discutendo in astratto. Regole operative per gli agenti: `AGENTS.md`. Oggi il lavoro attivo è su due fronti:
+> la skill `skills/story-ir-compiler`, che applica queste regole direttamente
+> in conversazione, e il player CLI di test `player-cli/`, che le verifica
+> giocando l'IR prodotto. In futuro le stesse regole del compilatore verranno
+> implementate in un generatore dedicato (non ancora iniziato, nessuna scelta
+> di linguaggio/stack presa).
 
 ## Obiettivo
 
@@ -30,7 +31,7 @@ sceneggiatura.md (libera)
     ▼  COMPILATORE (oggi: skill in conversazione; domani: generatore ad hoc)
 story.ir.json (formato IR, contratto stabile — engine-ir.schema.json)
     │
-    ├─▶  PLAYER CLI DI TEST (solo testo, nessun asset — spec più sotto)
+    ├─▶  PLAYER CLI DI TEST (solo testo, nessun asset — `player-cli/`)
     │      usa il RESOLVER, salta completamente il modulo assets
     │
     ▼  MODULO ASSETS (design definito, non ancora implementato in un generatore)
@@ -164,7 +165,7 @@ in un generatore.
   player mobile reale avrà comunque bisogno che gli asset siano raggiungibili
   via URL pubblico (storage/CDN), ma quale servizio usare non è stato deciso.
 
-## Player CLI di test (specifica, non ancora costruito)
+## Player CLI di test (`player-cli/`, costruito)
 
 Player minimale da riga di comando, **puramente testuale**: nessuna risorsa
 grafica o audio, nessun manifest asset. Consuma **esclusivamente
@@ -177,6 +178,15 @@ un id inesistente, flag mai impostato ma richiesto da una condizione, ramo
 di dialogo irraggiungibile) senza dover prima generare immagini e voci.
 La validazione di schema dice che l'IR è *ben formato*; solo giocarlo dice
 che è *giocabile*.
+
+**Stack scelto: Go, binario singolo** (`player-cli/`, comando `zaplay`,
+nessuna dipendenza esterna — `go.mod` senza `require`). Motivazione: un
+eseguibile autonomo che si passa a chiunque debba testare una storia senza
+installargli un runtime, e un linguaggio tipizzato che rende l'IR uno
+schema di tipi verificato dal compilatore. Contro consapevole: è un
+linguaggio in più nel repository e non riusabile dalla futura PWA — la
+logica di engine andrà riscritta lì, ma è poca e interamente derivabile da
+`Effect`/`Condition`.
 
 - **Input unico: l'IR.** Nessun'altra dipendenza. Tutti i campi destinati
   alla generazione asset (`image_prompt`, `ambient_sound_prompt`,
@@ -207,9 +217,11 @@ che è *giocabile*.
   un id di azione esistente oppure un fallback in-character):
   1. **nessun resolver** — selezione a menu numerato. Deterministico, zero
      dipendenze, è la modalità da usare per i test di regressione.
-  2. **Claude** — via API/sessione, per input testuale libero.
+     **Implementato** (`-resolver menu`, default).
+  2. **Claude** — via API/sessione, per input testuale libero. Non ancora
+     implementato: `-resolver claude` esce con un errore esplicito.
   3. **LLM/SLM locale offline** — modello piccolo eseguito in locale, per
-     testare senza rete e senza costo per battuta.
+     testare senza rete e senza costo per battuta. Non ancora implementato.
   Il backend si sceglie all'avvio; il resto del player non cambia. Motivo
   per cui i tre stanno insieme: il resolver è il pezzo più incerto del
   progetto, e il player CLI è il banco di prova naturale per confrontare
@@ -222,12 +234,23 @@ che è *giocabile*.
   prevede — ed è esattamente l'informazione che si sta cercando.
 - **Riproducibilità**: poiché il resolver può solo scegliere tra azioni già
   definite, una partita è interamente descritta dalla sequenza di id di
-  azione/scelta. Questo abilita, quando servirà, uno "script di
-  playthrough" (un file con la sequenza di id) rigiocabile in modalità
-  non-interattiva come test di regressione su una storia.
-
-Nessuna scelta di linguaggio o stack è ancora presa, coerentemente con
-quanto vale per il generatore ad hoc.
+  azione/scelta. Implementato: `-record` salva la sequenza giocata,
+  `-script` la rigioca senza input umano (exit code diverso da 0 se la
+  partita non arriva più in fondo). Le scelte di dialogo, che nello schema
+  non hanno un id proprio, sono identificate dal nodo di destinazione.
+- **Linter di giocabilità** (`-lint`, aggiunto costruendo il player): i
+  controlli statici che la validazione di schema non può fare — `goto` verso
+  id inesistenti, scene irraggiungibili, nodi di dialogo monchi o
+  irraggiungibili, alberi di dialogo che nessuna azione raggiunge,
+  condizioni impossibili (flag richiesto e mai impostato, oggetto richiesto e
+  mai raccolto). Trova le porte chiuse a chiave; se la storia si gioca *bene*
+  lo dice solo giocarla.
+- **Convenzione dei finali**: una scena senza `goto_scene` in uscita è un
+  finale, e lì una lista `actions` vuota è legittima (il player chiude la
+  partita); la stessa situazione in una scena con un'uscita è invece il
+  vicolo cieco che il player segnala come bug. È la sola regola di flusso
+  che il player aggiunge, e non introduce logica narrativa: lo schema non ha
+  un marcatore esplicito di finale.
 
 ## Deploy del player (solo discusso, nulla costruito)
 
@@ -250,18 +273,23 @@ quanto vale per il generatore ad hoc.
   autore vero, non solo su esempi giocattolo, ha rivelato lacune che
   l'analisi teorica da sola non aveva previsto. Buona fonte per ulteriori
   casi di test se si estende ancora lo schema.
+  Compilata in `examples/nel-paese-dei-ciechi.ir.json` (18 scene, 8 cutscene
+  e 10 interattive) con `examples/nel-paese-dei-ciechi.playthrough.txt`, la
+  partita completa dal prologo al finale: è il test di conformità dell'IR
+  end-to-end, e va rigiocato quando si tocca lo schema o il player.
 
 ## Prossimi passi (nell'ordine più naturale, non vincolante)
 
 1. Continuare a iterare sulla skill: testarla su altre sceneggiature reali
    (stili diversi da quello già provato), correggere prompt/schema quando
    emergono lacune concrete — non in astratto.
-2. Costruire il **player CLI di test** (spec sopra): è il passo che dà il
-   ritorno più rapido, perché rende giocabile e verificabile l'output del
-   compilatore senza dipendere da assets, hosting o PWA.
+2. ~~Costruire il **player CLI di test**~~ — fatto (`player-cli/`, Go,
+   resolver a menu, modalità debug, linter, script di playthrough).
 3. Implementare il resolver per input testuale libero (design già fissato
    sopra, mai implementato) — il player CLI è il suo primo consumatore e il
-   banco di prova per confrontare Claude e un SLM locale.
+   banco di prova per confrontare Claude e un SLM locale. È ora il prossimo
+   passo naturale: l'interfaccia e il backend a menu ci sono già, manca solo
+   il corpo dei due backend.
 4. Quando le regole si saranno stabilizzate, valutare la costruzione del
    generatore ad hoc (nessuna decisione di stack ancora presa).
 5. Decidere la pubblicazione/hosting degli asset (rimandato finora).

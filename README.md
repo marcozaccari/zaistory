@@ -20,9 +20,23 @@ nulla degli altri.
 
 ## Stato
 
-Prototipo. L'unica parte funzionante è il compilatore, realizzato come skill
-Claude che applica le regole di progetto direttamente in conversazione. Modulo
-assets, player CLI e player grafici sono progettati ma non ancora costruiti.
+Prototipo. Funzionano due pezzi: il **compilatore**, realizzato come skill
+Claude che applica le regole di progetto direttamente in conversazione, e il
+**player CLI di test** (`player-cli/`, Go), che gioca un `story.ir.json` in
+puro testo — senza immagini né voci — per scoprire se una storia compilata è
+davvero giocabile. Modulo assets e player grafici sono progettati ma non
+ancora costruiti.
+
+## Provare subito
+
+```bash
+cd player-cli && go build -o zaplay ./cmd/zaplay
+
+./zaplay ../examples/nel-paese-dei-ciechi.ir.json         # gioca la storia
+./zaplay -lint ../examples/nel-paese-dei-ciechi.ir.json   # solo controlli statici
+./zaplay -script ../examples/nel-paese-dei-ciechi.playthrough.txt \
+         ../examples/nel-paese-dei-ciechi.ir.json          # rigioca la partita di riferimento
+```
 
 ## Contenuto del repository
 
@@ -31,7 +45,8 @@ assets, player CLI e player grafici sono progettati ma non ancora costruiti.
 | `skills/story-ir-compiler/` | Il compilatore sceneggiatura → IR (skill Claude) |
 | `skills/story-ir-compiler/references/engine-ir.schema.json` | Lo schema dell'IR — il contratto stabile del progetto |
 | `skills/story-ir-compiler/scripts/` | Validatore dell'IR e segmentatore delle scene |
-| `examples/` | Sceneggiature di riferimento usate per i test |
+| `player-cli/` | Il player CLI di test (`zaplay`): gioca l'IR, linter di giocabilità, script di playthrough |
+| `examples/` | Sceneggiature di riferimento e l'IR compilato da usare come banco di prova |
 
 ## Documentazione
 
