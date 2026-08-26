@@ -1,0 +1,275 @@
+# ZAiStory Engine — decisioni architetturali
+
+> Documento di analisi, non di implementazione: raccoglie le scelte
+> architetturali prese finora e il *perché* di ciascuna, così una sessione
+> futura (mia o di un generatore ad hoc costruito più avanti) può ripartire
+> da qui senza riscoprire le stesse cose. Il lavoro attivo oggi è solo sulla
+> skill `skills/story-ir-compiler`, che applica queste regole direttamente in
+> conversazione. In futuro queste stesse regole verranno implementate in un
+> generatore dedicato (non ancora iniziato, nessuna scelta di linguaggio/
+> stack presa).
+
+## Obiettivo
+
+Motore narrativo interattivo moderno (tipo SCUMM, ma leggero): l'autore
+scrive sceneggiature in markdown libero (formato ottimizzato per la
+creatività, non per la macchina). Un compilatore le trasforma in un formato
+IR (`story.ir.json`) giocabile e player-agnostic, che poi alimenta un modulo
+di generazione asset (immagini/voce/musica) e infine uno o più player
+(PWA, bot Telegram, ...) — nessuno di questi componenti deve essere
+accoppiato agli altri: l'IR è il contratto che li tiene separati.
+
+## Pipeline concettuale
+
+```
+sceneggiatura.md (libera)
+    │
+    ▼  COMPILATORE (oggi: skill in conversazione; domani: generatore ad hoc)
+story.ir.json (formato IR, contratto stabile — engine-ir.schema.json)
+    │
+    ├─▶  PLAYER CLI DI TEST (solo testo, nessun asset — spec più sotto)
+    │      usa il RESOLVER, salta completamente il modulo assets
+    │
+    ▼  MODULO ASSETS (design definito, non ancora implementato in un generatore)
+manifest.json + file immagini/voce/suoni generati
+    │
+    ▼  PLAYER (non ancora costruito)
+PWA (principale) + eventuale bot Telegram (secondario, testuale)
+```
+
+## Il formato IR: decisioni chiave
+
+Schema: `engine-ir.schema.json` (JSON Schema draft 2020-12), versione
+corrente **1.2.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
+
+Decisioni di design, con il *perché* (per non riscoprirle da capo):
+
+- **Niente modello verbo×oggetto stile SCUMM classico.** Deciso
+  esplicitamente: interazione = dialoghi a scelte multiple + **azioni
+  contestuali** (poche, 3-6 per scena, esplicite, specifiche alla scena,
+  mai generiche tipo "guarda"/"usa X su Y"). Ogni scena `interactive` deve
+  sempre avere un modo di proseguire/uscire — una scena senza uscita è un
+  bug di game design, non solo tecnico.
+- **Un blocco `Effect` riusabile**, condiviso concettualmente tra azioni e
+  scelte di dialogo: stesso "motore" di applicazione dello stato in
+  qualunque player, non due logiche parallele.
+- **`scene_type: "interactive" | "cutscene"`** Le sequenze di puro montaggio narrato 
+  (voce fuori campo su
+  più inquadrature, zero scelte reali per il giocatore) sono cutscene con
+  `narration[]` multi-beat e una sola azione "continua"; non vanno forzate
+  nel modello "stanza con azioni". Un "SEQUENZA"/capitolo della
+  sceneggiatura originale NON è automaticamente una scena del gioco:
+  la segmentazione va fatta in base alla giocabilità (dove comincia
+  davvero l'interattività), non alla struttura editoriale del documento
+  sorgente.
+- **`narration[].image_prompt` / `.sound_effect_prompt` per-beat** (stessa
+  origine): una sequenza narrata può cambiare inquadratura più volte —
+  un'unica immagine di sfondo per scena non basta per un montaggio
+  cinematografico con più "fotografie" diverse.
+- **Personaggi occasionali** (voci fuori campo, comparse):
+  NON vanno nella roster globale dei personaggi —
+  lo `speaker` di un nodo di dialogo è già una stringa libera, e una scena
+  può definire personaggi locali (visual/voice override) senza che esistano
+  a livello globale. Importante: questo è un vincolo di *comportamento del
+  compilatore* (va scritto nelle istruzioni/regole), non dello schema dati
+  — lo schema già lo permetteva, mancava solo la guida a usarlo così.
+- **Niente proprietà non previste, in nessun oggetto dell'IR** — vincolo
+  architetturale forte: ogni oggetto dell'IR ammette solo i campi definiti,
+  nessuno extra. Motivazione: rete di sicurezza contro derive/allucinazioni
+  del compilatore (un LLM che inventa un campo plausibile ma non previsto
+  va scartato e corretto, non silenziosamente accettato). Qualunque
+  implementazione futura (skill, generatore ad hoc) deve applicare questo
+  controllo prima di considerare valido un output.
+- **L'IR non nomina mai un generatore.** `VoiceSpec` non ha piu' `engine`
+  ne' `voice_id`: resta solo `style_prompt`, cioe' una descrizione testuale
+  di *come suona* la voce. Stessa logica per immagini, effetti sonori e
+  musica: il compilatore produce solo prompt e tag di mood, mai il nome del
+  provider o i suoi parametri. La mappa `personaggio -> generatore`,
+  `immagini -> generatore`, `colonna sonora -> generatore` (con i relativi
+  parametri, incluso il voice_id concreto assegnato una volta per parlante)
+  vive in un **file separato gestito dal modulo assets**. Motivazione:
+  cambiare provider TTS o modello di immagini non deve toccare l'IR, che e'
+  il contratto stabile tra compilatore e player.
+- **Riferimenti a scene esterne** (una scena come file separato, per storie
+  molto grandi) sono previsti concettualmente ma non ancora affrontati nel
+  dettaglio — oggi si lavora solo con IR a scene inline in un unico
+  documento. Da riprendere se/quando servirà davvero (storie molto lunghe).
+- **Resolver per input testuale libero**: discusso approfonditamente ma mai
+  costruito. Design deciso: un modulo player-agnostic separato che riceve
+  `(azioni disponibili nella scena, testo libero del giocatore, tono della
+  scena)` e ritorna `(id di un'azione esistente, oppure nessun match con
+  una narrazione di fallback in-character)`. Vincolo architetturale
+  fondamentale: il resolver non deve MAI generare un effetto di sua
+  iniziativa, solo scegliere quale azione già definita eseguire — altrimenti
+  lo stato del gioco smette di essere deterministico/testabile. In pratica
+  è l'equivalente moderno del classico "Non puoi farlo" dei punta-e-clicca,
+  ma generato al volo e coerente col tono della scena invece che un
+  messaggio di sistema generico.
+
+## Il compilatore: dove si trova oggi il lavoro
+
+**Skill `skills/story-ir-compiler`** (unica implementazione attiva): applica le
+stesse regole sopra elencate direttamente in conversazione — Stadio A
+(estrazione di una "story map" con id stabili, personaggi, stile, elenco
+scene) seguito da Stadio B (compilazione di dettaglio di ogni scena),
+con un passo di validazione e correzione prima di consegnare il risultato.
+
+Limiti onesti da tenere a mente lavorando sulla skill:
+- **Nessuna cache tra conversazioni diverse**: ogni sessione ricompila da
+  zero, non esiste un meccanismo per saltare le scene invariate.
+- **Non perfettamente deterministica tra sessioni diverse**: id e dettagli
+  minori possono variare da una compilazione all'altra. Se esiste già un
+  `story.ir.json` e serve solo un aggiornamento, meglio editarlo in place
+  (mantenendo gli id esistenti) che ricompilare tutto da capo.
+
+**Generatore ad hoc (futuro, non iniziato)**: l'idea è che le stesse regole
+documentate qui verranno implementate come codice deterministico, per
+ottenere ripetibilità/velocità/automazione che la skill non può dare in
+conversazione. Nessuna scelta di linguaggio, struttura o stack è stata
+ancora presa — è deliberatamente rimandata: prima si stabilizzano le
+regole (iterando via skill su sceneggiature reali), poi si cristallizzano
+in un generatore.
+
+## Modulo assets: decisioni di design (non ancora implementate in codice)
+
+- **Estrazione come passo concettualmente separato dalla generazione**:
+  prima si attraversa l'intero IR raccogliendo ogni prompt (immagini di
+  personaggi/sfondi/beat di narrazione, voci, effetti sonori, musica),
+  deduplicando per contenuto identico, POI si chiamano i provider esterni.
+  Evita di rigenerare due volte lo stesso asset se due scene riusano lo
+  stesso prompt (es. il ritratto di un personaggio).
+- **Voce a due livelli, non uno**: (1) *assegnazione* — una volta per
+  parlante nell'intera storia, uno stile testuale diventa un timbro/voice_id
+  stabile; (2) *sintesi* — per ogni battuta, quel timbro più il testo
+  producono l'audio. Motivazione: un personaggio deve suonare sempre uguale
+  lungo tutta la storia — se si risolve lo stile riga per riga invece che
+  una volta per personaggio, provider come ElevenLabs possono restituire
+  timbri leggermente diversi ad ogni chiamata anche con lo stesso stile
+  testuale. Attenzione al caso limite: una battuta con un override vocale
+  che specifica solo uno stile testuale (senza un id voce esplicito) deve
+  comunque passare dal livello di assegnazione, non bypassarlo — altrimenti
+  resta irrisolvibile.
+- **Musica di sottofondo = corrispondenza a tag contro una libreria locale
+  curata, NON generazione via API**: la generazione musicale è stata
+  giudicata ancora troppo acerba rispetto a immagini/voce per essere
+  affidabile in una pipeline automatica.
+- **Provider raccomandati** (scelta suggerita in fase di analisi, non
+  vincolante): fal.ai o Replicate (Flux) per le immagini, ElevenLabs per
+  voce e per effetti sonori puntuali.
+- **Pubblicazione/hosting degli asset**: deciso esplicitamente di rimandare
+  questa scelta ("solo locale per ora, penseremo al deploy dopo") — un
+  player mobile reale avrà comunque bisogno che gli asset siano raggiungibili
+  via URL pubblico (storage/CDN), ma quale servizio usare non è stato deciso.
+
+## Player CLI di test (specifica, non ancora costruito)
+
+Player minimale da riga di comando, **puramente testuale**: nessuna risorsa
+grafica o audio, nessun manifest asset. Consuma **esclusivamente
+`story.ir.json`** e serve a giocare e testare una storia molto prima che
+esistano il modulo assets e la PWA.
+
+Perché serve, in una riga: è il modo più economico per scoprire che una
+storia compilata *non è giocabile* (scena senza uscita, `goto` che punta a
+un id inesistente, flag mai impostato ma richiesto da una condizione, ramo
+di dialogo irraggiungibile) senza dover prima generare immagini e voci.
+La validazione di schema dice che l'IR è *ben formato*; solo giocarlo dice
+che è *giocabile*.
+
+- **Input unico: l'IR.** Nessun'altra dipendenza. Tutti i campi destinati
+  alla generazione asset (`image_prompt`, `ambient_sound_prompt`,
+  `sound_effect_prompt`, `VoiceSpec.style_prompt`, `ambient_music_tags`)
+  non vengono generati né riprodotti: in modalità normale sono ignorati, in
+  modalità debug vengono mostrati come testo. Conseguenza voluta: il player
+  CLI è anche un **test di conformità dell'IR** — se riesce a portare una
+  storia dall'inizio alla fine, il contratto regge.
+- **Cosa mostra in gioco**: narrazione all'ingresso scena (tutti i beat di
+  `narration[]` in sequenza, incluse le cutscene, con tap-to-continue),
+  battute di dialogo con `speaker`, scelte di dialogo disponibili, azioni
+  contestuali della scena. Le scelte e le azioni non disponibili (condizione
+  `Condition` non soddisfatta) restano nascoste come in un player reale.
+- **Modalità debug** (comando dedicato, es. `:debug`, oppure flag di avvio):
+  mostra i *parametri della scena* — `id`, `title`, `scene_type`,
+  `scene_tone`, prompt di background, personaggi presenti,
+  `on_enter_flags_set` — e **tutte** le azioni della scena, comprese quelle
+  attualmente filtrate da una condizione, con accanto id, condizione
+  richiesta ed effetto risultante. Serve a capire *perché* un'azione non
+  compare, che è la domanda che ci si pone il 90% delle volte quando si
+  testa una storia.
+- **Ispezione dello stato**: comandi per vedere flag attivi, inventario,
+  scena corrente e storico delle scene visitate. Lo stato del gioco è
+  piccolo e interamente derivabile dagli `Effect` applicati, quindi mostrarlo
+  è banale e rende ovvia la diagnosi di ogni bug di stato.
+- **Resolver pluggable, tre backend dietro la stessa interfaccia** (quella
+  già fissata sopra: riceve azioni disponibili + testo libero + tono, ritorna
+  un id di azione esistente oppure un fallback in-character):
+  1. **nessun resolver** — selezione a menu numerato. Deterministico, zero
+     dipendenze, è la modalità da usare per i test di regressione.
+  2. **Claude** — via API/sessione, per input testuale libero.
+  3. **LLM/SLM locale offline** — modello piccolo eseguito in locale, per
+     testare senza rete e senza costo per battuta.
+  Il backend si sceglie all'avvio; il resto del player non cambia. Motivo
+  per cui i tre stanno insieme: il resolver è il pezzo più incerto del
+  progetto, e il player CLI è il banco di prova naturale per confrontare
+  quanto bene un modello piccolo locale se la cava rispetto a Claude sullo
+  stesso set di scene.
+- **Vincolo architetturale, identico a quello del resolver**: il player CLI
+  non contiene logica narrativa propria. Non inventa azioni, non genera
+  testo di suo, non modifica lo stato se non applicando `Effect` già
+  presenti nell'IR. Se qualcosa non si può fare, è perché l'IR non lo
+  prevede — ed è esattamente l'informazione che si sta cercando.
+- **Riproducibilità**: poiché il resolver può solo scegliere tra azioni già
+  definite, una partita è interamente descritta dalla sequenza di id di
+  azione/scelta. Questo abilita, quando servirà, uno "script di
+  playthrough" (un file con la sequenza di id) rigiocabile in modalità
+  non-interattiva come test di regressione su una storia.
+
+Nessuna scelta di linguaggio o stack è ancora presa, coerentemente con
+quanto vale per il generatore ad hoc.
+
+## Deploy del player (solo discusso, nulla costruito)
+
+- **PWA** (target principale): installabile da browser mobile, può
+  funzionare offline se gli asset sono precachati, nessun vincolo di
+  formato — pensata come il player "di riferimento" più completo.
+- **Bot Telegram** (target secondario): meno adatto a un'interfaccia
+  punta-e-clicca vera, ma buon secondo target proprio perché il modello di
+  interazione scelto (dialoghi a scelte + azioni contestuali, non
+  verbo×oggetto) si presta bene anche a un'interfaccia a bottoni inline o
+  a puro testo.
+
+## Sceneggiature di riferimento per i test
+
+- Un esempio giocattolo minimo, creato da zero per validare rapidamente lo
+  schema durante lo sviluppo (una taverna, un oste, una chiave, una strada).
+- Una sceneggiatura REALE fornita dall'utente ("Nel paese dei ciechi",
+  adattamento da H.G. Wells) — è stata la fonte diretta delle decisioni
+  `scene_type` e narrazione multi-beat: testare su materiale scritto da un
+  autore vero, non solo su esempi giocattolo, ha rivelato lacune che
+  l'analisi teorica da sola non aveva previsto. Buona fonte per ulteriori
+  casi di test se si estende ancora lo schema.
+
+## Prossimi passi (nell'ordine più naturale, non vincolante)
+
+1. Continuare a iterare sulla skill: testarla su altre sceneggiature reali
+   (stili diversi da quello già provato), correggere prompt/schema quando
+   emergono lacune concrete — non in astratto.
+2. Costruire il **player CLI di test** (spec sopra): è il passo che dà il
+   ritorno più rapido, perché rende giocabile e verificabile l'output del
+   compilatore senza dipendere da assets, hosting o PWA.
+3. Implementare il resolver per input testuale libero (design già fissato
+   sopra, mai implementato) — il player CLI è il suo primo consumatore e il
+   banco di prova per confrontare Claude e un SLM locale.
+4. Quando le regole si saranno stabilizzate, valutare la costruzione del
+   generatore ad hoc (nessuna decisione di stack ancora presa).
+5. Decidere la pubblicazione/hosting degli asset (rimandato finora).
+6. Costruire un player con asset veri (PWA prima, bot Telegram poi).
+
+## Nota su come continuare una sessione futura
+
+Non ripartire da zero sulle decisioni sopra: sono già state prese e
+motivate. Mettile in discussione solo se emerge un caso concreto che non
+coprono bene — è così che è nato `scene_type`, testando su materiale reale
+invece che discutendo in astratto. Se l'utente chiede di riprendere il
+progetto, chiedi prima su quale dei tre fronti si lavora: continuare a
+iterare sulla skill del compilatore, costruire il player CLI di test, o
+impostare il generatore ad hoc.

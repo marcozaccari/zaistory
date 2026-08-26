@@ -1,0 +1,323 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/engine-ir.schema.json",
+  "title": "Story",
+  "description": "Formato intermedio (IR) player-agnostic per motore narrativo tipo SCUMM. Prodotto dal compilatore offline a partire dalla sceneggiatura markdown libera. E' il contratto che ogni player deve rispettare per essere compatibile.",
+  "type": "object",
+  "required": ["ir_version", "id", "title", "start_scene", "scenes"],
+  "additionalProperties": false,
+  "properties": {
+    "ir_version": {
+      "type": "string",
+      "description": "Versione dello schema IR, per compatibilita' futura tra compilatore e player (semver).",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "examples": ["1.0.0"]
+    },
+    "id": {
+      "type": "string",
+      "description": "Identificatore univoco della storia (slug).",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "language": {
+      "type": "string",
+      "description": "Codice lingua ISO 639-1 dei testi/dialoghi.",
+      "default": "it"
+    },
+    "global_style": {
+      "$ref": "#/$defs/GlobalStyle"
+    },
+    "characters": {
+      "type": "array",
+      "description": "Anagrafica globale dei personaggi, riusabile in tutte le scene. Le scene possono fare override locali.",
+      "items": { "$ref": "#/$defs/Character" }
+    },
+    "start_scene": {
+      "type": "string",
+      "description": "id della scena iniziale."
+    },
+    "state_flags_schema": {
+      "type": "array",
+      "description": "Elenco documentale (opzionale) di tutti i flag di stato usati nella storia, utile per validazione incrociata e debug.",
+      "items": { "type": "string" }
+    },
+    "inventory_schema": {
+      "type": "array",
+      "description": "Elenco documentale (opzionale) di tutti gli oggetti di inventario possibili nella storia.",
+      "items": { "type": "string" }
+    },
+    "scenes": {
+      "type": "array",
+      "description": "Elenco delle scene. Ogni entry puo' essere una scena inline oppure un riferimento a file esterno (per storie grandi, una scena per file).",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/Scene" },
+          {
+            "type": "object",
+            "description": "Riferimento a un file esterno contenente una Scene.",
+            "required": ["ref"],
+            "additionalProperties": false,
+            "properties": {
+              "ref": { "type": "string", "description": "Path relativo al file della scena, es. scenes/taverna_ingresso.ir.md" }
+            }
+          }
+        ]
+      }
+    }
+  },
+
+  "$defs": {
+
+    "GlobalStyle": {
+      "type": "object",
+      "description": "Stile visivo/sonoro globale applicato automaticamente a tutti i prompt di generazione asset, per coerenza stilistica lungo tutta la storia.",
+      "additionalProperties": false,
+      "properties": {
+        "image_style_suffix": {
+          "type": "string",
+          "description": "Suffisso aggiunto a ogni image_prompt, es. 'acquerello scuro, atmosfera gotica, illustrazione editoriale'."
+        },
+        "narrator_voice": { "$ref": "#/$defs/VoiceSpec" },
+        "default_tone": {
+          "type": "string",
+          "description": "Tono narrativo di default, usato anche dal resolver per generare i fallback in-character quando la scena non ne specifica uno."
+        },
+        "ambient_music_tags": {
+          "type": "array",
+          "description": "Tag di mood usati per pescare/generare musica di sottofondo di default.",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "VoiceSpec": {
+      "type": "object",
+      "description": "Descrizione puramente testuale della voce, provider-agnostica. Non contiene ne' il generatore ne' i suoi parametri (engine, voice_id, model, ...): quel binding vive nel file di mapping asset (personaggio -> generatore) gestito dal modulo assets, non dal compilatore.",
+      "additionalProperties": false,
+      "properties": {
+        "style_prompt": {
+          "type": "string",
+          "description": "Descrizione testuale dello stile vocale, es. 'roco, burbero, leggero accento del nord'. E' l'unico input vocale prodotto dal compilatore; il modulo assets lo risolve una volta per parlante in un timbro concreto del provider scelto."
+        }
+      }
+    },
+
+    "Character": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "name": { "type": "string", "description": "Nome visualizzato, se diverso dall'id." },
+        "visual_prompt": { "type": "string", "description": "Prompt per generazione immagine/sprite del personaggio." },
+        "voice": { "$ref": "#/$defs/VoiceSpec" }
+      }
+    },
+
+    "Condition": {
+      "type": "object",
+      "description": "Condizione di visibilita'/attivabilita' per azioni o rami di dialogo. Se assente, nessuna condizione (sempre valido).",
+      "additionalProperties": false,
+      "properties": {
+        "flag_present": { "type": "string", "description": "L'azione/ramo e' valido solo se questo flag e' stato impostato." },
+        "flag_absent": { "type": "string", "description": "L'azione/ramo e' valido solo se questo flag NON e' stato impostato." },
+        "has_item": { "type": "string", "description": "Richiede il possesso di un oggetto in inventario." }
+      }
+    },
+
+    "Effect": {
+      "type": "object",
+      "description": "Effetto applicato quando un'azione o un nodo di dialogo viene eseguito. Tutti i campi sono opzionali e possono essere combinati; il player li applica nell'ordine: narration -> set/unset_flag -> add/remove_inventory -> play_sound -> goto_dialogue/goto_scene.",
+      "additionalProperties": false,
+      "properties": {
+        "narration": {
+          "type": "string",
+          "description": "Testo narrativo mostrato/letto in conseguenza dell'azione."
+        },
+        "narration_voice": { "$ref": "#/$defs/VoiceSpec" },
+        "set_flag": { "type": "string" },
+        "unset_flag": { "type": "string" },
+        "add_inventory": { "type": "string" },
+        "remove_inventory": { "type": "string" },
+        "play_sound_prompt": {
+          "type": "string",
+          "description": "Prompt per un effetto sonoro puntuale legato a questo effetto."
+        },
+        "goto_dialogue": {
+          "type": "string",
+          "description": "id di un nodo nel dialogue_tree della scena corrente, da attivare."
+        },
+        "goto_scene": {
+          "type": "string",
+          "description": "id di un'altra scena verso cui transitare. Mutuamente esclusivo, in pratica, con goto_dialogue."
+        }
+      }
+    },
+
+    "DialogueChoice": {
+      "type": "object",
+      "required": ["text", "goto"],
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "string", "description": "Testo della scelta mostrata al giocatore." },
+        "goto": { "type": "string", "description": "id del nodo di dialogo successivo." },
+        "condition": { "$ref": "#/$defs/Condition" },
+        "effect": {
+          "$ref": "#/$defs/Effect",
+          "description": "Effetto opzionale applicato alla selezione di questa scelta, prima di passare al nodo 'goto'."
+        }
+      }
+    },
+
+    "DialogueNode": {
+      "type": "object",
+      "required": ["speaker", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "speaker": {
+          "type": "string",
+          "description": "id di un personaggio, oppure 'narrator'."
+        },
+        "text": { "type": "string" },
+        "voice_override": { "$ref": "#/$defs/VoiceSpec" },
+        "effect": { "$ref": "#/$defs/Effect" },
+        "choices": {
+          "type": "array",
+          "description": "Scelte disponibili dopo questa battuta. Se assente e 'end' non e' true, il player prosegue automaticamente (nodo lineare); serve un goto implicito al nodo successivo tramite 'next'.",
+          "items": { "$ref": "#/$defs/DialogueChoice" }
+        },
+        "next": {
+          "type": "string",
+          "description": "id del prossimo nodo se non ci sono scelte (dialogo lineare)."
+        },
+        "end": {
+          "type": "boolean",
+          "description": "Se true, questo nodo chiude il dialogue tree e riporta il giocatore alle azioni di scena.",
+          "default": false
+        }
+      }
+    },
+
+    "DialogueTree": {
+      "type": "object",
+      "required": ["start", "nodes"],
+      "additionalProperties": false,
+      "properties": {
+        "start": { "type": "string", "description": "id del nodo iniziale." },
+        "nodes": {
+          "type": "object",
+          "description": "Mappa id -> DialogueNode.",
+          "additionalProperties": { "$ref": "#/$defs/DialogueNode" },
+          "minProperties": 1
+        }
+      }
+    },
+
+    "Action": {
+      "type": "object",
+      "description": "Azione contestuale disponibile nella scena. Poche, esplicite, mostrate come chip/bottoni dal player e usate come target di matching dal resolver per l'input testuale libero.",
+      "required": ["id", "label", "effect"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "label": {
+          "type": "string",
+          "description": "Testo mostrato al giocatore, es. 'Osserva il camino'."
+        },
+        "target": {
+          "type": "string",
+          "description": "id di un personaggio o oggetto a cui l'azione si riferisce, per contesto (opzionale, 'ambiente' se generico)."
+        },
+        "aliases": {
+          "type": "array",
+          "description": "Frasi/sinonimi opzionali per aiutare il resolver dell'input testuale libero a fare matching.",
+          "items": { "type": "string" }
+        },
+        "condition": { "$ref": "#/$defs/Condition" },
+        "effect": { "$ref": "#/$defs/Effect" },
+        "repeatable": {
+          "type": "boolean",
+          "description": "Se false, l'azione scompare dalla lista dopo il primo utilizzo (tipico per 'prendi oggetto').",
+          "default": true
+        }
+      }
+    },
+
+    "Scene": {
+      "type": "object",
+      "required": ["id", "background", "actions"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "title": { "type": "string", "description": "Titolo/etichetta interna della scena, per editor e debug." },
+        "background": {
+          "type": "object",
+          "required": ["image_prompt"],
+          "additionalProperties": false,
+          "properties": {
+            "image_prompt": { "type": "string" },
+            "ambient_sound_prompt": { "type": "string" }
+          }
+        },
+        "scene_tone": {
+          "type": "string",
+          "description": "Override locale del tono narrativo, usato per generare i fallback in-character del resolver quando l'input libero non corrisponde a nessuna azione."
+        },
+        "scene_type": {
+          "type": "string",
+          "enum": ["interactive", "cutscene"],
+          "default": "interactive",
+          "description": "'interactive': scena con dialogue_tree e/o piu' azioni contestuali tra cui scegliere. 'cutscene': sequenza puramente narrata (montaggio di immagini + V.O.), senza scelte reali - convenzionalmente ha solo un'azione 'continua' in actions[] e nessun dialogue_tree. Aiuta il player a scegliere il rendering (menu di azioni vs slideshow con tap-to-continue) senza dover ispirare la logica dal contenuto."
+        },
+        "characters": {
+          "type": "array",
+          "description": "Personaggi presenti in questa scena. Ogni entry referenzia un Character globale per id ed eventualmente ne fa override dei campi visual_prompt/voice.",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "visual_prompt": { "type": "string" },
+              "voice": { "$ref": "#/$defs/VoiceSpec" }
+            }
+          }
+        },
+        "narration": {
+          "type": "array",
+          "description": "Testo narrativo mostrato all'ingresso nella scena, prima di qualunque interazione. Per scene di tipo 'cutscene' (sequenze di montaggio con piu' inquadrature) questa lista rappresenta l'intera sequenza di beat narrativi, ciascuno con la propria immagine se cambia inquadratura.",
+          "items": {
+            "type": "object",
+            "required": ["text"],
+            "additionalProperties": false,
+            "properties": {
+              "text": { "type": "string" },
+              "voice": { "$ref": "#/$defs/VoiceSpec" },
+              "image_prompt": {
+                "type": "string",
+                "description": "Prompt immagine per QUESTO beat narrativo, se l'inquadratura cambia rispetto al background della scena (o al beat precedente). Se assente, il player mantiene l'ultima immagine mostrata (background.image_prompt per il primo beat)."
+              },
+              "sound_effect_prompt": {
+                "type": "string",
+                "description": "Effetto sonoro puntuale legato a questo beat (es. un boato, un grido lontano), distinto dall'ambient continuo di background.ambient_sound_prompt."
+              }
+            }
+          }
+        },
+        "dialogue_tree": { "$ref": "#/$defs/DialogueTree" },
+        "actions": {
+          "type": "array",
+          "description": "Azioni contestuali disponibili in scena (dopo la narrazione iniziale). Devono includere sempre un modo di proseguire/uscire dalla scena.",
+          "items": { "$ref": "#/$defs/Action" }
+        },
+        "on_enter_flags_set": {
+          "type": "array",
+          "description": "Flag impostati automaticamente all'ingresso nella scena (es. per tracciare visite).",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}
