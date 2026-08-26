@@ -1,9 +1,12 @@
 # ZAiStory Engine — decisioni architetturali
 
 > Documento di analisi, non di implementazione: raccoglie le scelte
-> architetturali prese finora e il *perché* di ciascuna, così una sessione
-> futura (mia o di un generatore ad hoc costruito più avanti) può ripartire
-> da qui senza riscoprire le stesse cose. Il lavoro attivo oggi è solo sulla
+> architetturali prese finora e il *perché* di ciascuna, così chi riprende
+> il progetto (persona o agente) può ripartire da qui senza riscoprire le
+> stesse cose. Le decisioni qui sotto sono già prese e motivate: vanno
+> rimesse in discussione solo se emerge un caso concreto che non coprono
+> bene — è così che è nato `scene_type`, testando su materiale reale invece
+> che discutendo in astratto. Regole operative per gli agenti: `AGENTS.md`. Il lavoro attivo oggi è solo sulla
 > skill `skills/story-ir-compiler`, che applica queste regole direttamente in
 > conversazione. In futuro queste stesse regole verranno implementate in un
 > generatore dedicato (non ancora iniziato, nessuna scelta di linguaggio/
@@ -263,13 +266,3 @@ quanto vale per il generatore ad hoc.
    generatore ad hoc (nessuna decisione di stack ancora presa).
 5. Decidere la pubblicazione/hosting degli asset (rimandato finora).
 6. Costruire un player con asset veri (PWA prima, bot Telegram poi).
-
-## Nota su come continuare una sessione futura
-
-Non ripartire da zero sulle decisioni sopra: sono già state prese e
-motivate. Mettile in discussione solo se emerge un caso concreto che non
-coprono bene — è così che è nato `scene_type`, testando su materiale reale
-invece che discutendo in astratto. Se l'utente chiede di riprendere il
-progetto, chiedi prima su quale dei tre fronti si lavora: continuare a
-iterare sulla skill del compilatore, costruire il player CLI di test, o
-impostare il generatore ad hoc.
