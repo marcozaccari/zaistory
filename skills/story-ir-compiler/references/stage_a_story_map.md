@@ -98,11 +98,21 @@ passare il blocco giusto allo Stadio B.
    aggiuntivi non previsti qui, se la logica di una scena lo richiede: questa
    lista è un aiuto alla coerenza, non un vincolo rigido.
 
-7. **Personaggi**: includi nella roster globale solo personaggi con un ruolo
-   ricorrente o significativo (parlano più volte, hanno un arco narrativo).
-   NON includere qui voci/comparse occasionali (es. "voce fuori campo",
-   "un anziano", "il terzo cieco") — quelle le gestirà lo Stadio B come
-   personaggi locali alla singola scena, senza bisogno di una scheda globale.
+7. **Personaggi**: nella roster globale va **chiunque parli**, anche una sola
+   volta — protagonisti, comprimari e voci di passaggio ("un anziano", "il
+   terzo cieco", "una voce nel buio"). Non è un elenco dei personaggi
+   importanti: è l'elenco dei parlanti, e serve al modulo assets, che assegna
+   il timbro di voce una volta per parlante. Un parlante che non è qui resta
+   senza voce assegnabile.
+
+   Dai a ciascuno `id` (snake_case), `name`, `visual_prompt` e `voice`, anche
+   quando il testo sorgente lo nomina genericamente: un anziano che dice tre
+   battute ha comunque un aspetto e un timbro. L'unica eccezione è
+   `narrator`, che non è un personaggio e prende la voce da
+   `global_style.narrator_voice`.
+
+   Se una voce ti sfugge in questa fase, lo Stadio B la ritrova compilando la
+   scena e te la fa aggiungere: meglio recuperarla che lasciarla fuori.
 
 8. **Non includere MAI testo fuori dal JSON**: niente premessa, niente
    spiegazioni, niente code fence markdown. Rispondi con il solo oggetto JSON,

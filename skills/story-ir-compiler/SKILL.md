@@ -73,8 +73,11 @@ tutta la story map.
 Per ogni blocco prodotto al passo 3, leggi **`references/stage_b_scene.md`**
 e applica le sue regole (in particolare le sezioni su `scene_type`
 cutscene/interactive, narrazione multi-beat con immagini per-inquadratura,
-azioni contestuali poche ed esplicite, personaggi occasionali) per produrre
-l'oggetto `Scene` in JSON.
+azioni contestuali poche ed esplicite, parlanti non previsti dalla story map)
+per produrre l'oggetto `Scene` in JSON.
+
+Se la scena introduce parlanti che non sono nella roster della story map,
+tienine da parte le schede (`new_characters`): servono al passo 6.
 
 Regola pratica per non perdere coerenza su sceneggiature lunghe: prima di
 compilare la scena N, ripassa velocemente gli id già usati nelle scene
@@ -97,12 +100,12 @@ compilatore CLI, non riscrivere la scena da zero per un errore di schema.
 
 ```json
 {
-  "ir_version": "1.1.0",
+  "ir_version": "1.2.0",
   "id": "<story_map.id>",
   "title": "<story_map.title>",
   "language": "<story_map.language o \"it\">",
   "global_style": "<story_map.global_style>",
-  "characters": "<story_map.characters>",
+  "characters": "<story_map.characters + i new_characters emessi dallo Stadio B, deduplicati per id>",
   "start_scene": "<story_map.start_scene>",
   "state_flags_schema": "<story_map.state_flags_schema>",
   "inventory_schema": "<story_map.inventory_schema>",

@@ -327,21 +327,41 @@ class Linter {
   // ------------------------------------------------------------ personaggi
 
   checkCharacters(): void {
-    const seen = new Set<string>();
+    const roster = new Set<string>();
     for (const c of this.story.characters ?? []) {
-      if (seen.has(c.id)) this.add('avviso', '', `personaggio duplicato nella roster globale: "${c.id}"`);
-      seen.add(c.id);
+      if (roster.has(c.id)) this.add('avviso', '', `personaggio duplicato nella roster globale: "${c.id}"`);
+      roster.add(c.id);
     }
-    // Nota: uno speaker fuori dalla roster NON e' un errore. I personaggi
-    // occasionali (voci fuori campo, comparse) per scelta architetturale non
-    // stanno nella roster globale.
+
+    // Chi parla deve stare nella roster globale, sempre — anche una voce fuori
+    // campo con una sola battuta. Non e' pignoleria: il modulo assets assegna
+    // il timbro una volta per parlante, e un parlante che esiste solo come
+    // stringa in `speaker` non ha niente a cui agganciare quell'assegnazione.
+    // `narrator` e' l'eccezione: non e' un personaggio, la sua voce sta in
+    // global_style.narrator_voice.
+    const speakers = new Map<string, string>();
+    for (const sc of this.story.scenes) {
+      if (!sc.dialogue_tree) continue;
+      for (const [id, n] of Object.entries(sc.dialogue_tree.nodes)) {
+        if (!n.speaker || n.speaker === 'narrator' || roster.has(n.speaker)) continue;
+        if (!speakers.has(n.speaker)) speakers.set(n.speaker, `${sc.id} / nodo ${id}`);
+      }
+    }
+    for (const [speaker, where] of speakers) {
+      this.add(
+        'errore',
+        where,
+        `lo speaker "${speaker}" non e' nella roster globale: non avra' ne' aspetto ne' voce assegnabili`,
+      );
+    }
+
     for (const sc of this.story.scenes) {
       for (const c of sc.characters ?? []) {
-        if (!seen.has(c.id) && !c.visual_prompt && !c.voice) {
+        if (!roster.has(c.id)) {
           this.add(
-            'avviso',
+            'errore',
             sc.id,
-            `personaggio "${c.id}" in scena non e' nella roster globale e non ha override locali: non ha ne' aspetto ne' voce`,
+            `personaggio "${c.id}" in scena ma non nella roster globale: gli override locali non sostituiscono la scheda globale`,
           );
         }
       }

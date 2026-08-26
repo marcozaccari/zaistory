@@ -36,6 +36,7 @@ test('una storia rotta produce tutti i difetti attesi', () => {
     ['nodo monco', 'errore', 'nodo monco'],
     ['nodo irraggiungibile', 'avviso', 'irraggiungibile'],
     ['dialogo senza ingresso', 'avviso', 'goto_dialogue'],
+    ['speaker fuori dalla roster globale', 'errore', 'lo speaker "voce"'],
   ];
   for (const [nome, level, frag] of casi) {
     assert.ok(has(fs, level, frag), `il linter non ha trovato: ${nome} (cercavo "${frag}" come ${level})`);

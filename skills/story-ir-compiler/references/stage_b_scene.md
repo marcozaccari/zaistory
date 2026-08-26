@@ -148,15 +148,42 @@ scena**. NON stai costruendo un motore verbo×oggetto stile SCUMM classico
   restare coerente col resto della storia; introduci nuovi id solo se la
   scena lo richiede davvero e non è già coperto da uno esistente.
 
-### 6. Personaggi occasionali (voci fuori campo, comparse)
+### 6. Parlanti non previsti dalla story map
 
 Se il testo sorgente ha un parlante non presente nella roster globale
 (`story_context.characters`) — es. "voce fuori campo", "un anziano",
-"il terzo cieco" — NON è un errore e non serve segnalarlo: usalo comunque
-come `speaker` nel dialogue_tree (una stringa id qualsiasi, snake_case, es.
-`voce_anziana`, `il_terzo_cieco`). Se la scena lo richiede visivamente,
-aggiungilo a `characters[]` della scena con un `visual_prompt` locale, senza
-bisogno che esista nella roster globale della story map.
+"il terzo cieco" — usalo come `speaker` nel dialogue_tree con un id
+snake_case (`voce_anziana`, `il_terzo_cieco`), **e insieme alla scena emetti
+la sua scheda per la roster globale**:
+
+```json
+{
+  "scene": { "...": "la Scene compilata" },
+  "new_characters": [
+    {
+      "id": "il_terzo_cieco",
+      "name": "Il terzo cieco",
+      "visual_prompt": "uomo più anziano, secchio ancora sulle spalle, testa inclinata all'ascolto",
+      "voice": { "style_prompt": "voce ferma, poche parole" }
+    }
+  ]
+}
+```
+
+Vanno in `new_characters` **tutti** i parlanti che non trovi già nella roster,
+anche quelli con una sola battuta; il passo di assemblaggio li unirà a
+`characters` deduplicando per `id`. `narrator` è l'unica eccezione: non è un
+personaggio e prende la voce da `global_style.narrator_voice`.
+
+Il perché: il modulo assets assegna il timbro **una volta per parlante**, e un
+parlante che vive solo come stringa in `speaker` non ha niente a cui agganciare
+quell'assegnazione. Il linter del player segnala come errore ogni `speaker`
+fuori dalla roster, quindi una scheda dimenticata viene fuori subito.
+
+`characters[]` della *scena* resta quello che era: l'elenco di chi è presente
+lì, con eventuali override locali di `visual_prompt`/`voice` quando in quella
+scena il personaggio appare o suona diverso. Se non c'è niente da
+sovrascrivere, basta `{"id": "..."}`.
 
 ### 7. scene_tone
 

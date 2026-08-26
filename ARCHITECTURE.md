@@ -71,13 +71,20 @@ Decisioni di design, con il *perché* (per non riscoprirle da capo):
   origine): una sequenza narrata può cambiare inquadratura più volte —
   un'unica immagine di sfondo per scena non basta per un montaggio
   cinematografico con più "fotografie" diverse.
-- **Personaggi occasionali** (voci fuori campo, comparse):
-  NON vanno nella roster globale dei personaggi —
-  lo `speaker` di un nodo di dialogo è già una stringa libera, e una scena
-  può definire personaggi locali (visual/voice override) senza che esistano
-  a livello globale. Importante: questo è un vincolo di *comportamento del
-  compilatore* (va scritto nelle istruzioni/regole), non dello schema dati
-  — lo schema già lo permetteva, mancava solo la guida a usarlo così.
+- **Chi parla sta nella roster globale, sempre** — anche una voce fuori campo
+  con una sola battuta. Regola cambiata rispetto alla prima stesura, che
+  lasciava i personaggi occasionali fuori dalla roster e li definiva solo
+  localmente alla scena. Il motivo del cambio è il modulo assets: la voce si
+  assegna **una volta per parlante** (vedi più sotto), e un parlante che
+  esiste solo come stringa in `speaker` non ha niente a cui agganciare quella
+  assegnazione — resta senza timbro, o ne prende uno diverso a ogni battuta.
+  La roster è l'elenco dei parlanti, non l'elenco dei personaggi importanti.
+  Le scene continuano a poter fare override locali di `visual_prompt`/`voice`:
+  quello che non possono più fare è essere l'unico posto dove un parlante
+  esiste. Come prima, è un vincolo di *comportamento del compilatore*, non
+  dello schema dati — lo schema non è cambiato, e infatti l'IR resta 1.2.0;
+  a farlo rispettare è il linter, che segnala come errore ogni `speaker`
+  fuori dalla roster.
 - **Niente proprietà non previste, in nessun oggetto dell'IR** — vincolo
   architetturale forte: ogni oggetto dell'IR ammette solo i campi definiti,
   nessuno extra. Motivazione: rete di sicurezza contro derive/allucinazioni

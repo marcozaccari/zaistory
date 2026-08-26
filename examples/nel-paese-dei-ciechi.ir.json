@@ -58,6 +58,38 @@
       "voice": {
         "style_prompt": "voce didattica ed entusiasta, come chi annuncia una buona notizia"
       }
+    },
+    {
+      "id": "correa",
+      "name": "Correa",
+      "visual_prompt": "uomo dalle mani morbide e curiose, palpebre chiuse e incavate, tunica di alpaca chiara",
+      "voice": {
+        "style_prompt": "voce lenta e ragionevole, che spiega l'assurdo con perfetta calma"
+      }
+    },
+    {
+      "id": "il_terzo_cieco",
+      "name": "Il terzo cieco",
+      "visual_prompt": "uomo più anziano, secchio ancora sulle spalle, testa inclinata all'ascolto",
+      "voice": {
+        "style_prompt": "voce ferma, poche parole"
+      }
+    },
+    {
+      "id": "anziano",
+      "name": "Anziano",
+      "visual_prompt": "uomo molto vecchio seduto su una panca di pietra, mani ferme sulle ginocchia, palpebre chiuse e incavate",
+      "voice": {
+        "style_prompt": "voce lenta e paziente, di chi spiega una cosa ovvia a un bambino"
+      }
+    },
+    {
+      "id": "voce_cieca",
+      "name": "Una voce fra i ciechi",
+      "visual_prompt": "figura di cieco appena distinguibile contro il muro di cinta, palpebre chiuse e incavate, testa girata di lato per ascoltare, tunica di alpaca chiara, mani abbandonate lungo i fianchi",
+      "voice": {
+        "style_prompt": "voce piatta e paziente, che interroga senza curiosita, come chi ripete una formula gia nota"
+      }
     }
   ],
   "start_scene": "prologo_la_valle",
@@ -352,18 +384,10 @@
           "id": "pedro"
         },
         {
-          "id": "correa",
-          "visual_prompt": "uomo dalle mani morbide e curiose, palpebre chiuse e incavate, tunica di alpaca chiara",
-          "voice": {
-            "style_prompt": "voce lenta e ragionevole, che spiega l'assurdo con perfetta calma"
-          }
+          "id": "correa"
         },
         {
-          "id": "il_terzo_cieco",
-          "visual_prompt": "uomo più anziano, secchio ancora sulle spalle, testa inclinata all'ascolto",
-          "voice": {
-            "style_prompt": "voce ferma, poche parole"
-          }
+          "id": "il_terzo_cieco"
         }
       ],
       "narration": [
@@ -496,11 +520,7 @@
           "id": "nunez"
         },
         {
-          "id": "anziano",
-          "visual_prompt": "uomo molto vecchio seduto su una panca di pietra, mani ferme sulle ginocchia, palpebre chiuse e incavate",
-          "voice": {
-            "style_prompt": "voce lenta e paziente, di chi spiega una cosa ovvia a un bambino"
-          }
+          "id": "anziano"
         }
       ],
       "narration": [
@@ -857,6 +877,9 @@
       "characters": [
         {
           "id": "nunez"
+        },
+        {
+          "id": "voce_cieca"
         }
       ],
       "narration": [

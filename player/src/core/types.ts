@@ -162,9 +162,10 @@ export function findScene(story: Story, id: string): Scene | undefined {
   return story.scenes.find((s) => s.id === id);
 }
 
-/** Un id assente non e' un errore: per scelta architetturale i personaggi
- * occasionali (voci fuori campo, comparse) non stanno nella roster globale e
- * compaiono solo come stringa nel campo `speaker`. */
+/** Un id assente non fa fallire niente qui — lo `speaker` di un nodo resta una
+ * stringa libera per lo schema — ma e' un difetto: chi parla deve stare nella
+ * roster globale, anche con una sola battuta, altrimenti non ha voce
+ * assegnabile. E' il linter a segnalarlo. */
 export function findCharacter(story: Story, id: string): Character | undefined {
   return story.characters?.find((c) => c.id === id);
 }
