@@ -25,6 +25,7 @@ import {
   type Finding,
 } from '../core/index.js';
 import { Theme, termWidth } from './term.js';
+import { playerVersion } from './version.js';
 import { TermUI } from './ui.js';
 
 const USAGE = `zaiplay - player CLI di test per il motore narrativo ZAiStory
@@ -38,6 +39,7 @@ Opzioni:
   --record FILE      salva la sequenza di id giocata, rigiocabile con --script
   --resolver NOME    backend del resolver: menu (default), claude, locale
   --no-color         niente colori ANSI
+  --version          stampa la versione del player e esce
   --width N          larghezza di riga (default: larghezza del terminale o 80)
 
 Comandi in gioco: :aiuto, :debug, :stato, :flag, :inv, :scena, :storico,
@@ -140,9 +142,17 @@ function printLint(t: Theme, fs: Finding[]): void {
 }
 
 async function main(): Promise<number> {
+  const argv = process.argv.slice(2);
+
+  // Prima di parseArgs: `--version` non vuole un file da giocare.
+  if (argv.some((a) => a === '--version' || a === '-version' || a === '-V')) {
+    console.log(`zaiplay ${playerVersion()}`);
+    return 0;
+  }
+
   let o: Options;
   try {
-    o = parseArgs(process.argv.slice(2));
+    o = parseArgs(argv);
   } catch (err) {
     if (err instanceof UsageError) {
       if (err.message) console.error(err.message);

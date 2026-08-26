@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig, type Plugin } from 'vite';
+
+/** Il numero di versione del player vive solo qui: nel package.json. */
+const version: string = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version;
 
 /**
  * Incolla CSS e JS dentro l'HTML, cosi' la build e' **un solo file**.
@@ -45,6 +49,8 @@ function escapeRe(s: string): string {
 
 export default defineConfig({
   base: './',
+  // Il browser non ha un package.json da leggere: glielo si incolla addosso.
+  define: { __ZAIPLAY_VERSION__: JSON.stringify(version) },
   build: {
     target: 'es2022',
     cssCodeSplit: false,

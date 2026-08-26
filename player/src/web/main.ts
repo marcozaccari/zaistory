@@ -22,6 +22,7 @@ import {
   type Finding,
   type Story,
 } from '../core/index.js';
+import { PLAYER_VERSION } from '../version.js';
 import { $, clear } from './dom.js';
 import { renderPanel, type PanelContext, type Tab } from './panel.js';
 import { WebUI } from './webui.js';
@@ -42,6 +43,8 @@ const panel = $('#panel');
 const panelBody = $('#panel-body');
 const scrim = $('#scrim');
 const lintBadge = $('#lint-badge');
+
+$('#panel-foot').textContent = `zaiplay v${PLAYER_VERSION}`;
 
 let session: Session | undefined;
 let tab: Tab = 'stato';
