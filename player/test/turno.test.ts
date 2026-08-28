@@ -14,6 +14,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  EmbeddingResolver,
   InputLibero,
   LexicalResolver,
   classifica,
@@ -305,6 +306,66 @@ test("un'azione disponibile viene eseguita e dichiara chi l'ha scelta", async ()
   assert.equal(e.kind, 'azione');
   assert.equal(e.actionId, 'accendi');
   assert.equal(e.via, 'lessicale');
+});
+
+// ------------------------------------------------------------- embedding
+
+/**
+ * Un "modello" finto e deterministico: ogni frase diventa un vettore sulle
+ * parole che contiene.
+ *
+ * Non misura la qualita' di nessun embedder — misura la **logica intorno**:
+ * che in ibrido il lessicale parli per primo, che in puro non venga
+ * consultato affatto, e che il fallback lo instradino sempre i vettori. Sono
+ * le tre cose che si possono rompere cambiando il codice, e le uniche che un
+ * test puo' difendere senza scaricare un centinaio di megabyte.
+ */
+function embedFinto(vocabolario: string[]) {
+  return async (testi: string[]): Promise<number[][]> =>
+    testi.map((t) => {
+      const parole = new Set(t.toLowerCase().split(/[^a-zà-ù]+/).filter(Boolean));
+      return vocabolario.map((v) => (parole.has(v) ? 1 : 0));
+    });
+}
+
+const CANDIDATE_EMB = [
+  { id: 'apri_cassa', label: 'Aprire il registratore', aliases: ['apri la cassa'] },
+  { id: 'guarda_porta', label: 'Osservare la porta', aliases: ['guarda la porta'] },
+];
+
+test('in ibrido il lessicale decide per primo e i vettori non lo scavalcano', async () => {
+  // I vettori, da soli, punterebbero altrove: il vocabolario e' fatto apposta
+  // perche' "porta" pesi piu' del verbo.
+  const r = new EmbeddingResolver(embedFinto(['porta', 'cassa', 'apri', 'guarda']), 'ibrido');
+  const res = await r.resolve({ candidates: CANDIDATE_EMB, input: 'apri la cassa', tone: '' });
+  assert.equal(res.actionId, 'apri_cassa');
+  assert.equal(res.via, 'lessicale');
+});
+
+test('in puro decidono i vettori, e il lessicale non viene consultato', async () => {
+  const r = new EmbeddingResolver(embedFinto(['porta', 'cassa', 'apri', 'guarda', 'registratore', 'osservare']), 'puro');
+  const res = await r.resolve({ candidates: CANDIDATE_EMB, input: 'apri la cassa', tone: '' });
+  assert.equal(res.actionId, 'apri_cassa');
+  assert.equal(res.via, 'embedding');
+});
+
+test('senza nessuna candidata vicina si torna a un fallback, scelto dai vettori', async () => {
+  const pool = [
+    { intent: 'generico' as const, text: 'Non succede niente.' },
+    { intent: 'forza' as const, text: 'Non c\'e\' niente da rompere a calci.' },
+  ];
+  const r = new EmbeddingResolver(embedFinto(['calci', 'rompere', 'porta', 'cassa', 'niente', 'succede']), 'puro');
+  const res = await r.resolve({ candidates: CANDIDATE_EMB, input: 'rompere a calci', tone: '', noMatch: pool });
+  assert.equal(res.actionId, '');
+  assert.equal(res.via, 'embedding');
+  assert.match(res.fallback ?? '', /calci/);
+});
+
+test('il nome della modalita dice quale delle tre e', () => {
+  const e = embedFinto(['x']);
+  assert.match(new EmbeddingResolver(e, 'ibrido').name, /lessicale \+/);
+  assert.match(new EmbeddingResolver(e, 'puro').name, /solo vettori/);
+  assert.equal(new LexicalResolver().name, 'lessicale (deterministico, nessun modello)');
 });
 
 // ------------------------------------------------------------- copertura

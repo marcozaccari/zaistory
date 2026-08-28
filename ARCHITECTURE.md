@@ -605,14 +605,24 @@ Vite sono soli strumenti di build).
   1. **lessicale** — matcher deterministico sugli `aliases` scritti in
      compilazione. Zero dipendenze, zero rete, zero byte scaricati, e sta
      dentro il file HTML unico. **È il default** (`--resolver lessicale`).
-  2. **embedding** — vettori locali, ma solo dove sbagliare non costa (vedi
-     sotto). Il modello non è una dipendenza del core: la CLI lo prende da una
-     dipendenza opzionale, il player web da CDN al momento in cui lo si
-     accende, così il file unico resta unico per chi non lo usa.
-  3. **Claude** — via API/sessione. Non ancora implementato: `--resolver
+  2. **ibrido** — lessicale + vettori, con i vettori solo dove il lessicale
+     tace (vedi sotto). **È la modalità con cui si gioca**, quando i vettori
+     si vogliono.
+  3. **embedding** — solo vettori, il lessicale non viene consultato affatto.
+     Non è una modalità di gioco: lì un falso positivo esegue senza nessuna
+     rete di protezione. Serve a **misurare** cosa fa l'embedder da solo, che è
+     l'unico modo di dire quanto stia aggiungendo davvero nell'ibrido invece
+     di limitarsi a confermare quello che il lessicale aveva già preso.
+  4. **Claude** — via API/sessione. Non ancora implementato: `--resolver
      claude` esce con un errore esplicito. Il suo posto naturale non è essere
      il backend di gioco ma **l'oracolo di riferimento**: si fa girare lo
-     stesso set di frasi di prova sui tre e si misura quanto si perde.
+     stesso set di frasi di prova su tutte e si misura quanto si perde.
+
+  Che le tre modalità siano separate e non un interruttore è il punto: senza
+  `embedding` puro non c'è modo di sapere se l'ibrido stia guadagnando o solo
+  costando, perché nell'ibrido i vettori parlano *solo* dove il lessicale ha
+  già rinunciato, e da lì non si vede la differenza fra "ha aggiunto poco" e
+  "non era mai il suo turno".
 
   Il backend si sceglie all'avvio; nel player web anche a partita in corso,
   dalla scheda **resolver** del pannello, che è dove va guardato: non è stato

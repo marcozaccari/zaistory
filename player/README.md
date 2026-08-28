@@ -244,41 +244,50 @@ un resolver non genera mai un effetto di sua iniziativa, e **non genera mai
 nemmeno il testo del fallback** — lo sceglie fra quelli che l'autore ha scritto
 in `no_match_narration`.
 
-Backend, si sceglie con `--resolver`:
+Modalità, si sceglie con `--resolver` (o dalla scheda **resolver** del
+pannello, nel player web):
 
-1. `lessicale` *(default)* — matcher deterministico sugli `aliases` scritti in
-   compilazione. Zero dipendenze, zero rete, zero byte scaricati. Gli alias
-   *sono* la sua copertura: un'azione con tre alias è un'azione che quasi
-   nessuno riuscirà a chiedere.
-2. `embedding` — vettori locali. Il modello non è una dipendenza del player: la
-   CLI lo prende da una dipendenza opzionale (`npm i --no-save
-   @huggingface/transformers`), il player web da CDN al momento in cui lo si
-   accende dalla scheda **resolver** del pannello. Chi non lo usa non scarica
-   niente, e il file HTML unico resta unico.
+| modalità | a cosa serve |
+|---|---|
+| `lessicale` *(default)* | giocare. Deterministico, nessun modello, nessuna rete, nessun byte scaricato |
+| `ibrido` | giocare con i vettori: il lessicale decide, i vettori intervengono dove tace |
+| `embedding` | **misurare**, non giocare: i vettori decidono da soli, senza rete di protezione |
+| `claude` | non ancora implementato |
 
-   Quella scheda espone i tre indirizzi da cui il backend dipende — la
-   libreria, il modello, l'host dei pesi — perché è sempre uno di quei tre a
-   fallire, e senza poterli cambiare l'unica diagnosi possibile è «Failed to
-   fetch». Servono anche per puntare a un mirror interno o a una copia servita
-   in locale.
+Che `embedding` puro esista separato dall'ibrido non è pignoleria: nell'ibrido i
+vettori parlano solo dove il lessicale ha già rinunciato, e da lì non si
+distingue «ha aggiunto poco» da «non era mai il suo turno». Per saperlo bisogna
+farli decidere da soli su tutto.
 
-   **Dove il backend a vettori non funziona, e perché.** Da `file://` il
-   browser tratta la pagina come origine opaca e le richieste esterne cadono;
-   nella pagina *pubblicata* non passa nessuna richiesta verso l'esterno per
-   politica del sito. In tutti e due i casi la libreria o il modello non
-   arrivano, e il player lo dice a parole invece di lasciare l'errore grezzo,
-   restando sul lessicale. Servito da http è una pagina web come un'altra e
-   funziona: è esattamente il motivo per cui esiste `npm run serve`.
-3. `claude` — via API. Non ancora implementato.
+Gli alias *sono* la copertura del lessicale: un'azione con tre alias è
+un'azione che quasi nessuno riuscirà a chiedere. Il modello non è una
+dipendenza del player: la CLI lo prende da una dipendenza opzionale (`npm i
+--no-save @huggingface/transformers`), il player web da CDN al momento in cui
+lo si accende. Chi non lo usa non scarica niente, e il file HTML unico resta
+unico.
+
+La scheda **resolver** del pannello espone anche i tre indirizzi da cui i
+vettori dipendono — la libreria, il modello, l'host dei pesi — perché è sempre
+uno di quei tre a fallire, e senza poterli cambiare l'unica diagnosi possibile
+è «Failed to fetch». Servono anche per puntare a un mirror interno o a una
+copia servita in locale.
+
+**Dove i vettori non funzionano, e perché.** Da `file://` il browser tratta la
+pagina come origine opaca e le richieste esterne cadono; nella pagina
+*pubblicata* non passa nessuna richiesta verso l'esterno per politica del sito.
+In tutti e due i casi la libreria o il modello non arrivano, e il player lo
+dice a parole invece di lasciare l'errore grezzo, restando sul lessicale.
+Servito da http è una pagina web come un'altra e funziona: è esattamente il
+motivo per cui esiste `npm run serve`.
 
 Il backend a menu non c'è più: i test di regressione non passano dal resolver
 (li guida `--script`) e per ispezionare una scena c'è `--debug`, che stampa
 l'elenco delle azioni e accetta il numero della riga.
 
-### Perché l'embedder interviene solo in due punti
+### Perché in `ibrido` i vettori intervengono solo in due punti
 
-I due backend sbagliano in modi diversi, e la divisione del lavoro segue il
-costo dell'errore:
+I due modi di risolvere sbagliano in modi diversi, e la divisione del lavoro
+segue il costo dell'errore:
 
 - il **lessicale** sbaglia **rifiutando**: costa al giocatore una frase
   riscritta;
@@ -317,8 +326,14 @@ della scena.
 
 ```bash
 zaiplay --copertura story.ir.json                       # lessicale
-zaiplay --copertura --resolver embedding story.ir.json  # vettori
+zaiplay --copertura --resolver ibrido story.ir.json     # lessicale + vettori
+zaiplay --copertura --resolver embedding story.ir.json  # solo vettori
 ```
+
+Le tre righe insieme dicono quello che nessuna delle tre dice da sola: quanto
+prende il lessicale, quanto aggiunge l'ibrido sopra di lui, e quanto
+prenderebbero i vettori da soli — cioè se l'ibrido stia guadagnando o solo
+costando.
 
 Passa le `Action.test_phrases` dell'IR al backend e conta quante arrivano
 all'id giusto, distinguendo le **perse** (nessun match) dalle **sbagliate**

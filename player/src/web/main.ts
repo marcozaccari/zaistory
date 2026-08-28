@@ -76,16 +76,16 @@ let configEmbedder: ConfigEmbedder = { ...CONFIG_DEFAULT };
 async function scegliResolver(nome: string, riprova = false): Promise<void> {
   if (nome === nomeResolver && !riprova) return;
   try {
-    if (nome === 'embedding') {
-      statoResolver = 'attivo il backend a vettori…';
+    if (nome === 'lessicale') {
+      resolver = new LexicalResolver();
+    } else {
+      statoResolver = 'attivo i vettori…';
       refreshPanel();
       const { embed, etichetta } = await caricaEmbedder(configEmbedder, (m) => {
         statoResolver = m;
         refreshPanel();
       });
-      resolver = makeResolver('embedding', { embed, modello: etichetta });
-    } else {
-      resolver = new LexicalResolver();
+      resolver = makeResolver(nome, { embed, modello: etichetta });
     }
     nomeResolver = nome;
     statoResolver = '';
@@ -158,7 +158,9 @@ function panelContext(s: Session): PanelContext {
     onResolver: (nome) => void scegliResolver(nome),
     onConfigEmbedder: (c) => {
       configEmbedder = c;
-      void scegliResolver('embedding', true);
+      // Si riprova con la modalita' che l'utente aveva scelto; se non ne aveva
+      // scelta nessuna coi vettori, l'ibrido e' quella con cui si gioca.
+      void scegliResolver(nomeResolver === 'lessicale' ? 'ibrido' : nomeResolver, true);
     },
     onResetEmbedder: () => {
       configEmbedder = { ...CONFIG_DEFAULT };

@@ -85,10 +85,24 @@ function chips(values: string[], vuoto: string): HTMLElement {
  * poterli cambiare l'unica diagnosi che arriva all'utente e' "Failed to fetch".
  */
 function renderResolver(body: HTMLElement, ctx: PanelContext): void {
-  body.append(el('h3', undefined, 'backend'));
+  const MODI: Array<[string, string, string]> = [
+    ['lessicale', 'lessicale', 'Deterministico, nessun modello, nessuna rete, nessun byte scaricato.'],
+    [
+      'ibrido',
+      'lessicale + embedding',
+      "Il lessicale decide; i vettori intervengono solo dove tace, e sempre nella scelta del fallback — dove sbagliare non costa niente. E' la modalita' con cui si gioca.",
+    ],
+    [
+      'embedding',
+      'solo embedding',
+      "I vettori decidono da soli. Serve a misurare cosa farebbero senza rete di protezione, non a far giocare qualcuno: qui un falso positivo esegue.",
+    ],
+  ];
+
+  body.append(el('h3', undefined, 'modalita'));
   const riga = el('div', 'chips');
-  for (const nome of ['lessicale', 'embedding'] as const) {
-    const b = el('button', `chip scelta${ctx.resolver === nome ? ' on' : ''}`, nome);
+  for (const [nome, etichetta] of MODI) {
+    const b = el('button', `chip scelta${ctx.resolver === nome ? ' on' : ''}`, etichetta);
     b.onclick = async () => {
       if (ctx.resolver === nome) return;
       await premi(b);
@@ -97,15 +111,7 @@ function renderResolver(body: HTMLElement, ctx: PanelContext): void {
     riga.append(b);
   }
   body.append(riga);
-  body.append(
-    el(
-      'p',
-      'empty',
-      ctx.resolver === 'embedding'
-        ? "I vettori intervengono solo dove il lessicale tace, e sempre nella scelta del fallback: dove sbagliare non costa niente."
-        : 'Deterministico, nessun modello, nessuna rete, nessun byte scaricato.',
-    ),
-  );
+  body.append(el('p', 'empty', MODI.find(([n]) => n === ctx.resolver)?.[2] ?? ''));
 
   if (ctx.statoResolver) {
     body.append(el('p', 'stato-resolver', ctx.statoResolver));
@@ -113,7 +119,7 @@ function renderResolver(body: HTMLElement, ctx: PanelContext): void {
 
   body.append(el('h3', undefined, 'da dove viene il modello'));
   body.append(
-    el('p', 'empty', "Serve solo al backend a vettori. Cambiarli e premere «attiva» rifa il tentativo."),
+    el('p', 'empty', "Serve alle due modalita' con i vettori. Cambiarli e premere «attiva» rifa il tentativo."),
   );
 
   const campi: Array<[keyof ConfigEmbedder, string, string]> = [

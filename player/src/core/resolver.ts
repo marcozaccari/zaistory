@@ -294,10 +294,23 @@ export type Embed = (testi: string[]) => Promise<number[][]>;
 export const SOGLIA_EMBEDDING = 0.72;
 
 /**
- * Backend 3: embedding locali, ma **solo dove sbagliare non costa**.
+ * Come i vettori si mettono accanto al lessicale.
  *
- * Non e' una cascata ingenua. Il lessicale ha sempre la precedenza sulla
- * risoluzione di un'azione, e l'embedder interviene in due punti soltanto:
+ * - `ibrido` — il lessicale decide, i vettori intervengono solo dove tace.
+ *   E' la modalita' con cui si **gioca**.
+ * - `puro` — i vettori decidono da soli, il lessicale non viene consultato.
+ *   E' la modalita' con cui si **misura**: serve a sapere cosa farebbe
+ *   l'embedder da solo, che e' l'unico modo di dire quanto sta aggiungendo
+ *   davvero nell'ibrido invece di limitarsi a confermare.
+ */
+export type ModoEmbedding = 'ibrido' | 'puro';
+
+/**
+ * Backend 3: embedding locali.
+ *
+ * In `ibrido` non e' una cascata ingenua. Il lessicale ha sempre la precedenza
+ * sulla risoluzione di un'azione, e l'embedder interviene in due punti
+ * soltanto:
  *
  * 1. **dove il lessicale e' muto** — nessuna candidata sopra la soglia — e
  *    solo se la similarita' e' alta. E' la zona grigia: le parafrasi legittime
@@ -314,6 +327,9 @@ export const SOGLIA_EMBEDDING = 0.72;
  *
  * In una riga: embedding dove sbagliare non costa niente, lessicale dove
  * sbagliare cambia lo stato.
+ *
+ * In `puro` quella prudenza non c'e', ed e' voluto: si vuole vedere l'errore,
+ * non evitarlo. Non e' la modalita' con cui far giocare qualcuno.
  */
 export class EmbeddingResolver implements Resolver {
   readonly name: string;
@@ -323,55 +339,51 @@ export class EmbeddingResolver implements Resolver {
 
   constructor(
     private embed: Embed,
+    private modo: ModoEmbedding = 'ibrido',
     etichetta = 'embedding',
   ) {
-    this.name = `${etichetta} (lessicale + vettori, solo dove il lessicale tace)`;
+    this.name =
+      modo === 'ibrido'
+        ? `lessicale + ${etichetta} (i vettori solo dove il lessicale tace)`
+        : `${etichetta} (solo vettori, nessun lessicale)`;
   }
 
   async resolve(req: ResolveRequest): Promise<ResolveResult> {
-    const lessicale = this.base.decidi(req);
-    if (lessicale.actionId) return lessicale; // il lessicale ha deciso: non si tocca
+    if (req.input.trim() === '') return { actionId: '', via: 'embedding' };
 
-    // Zona grigia. Si prova solo quando il lessicale e' muto per debolezza, non
-    // quando lo e' per ambiguita': se due azioni se la giocano alla pari, il
-    // problema non e' che manchi comprensione, e aggiungerne non lo risolve.
-    const ambigua = (lessicale.score ?? 0) >= ACCETTA;
-    let esito: ResolveResult = { ...lessicale, via: 'lessicale' };
+    // Nell'ibrido il lessicale parla per primo, e se ha deciso non si tocca.
+    const lessicale = this.modo === 'ibrido' ? this.base.decidi(req) : undefined;
+    if (lessicale?.actionId) return lessicale;
+
+    // Si prova con i vettori solo quando il lessicale e' muto per debolezza,
+    // non per ambiguita': se due azioni se la giocano alla pari il problema non
+    // e' che manchi comprensione, e aggiungerne non lo risolve. Nel modo puro
+    // non c'e' nessun lessicale da cui ereditare l'ambiguita'.
+    const ambigua = this.modo === 'ibrido' && (lessicale?.score ?? 0) >= ACCETTA;
+    let esito: ResolveResult = lessicale
+      ? { ...lessicale, via: 'lessicale' }
+      : { actionId: '', via: 'embedding', intent: classificaIntento(req.input) };
 
     if (!ambigua && req.candidates.length > 0) {
-      const frasi = req.candidates.map((c) => superfici(c, req.world).join('. '));
-      const vettori = await this.vettori([req.input, ...frasi]);
-      const q = vettori[0];
-      let migliore = -1;
-      let secondo = -1;
-      let vincitore = '';
-      req.candidates.forEach((c, i) => {
-        const s = coseno(q, vettori[i + 1]);
-        if (s > migliore) {
-          secondo = migliore;
-          migliore = s;
-          vincitore = c.id;
-        } else if (s > secondo) {
-          secondo = s;
-        }
-      });
-      if (migliore >= SOGLIA_EMBEDDING && migliore - Math.max(secondo, 0) >= MARGINE) {
+      const { id, migliore, secondo } = await this.vicina(req);
+      if (id && migliore >= SOGLIA_EMBEDDING && migliore - Math.max(secondo, 0) >= MARGINE) {
         return {
-          actionId: vincitore,
+          actionId: id,
           via: 'embedding',
           score: migliore,
           runnerUp: secondo,
-          why: `lessicale muto (${(lessicale.score ?? 0).toFixed(2)}), embedding ${migliore.toFixed(2)}`,
+          why:
+            this.modo === 'ibrido'
+              ? `lessicale muto (${(lessicale?.score ?? 0).toFixed(2)}), embedding ${migliore.toFixed(2)}`
+              : `embedding ${migliore.toFixed(2)} (secondo ${secondo.toFixed(2)})`,
         };
       }
-      esito = {
-        ...esito,
-        why: `${lessicale.why}; embedding ${migliore.toFixed(2)} sotto ${SOGLIA_EMBEDDING}`,
-      };
+      const perche = `embedding ${migliore.toFixed(2)} sotto ${SOGLIA_EMBEDDING}`;
+      esito = { ...esito, why: esito.why ? `${esito.why}; ${perche}` : perche };
     }
 
-    // Instradamento del fallback: qui l'embedder decide sempre, perche' qui
-    // sbagliare non costa niente.
+    // Instradamento del fallback: qui l'embedder decide sempre, in tutte e due
+    // le modalita', perche' qui sbagliare non costa niente.
     const pool = req.noMatch ?? [];
     if (pool.length > 1) {
       const vettori = await this.vettori([req.input, ...pool.map((n) => n.text)]);
@@ -385,9 +397,39 @@ export class EmbeddingResolver implements Resolver {
           scelto = n;
         }
       });
-      return { ...esito, via: 'embedding', fallback: scelto.text, intent: scelto.intent, why: `${esito.why}; fallback per vettore ${migliore.toFixed(2)}` };
+      return {
+        ...esito,
+        via: 'embedding',
+        fallback: scelto.text,
+        intent: scelto.intent,
+        why: `${esito.why ?? ''}; fallback per vettore ${migliore.toFixed(2)}`,
+      };
+    }
+    if (!esito.fallback && esito.intent) {
+      esito = { ...esito, fallback: scegliFallback(req.noMatch, esito.intent, req.giro ?? 0) };
     }
     return esito;
+  }
+
+  /** La candidata piu' vicina alla frase, e quanto stacca la seconda. */
+  private async vicina(req: ResolveRequest): Promise<{ id: string; migliore: number; secondo: number }> {
+    const frasi = req.candidates.map((c) => superfici(c, req.world).join('. '));
+    const vettori = await this.vettori([req.input, ...frasi]);
+    const q = vettori[0];
+    let migliore = -1;
+    let secondo = -1;
+    let id = '';
+    req.candidates.forEach((c, i) => {
+      const s = coseno(q, vettori[i + 1]);
+      if (s > migliore) {
+        secondo = migliore;
+        migliore = s;
+        id = c.id;
+      } else if (s > secondo) {
+        secondo = s;
+      }
+    });
+    return { id, migliore, secondo };
   }
 
   /** Vettori con memoria: le superfici delle candidate tornano identiche a
@@ -419,12 +461,16 @@ export function coseno(a: number[], b: number[]): number {
 // ----------------------------------------------------------------- scelta
 
 export interface ResolverOptions {
-  /** Necessaria per il backend a embedding, che il core non sa costruire da
-   * solo: il modello lo procura chi costruisce il player. */
+  /** Necessaria per i backend a vettori, che il core non sa costruire da solo:
+   * il modello lo procura chi costruisce il player. */
   embed?: Embed;
   /** Etichetta del modello, per il nome mostrato all'avvio. */
   modello?: string;
 }
+
+/** I nomi con cui si sceglie una modalita'. */
+export const MODALITA = ['lessicale', 'embedding', 'ibrido'] as const;
+export type Modalita = (typeof MODALITA)[number];
 
 export function makeResolver(name: string, o: ResolverOptions = {}): Resolver {
   switch (name.toLowerCase()) {
@@ -435,17 +481,25 @@ export function makeResolver(name: string, o: ResolverOptions = {}): Resolver {
     case 'embedding':
     case 'embed':
     case 'vettori':
-      if (!o.embed) {
-        throw new Error(
-          'il backend "embedding" ha bisogno di una funzione di embedding: la CLI la prende da una dipendenza opzionale, il player web da CDN',
-        );
-      }
-      return new EmbeddingResolver(o.embed, o.modello ?? 'embedding');
+      return new EmbeddingResolver(vuoleEmbed(o, name), 'puro', o.modello ?? 'embedding');
+    case 'ibrido':
+    case 'lessicale+embedding':
+    case 'misto':
+      return new EmbeddingResolver(vuoleEmbed(o, name), 'ibrido', o.modello ?? 'embedding');
     case 'claude':
       throw new Error(
         `il backend resolver "${name}" e' previsto dall'architettura ma non ancora implementato: per ora usa --resolver lessicale`,
       );
     default:
-      throw new Error(`resolver sconosciuto "${name}" (lessicale, embedding, claude)`);
+      throw new Error(`resolver sconosciuto "${name}" (${MODALITA.join(', ')}, claude)`);
   }
+}
+
+function vuoleEmbed(o: ResolverOptions, name: string): Embed {
+  if (!o.embed) {
+    throw new Error(
+      `il backend "${name}" ha bisogno di una funzione di embedding: la CLI la prende da una dipendenza opzionale, il player web da CDN`,
+    );
+  }
+  return o.embed;
 }

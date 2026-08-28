@@ -49,7 +49,10 @@ Opzioni:
                      giusta con il resolver scelto, e esce
   --script FILE      rigioca una sequenza di id senza input umano (test di regressione)
   --record FILE      salva la sequenza di id giocata, rigiocabile con --script
-  --resolver NOME    backend: lessicale (default), embedding, claude
+  --resolver NOME    modalita': lessicale (default), embedding, ibrido, claude
+                     'lessicale'  deterministico, nessun modello
+                     'embedding'  solo vettori — serve a misurare, non a giocare
+                     'ibrido'     lessicale + vettori dove il lessicale tace
   --embed-model ID   modello per --resolver embedding
                      (default: ${MODELLO_DEFAULT})
   --no-color         niente colori ANSI
@@ -174,9 +177,10 @@ function printLint(t: Theme, fs: Finding[]): void {
  */
 async function costruisciResolver(o: Options): Promise<Resolver> {
   const nome = o.resolver.toLowerCase();
-  if (nome === 'embedding' || nome === 'embed' || nome === 'vettori') {
+  const conVettori = ['embedding', 'embed', 'vettori', 'ibrido', 'lessicale+embedding', 'misto'];
+  if (conVettori.includes(nome)) {
     const { embed, etichetta } = await caricaEmbedder(o.embedModel || MODELLO_DEFAULT);
-    return makeResolver('embedding', { embed, modello: etichetta });
+    return makeResolver(nome, { embed, modello: etichetta });
   }
   return makeResolver(o.resolver);
 }
