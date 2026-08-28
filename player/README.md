@@ -170,6 +170,13 @@ tap-to-continue.
 
 ## Script di playthrough
 
+Nel player web la stessa traccia è anche un **salvataggio**: si incolla nella
+scheda «traccia» del pannello, viene rigiocata in un istante, e poi il gioco
+continua da lì. La traccia riprende a crescere mentre si gioca, quindi si può
+ricopiare e risalvare quando si vuole. In CLI no, e non è una svista: lì una
+traccia che si esaurisce prima del finale è un test fallito e fa uscire con 1.
+
+
 Poiché il resolver può solo scegliere tra azioni già definite, una partita è
 interamente descritta dalla sequenza di id di azione/scelta. Un file di
 playthrough è quella sequenza, una voce per riga:
@@ -196,6 +203,92 @@ filtrata da una condizione (regressione nella storia).
 
 Lo stesso file si incolla nella scheda `traccia` del player web.
 
+### Quando la scena è finita
+
+Le azioni non si elencano — si gioca scrivendo — ma quando in una scena non
+resta più niente da fare **e l'uscita è una sola**, quella compare come chip,
+con la label che le ha dato l'autore. «Niente da fare» vuol dire: ogni azione
+disponibile che non sia un'uscita è già stata eseguita, oppure è pura
+osservazione (narrazione e suono, nessun flag, nessun oggetto, nessun dialogo).
+
+Il vincolo dell'uscita unica non è prudenza: una scena il cui unico contenuto è
+un bivio — quattro azioni che portano tutte fuori — soddisfa «non resta niente
+da fare» fin dal primo istante, e mostrarle tutte vuol dire stampare il menu
+delle scelte.
+
+È l'unica parte del dock che la modalità ascolto recita.
+
+### Diagnostiche
+
+Dove l'IR non ha il testo che servirebbe, il player ripiega sul fallback
+d'autore e mette la nota fra parentesi **sotto il debug**: chi gioca non legge
+mai un messaggio di errore al posto della storia. Il segnale non si perde — il
+linter le elenca tutte prima ancora di giocare, come avvisi.
+
+Diverso `problem()`, che si vede sempre: quello segnala un IR **rotto** (un
+`goto` verso un id che non esiste), non una prosa che manca, e lì non c'è
+niente da leggere al suo posto.
+
+### Oggetti che si hanno in mano
+
+Se una frase non trova né un'azione né un verbo del player, ma **nomina un
+oggetto dell'inventario**, si legge la sua descrizione invece del fallback per
+intenzione:
+
+```
+· usa il walkie
+Un apparecchio da cantiere, plastica gialla sbucciata. E' spento: la barretta
+della batteria e' vuota da prima che la storia cominciasse, e un
+caricabatterie lei non ce l'ha.
+```
+
+Sono entrambi testi d'autore, ma il fallback è scritto per l'intenzione e della
+cosa appena nominata non sa niente. La precedenza resta quella di sempre:
+un'azione della scena vince.
+
+### «Cosa posso fare?»
+
+Un verbo del player, come «guardati intorno». Risponde con i **bersagli** delle
+azioni disponibili — gli oggetti e le persone su cui la scena risponde, con il
+loro nome d'autore — non con le azioni:
+
+```
+· cosa posso fare
+In gioco: la cassa di legno e Tommy.
+```
+
+Dice dove guardare, non cosa fare: l'enigma resta intero. Restano fuori i
+bersagli delle azioni ancora bloccate da una condizione, il protagonista, e i
+`target` generici (`"ambiente"`).
+
+La risposta somma due pezzi: il `look` della scena **com'è adesso**
+(`look_variants` comprese) e i bersagli delle azioni disponibili. Il `look` è
+quello che porta l'indizio, perché è l'unico testo che cambia con lo stato, ed è
+dove l'autore nomina le cose della stanza. Così un IR conforme non produce mai
+una nota diagnostica — quelle restano per i buchi veri, non per i campi che lo
+schema lascia opzionali.
+
+È anche l'unica frase consultata **prima** del resolver: non è un tentativo di
+agire sul mondo ed è l'unico modo di garantire che chiedere aiuto non faccia
+partire un'azione. Conseguenza: una storia non può avere un'azione chiamata
+esattamente «aiuto».
+
+Si riconosce da: «cosa posso fare», «che si fa adesso», «aiuto», «sono
+bloccato», «non so cosa fare», «suggerimento», «suggeriscimi qualcosa». Con un
+complemento non vale più — «cosa posso fare con la leva» è un'azione della
+scena, e scipparla all'autore sarebbe peggio del non capirla.
+
+### Didascalie nei dialoghi
+
+Un nodo con `speaker: "narrator"` non è una battuta: è la didascalia, quella che
+nella sceneggiatura sta fra due battute e dice cosa succede mentre si parla. Si
+legge come prosa, senza nome davanti — e in modalità ascolto si sente senza
+«Narratore» in testa.
+
+Un dialogo a cui sono state tolte si gioca benissimo e nessuno se ne accorge
+finché non lo legge: le battute ci sono tutte, i playthrough passano. Per questo
+il linter conta il rapporto fra nodi e descrizioni e lo segnala.
+
 ## Linter
 
 `--lint` (o la scheda `linter`) esegue i controlli statici che la validazione
@@ -218,7 +311,7 @@ gioca bene. Per quello serve giocarla.
 ```
 src/core/     engine, stato, Effect/Condition, linter, resolver, lettura strict dell'IR
               (nessun DOM, nessun stdin: e' il pezzo condiviso)
-src/web/      player web: transcript, chip, pannello di debug
+src/web/      player web: transcript, chip, pannello, modalita' ascolto
 src/cli/      terminale interattivo, esecutore di script, colori e wrap
 scripts/      embed.mjs: incorpora un IR nella build web
 test/         test di engine, linter e lettura dell'IR
@@ -233,6 +326,51 @@ Due vincoli architetturali si vedono direttamente nel codice:
 - **la lettura dell'IR è severa**: un campo non previsto dallo schema fa
   fallire il caricamento, esattamente come `additionalProperties: false` lato
   JSON Schema. Il player è anche un test di conformità dell'IR.
+
+## Modalità ascolto
+
+La stessa storia recitata invece che letta, per giocarla senza guardare lo
+schermo. Si accende dalla scheda **ascolto** del pannello. Usa la sintesi
+vocale del browser (`speechSynthesis`): nessuna dipendenza, e funziona anche
+nel file HTML autonomo aperto da `file://`.
+
+Cosa recita: narrazione, battute con chi le dice, esito dei comandi, scelte di
+dialogo — e la **descrizione di ciò che si vedrebbe**, cioè i prompt delle
+immagini. Finché l'immagine non esiste, il suo prompt letto ad alta voce *è*
+l'immagine.
+
+Le regole che la rendono ascoltabile:
+
+- **si collassa come a schermo**: la prima volta la composizione per intero
+  (luogo, inquadratura, aspetto dei personaggi), dalla seconda solo i nomi
+  dell'ambiente e dei personaggi. Una scena nuova nello stesso luogo dice la
+  sua inquadratura senza ridescrivere il luogo;
+- **«guardati intorno» riapre tutto**: è il contrappeso del collapse, e non
+  consuma la memoria — la volta dopo si torna a collassare;
+- **il dock non si legge**: né «continua», né le scelte di dialogo, né la chip
+  che hai appena toccato — si recita quello che è successo, non l'interfaccia
+  con cui l'hai chiesto. Si sente invece l'azione riconosciuta da una frase
+  scritta, che è la risposta a «ha capito quello che volevo». Alla fine di una
+  scena il silenzio dice che tocca a te;
+- **avanzamento automatico** (spegnibile): finita la lettura si prosegue da
+  soli, tap-to-continue e unica uscita di una cutscene comprese. Con due azioni
+  disponibili non si prosegue mai da soli.
+
+Nella scheda ci sono anche il flag per recitare **anche suoni e tipi di voce**
+(`ambient_sound_prompt`, `sound_effect_prompt`, `play_sound_prompt`, i
+`VoiceSpec.style_prompt` — spento di default, serve a collaudare la resa sonora
+di un IR senza guardarlo) e la scelta della voce di sistema con velocità, tono
+e volume.
+
+Ogni frase viene spezzata in pezzi da ~11 secondi prima di arrivare alla
+sintesi, sui confini che il testo ha già: Chrome smette di parlare dopo ~15
+secondi di una stessa utterance, e le descrizioni d'ambiente arrivano a 44. Il
+limite scala con la velocità, così rallentare la voce non fa tornare il taglio.
+
+Come ovunque nel player, **niente prosa inventata**: ogni frase recitata sta
+nell'IR. Le uniche parole del player sono le etichette dei campi
+(«Ambiente:», «Personaggio:», «Voce:», «Suono:»), quelle che a schermo stanno
+scritte accanto al valore.
 
 ## Resolver
 
@@ -355,6 +493,11 @@ Le fixture in `testdata/` sono due: `mini.ir.json` è una storia sana che copre
 cutscene, dialogo con scelte, condizioni su flag e inventario, azione non
 ripetibile e scena finale; `rotta.ir.json` contiene un esemplare di ogni bug
 che il linter deve saper trovare.
+
+`test/ascolto.test.ts` fissa la regola del collapse acustico con una voce
+finta: è l'unica parte della modalità ascolto che non si vede, e se sbaglia la
+storia continua a funzionare — diventa solo insopportabile da sentire (il
+paragrafo di un luogo ripetuto a ogni scena) oppure muta al primo ingresso.
 
 Il test end-to-end vero resta il playthrough di riferimento:
 

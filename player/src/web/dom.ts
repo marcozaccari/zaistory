@@ -40,6 +40,21 @@ export function premi(b: HTMLElement): Promise<void> {
   return new Promise((r) => setTimeout(r, DURATA_PRESSIONE));
 }
 
+/**
+ * Vero se l'evento arriva da un campo di testo.
+ *
+ * Serve a ogni scorciatoia da tastiera che vive su `document`: li' le frecce
+ * muovono il cursore, lo spazio scrive uno spazio e l'invio manda la frase, e
+ * una scorciatoia che se li prende rompe l'unica interfaccia che il player ha.
+ * Sta qui e non in un modulo solo perche' se ne servono due — la barra delle
+ * scorciatoie e il tap-to-continue — e due copie divergono.
+ */
+export function staScrivendo(e: Event): boolean {
+  const t = e.target as HTMLElement | null;
+  if (!t) return false;
+  return /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable;
+}
+
 /** Coppia chiave/valore in una <dl class="kv">. */
 export function kv(dl: HTMLElement, key: string, value: string): void {
   dl.append(el('dt', undefined, key), el('dd', undefined, value));

@@ -22,9 +22,10 @@ import {
 } from '../core/index.js';
 import { clear, el, kv, premi } from './dom.js';
 import type { ConfigEmbedder } from './embedder.js';
+import { ASCOLTO_DEFAULT, type Ascolto, type ImpostazioniAscolto } from './ascolto.js';
 import type { WebUI } from './webui.js';
 
-export type Tab = 'stato' | 'scena' | 'linter' | 'traccia' | 'resolver';
+export type Tab = 'stato' | 'scena' | 'linter' | 'traccia' | 'resolver' | 'ascolto';
 
 export interface PanelContext {
   story: Story;
@@ -41,6 +42,9 @@ export interface PanelContext {
   onResolver: (nome: string) => void;
   onConfigEmbedder: (c: ConfigEmbedder) => void;
   onResetEmbedder: () => void;
+  /** La modalita' ascolto e il modo di regolarla a partita in corso. */
+  ascolto: Ascolto;
+  onAscolto: (imp: ImpostazioniAscolto) => void;
 }
 
 export function renderPanel(body: HTMLElement, tab: Tab, ctx: PanelContext): void {
@@ -60,6 +64,9 @@ export function renderPanel(body: HTMLElement, tab: Tab, ctx: PanelContext): voi
       break;
     case 'resolver':
       renderResolver(body, ctx);
+      break;
+    case 'ascolto':
+      renderAscolto(body, ctx);
       break;
   }
 }
@@ -336,7 +343,14 @@ function renderTraccia(body: HTMLElement, ctx: PanelContext): void {
   btns.append(copy, restart, other);
   body.append(btns);
 
-  body.append(el('h3', undefined, 'rigioca uno script'));
+  body.append(el('h3', undefined, 'riprendi una partita'));
+  body.append(
+    el(
+      'p',
+      'empty',
+      "Incolla una traccia — la tua, copiata qui sopra, o quella di qualcun altro. Viene rigiocata in un istante e poi il gioco continua da li': e' cosi' che si riprende una partita. La traccia intanto ricomincia a crescere, quindi si puo' ricopiare e risalvare quando si vuole.",
+    ),
+  );
   const ta = el('textarea');
   ta.rows = 6;
   ta.placeholder = 'a:continua\na:parla_oste\nc:d_chiave\n…';
@@ -350,4 +364,190 @@ function renderTraccia(body: HTMLElement, ctx: PanelContext): void {
     ctx.onReplay(ta.value);
   };
   body.append(go);
+}
+
+/**
+ * Un interruttore: casella, etichetta e sotto la riga che dice cosa cambia.
+ *
+ * La didascalia non e' decorazione. Tre delle quattro caselle di questa scheda
+ * cambiano *cosa si sente*, non quanto forte, e la differenza fra «suoni e
+ * voci» acceso e spento non si indovina dal nome.
+ */
+function interruttore(
+  etichetta: string,
+  aiuto: string,
+  acceso: boolean,
+  cambia: (v: boolean) => void,
+): HTMLElement {
+  const wrap = el('label', 'interruttore');
+  const box = el('input');
+  box.type = 'checkbox';
+  box.checked = acceso;
+  box.onchange = () => cambia(box.checked);
+  const testi = el('span', 'testi');
+  testi.append(el('span', 'gname', etichetta), el('span', 'aiuto', aiuto));
+  wrap.append(box, testi);
+  return wrap;
+}
+
+/**
+ * Un cursore con il suo valore letto accanto.
+ *
+ * Il valore si aggiorna mentre si trascina e la voce lo prende subito: si
+ * regola la velocita' *mentre* la storia parla, che e' l'unico modo di
+ * regolarla — su un numero astratto non si decide niente.
+ */
+function cursore(
+  etichetta: string,
+  min: number,
+  max: number,
+  passo: number,
+  valore: number,
+  cambia: (v: number) => void,
+): HTMLElement {
+  const wrap = el('label', 'cursore');
+  const testa = el('span', 'gname', etichetta);
+  const letto = el('span', 'valore', valore.toFixed(2));
+  testa.append(letto);
+  const range = el('input');
+  range.type = 'range';
+  range.min = String(min);
+  range.max = String(max);
+  range.step = String(passo);
+  range.value = String(valore);
+  range.oninput = () => {
+    const v = Number(range.value);
+    letto.textContent = v.toFixed(2);
+    cambia(v);
+  };
+  wrap.append(testa, range);
+  return wrap;
+}
+
+/**
+ * La scheda della modalita' ascolto.
+ *
+ * Ha una scheda sua per la stessa ragione del resolver: non e' stato di gioco,
+ * e' un modo di giocare. Qui si decide **cosa** si sente (la storia, e in piu'
+ * i prompt di suono e di voce) e **come** (quale voce di sistema, a che
+ * velocita'), che sono due domande diverse e stanno in due blocchi diversi.
+ *
+ * Le modifiche valgono subito, senza un bottone «applica»: si accende la voce
+ * mentre la scena sta parlando e si sente se e' troppo veloce. Un «applica»
+ * costringerebbe a immaginare il risultato invece di sentirlo.
+ */
+function renderAscolto(body: HTMLElement, ctx: PanelContext): void {
+  const a = ctx.ascolto;
+  const imp = a.impostazioni;
+  const applica = (patch: Partial<ImpostazioniAscolto>) => ctx.onAscolto({ ...a.impostazioni, ...patch });
+
+  if (!a.voce.disponibile) {
+    body.append(
+      el(
+        'p',
+        'stato-resolver',
+        "Questo browser non espone la sintesi vocale (speechSynthesis): la modalita' ascolto resterebbe accesa e muta, quindi qui non c'e' niente da regolare.",
+      ),
+    );
+    return;
+  }
+
+  body.append(el('h3', undefined, 'modalita'));
+  body.append(
+    interruttore(
+      'leggi la storia ad alta voce',
+      "Narrazione, battute, esito dei comandi e la descrizione di cio' che si vedrebbe: i prompt delle immagini recitati sono l'immagine, finche' l'immagine non esiste.",
+      imp.attiva,
+      (v) => applica({ attiva: v }),
+    ),
+  );
+
+  body.append(el('h3', undefined, 'cosa recita'));
+  body.append(
+    interruttore(
+      'anche suoni e tipi di voce',
+      "Aggiunge ambient_sound_prompt, sound_effect_prompt, play_sound_prompt e i VoiceSpec.style_prompt. Serve a collaudare la resa sonora di un IR senza guardare; giocando e' una rottura del quarto muro a ogni battuta.",
+      imp.suoniEVoci,
+      (v) => applica({ suoniEVoci: v }),
+    ),
+  );
+  body.append(
+    interruttore(
+      'avanzamento automatico',
+      "Finita la lettura si prosegue da soli, senza cercare «continua» a tentoni. Il bottone resta comunque premibile per tagliare corto.",
+      imp.avanzamento,
+      (v) => applica({ avanzamento: v }),
+    ),
+  );
+
+  body.append(
+    el(
+      'p',
+      'empty',
+      "Si recita quello che succede — narrazione, battute, esito dei comandi — non i bottoni. Chiedendo «guardati intorno» la scena viene ridescritta per intero: la prima visita si sente tutta la composizione, dalle successive solo i nomi dell'ambiente e dei personaggi, e questo e' il modo di riaprirla.",
+    ),
+  );
+
+  // --- come suona.
+  //
+  // Le voci sono quelle installate sul sistema, non una lista del player: su
+  // un telefono sono quattro, su un desktop anche settanta. Quelle della
+  // lingua dell'IR vengono prima, perche' e' l'unico ordinamento che rende
+  // l'elenco usabile senza scorrerlo tutto.
+  body.append(el('h3', undefined, 'voce'));
+
+  const voci = a.voce.voci(a.lingua);
+  const scelta = el('select', 'voce-scelta');
+  const auto = el('option', undefined, 'voce di sistema');
+  auto.value = '';
+  scelta.append(auto);
+  for (const v of voci) {
+    const o = el('option', undefined, `${v.name} · ${v.lang}${v.localService ? '' : ' (rete)'}`);
+    o.value = v.voiceURI;
+    scelta.append(o);
+  }
+  scelta.value = imp.voce;
+  scelta.onchange = () => applica({ voce: scelta.value });
+  const wrapVoce = el('label', 'campo-cfg');
+  wrapVoce.append(el('span', 'gname', 'quale voce'), scelta);
+  if (voci.length === 0) {
+    wrapVoce.append(
+      el('span', 'aiuto', "il browser non ha ancora caricato l'elenco: riapri la scheda fra un istante"),
+    );
+  } else {
+    wrapVoce.append(
+      el('span', 'aiuto', `${voci.length} disponibili; quelle marcate «rete» richiedono la connessione`),
+    );
+  }
+  body.append(wrapVoce);
+
+  body.append(cursore('velocita', 0.5, 2, 0.05, imp.velocita, (v) => applica({ velocita: v })));
+  body.append(cursore('tono', 0, 2, 0.05, imp.tono, (v) => applica({ tono: v })));
+  body.append(cursore('volume', 0, 1, 0.05, imp.volume, (v) => applica({ volume: v })));
+
+  const btns = el('div', 'rowbtns');
+  const prova = el('button', 'btn primary', 'prova');
+  prova.onclick = async () => {
+    await premi(prova);
+    a.prova();
+  };
+  const reset = el('button', 'btn', 'valori di default');
+  reset.onclick = async () => {
+    await premi(reset);
+    // L'interruttore della modalita' non si tocca: e' l'unica di queste voci
+    // che non e' un parametro di resa, e spegnerla premendo «default» sarebbe
+    // una sorpresa.
+    ctx.onAscolto({ ...ASCOLTO_DEFAULT, attiva: a.impostazioni.attiva });
+    renderAscolto(clearBody(body), ctx);
+  };
+  btns.append(prova, reset);
+  body.append(btns);
+}
+
+/** Svuota e restituisce lo stesso nodo: serve al solo caso in cui la scheda
+ * debba ridisegnarsi da sola, cioe' quando e' lei a cambiare i valori che
+ * mostra. */
+function clearBody(body: HTMLElement): HTMLElement {
+  clear(body);
+  return body;
 }

@@ -27,7 +27,9 @@ import type { Resolver, Via } from './resolver.js';
 import type { Story } from './types.js';
 import type { Verbo } from './verbi.js';
 import { noMatchPool } from './types.js';
-import { oggettoDaEsaminare, testoInventario, testoLook, testoOggetto, testoPresenti, verboDelPlayer } from './verbi.js';
+import { classificaIntento } from './lexical.js';
+import { scegliFallback } from './resolver.js';
+import { isDomandaDiAiuto, oggettoDaEsaminare, oggettoNominato, testoAiuto, testoInventario, testoLook, testoOggetto, testoPresenti, verboDelPlayer } from './verbi.js';
 
 export type EsitoKind = 'azione' | 'bloccata' | 'verbo' | 'niente';
 
@@ -69,6 +71,26 @@ export class InputLibero {
   async risolvi(p: ActionPrompt, input: string): Promise<EsitoTurno> {
     if (input.trim() === '') return { kind: 'niente' };
 
+    // «Cosa posso fare?» prima di tutto, ed e' l'unica eccezione all'ordine
+    // dichiarato qui sopra.
+    //
+    // Non e' un tentativo di agire sul mondo, e' una domanda
+    // sull'interfaccia — e trattarla come una frase qualunque significava
+    // lasciarla somigliare agli alias di un'azione e farla partire: su "Metal
+    // Head" capitava in 5 scene su 43, e in una di quelle il giocatore che
+    // chiedeva aiuto sparava al tetto del furgone. Una domanda non puo'
+    // applicare un `Effect`.
+    if (isDomandaDiAiuto(input)) {
+      const soddisfaSubito = (c?: Parameters<typeof p.state.meets>[0]) => p.state.meets(c).ok;
+      const testo = testoAiuto(this.story, p.scene, p.available, soddisfaSubito);
+      return {
+        kind: 'verbo',
+        verbo: 'aiuto',
+        testo,
+        nota: buco(`la scena "${p.scene.id}" non risponde a "aiuto"`, 'look', testo),
+      };
+    }
+
     // Le azioni filtrate da una condizione entrano fra le candidate: e' la
     // differenza fra un menu e una conversazione. Quelle gia' consumate pure,
     // ma senza testo d'autore — la risposta li' e' una nota, non narrazione.
@@ -104,16 +126,40 @@ export class InputLibero {
       // Azione esistente ma non eseguibile adesso. Il player mostra il testo
       // d'autore e non applica NIENTE: nessun flag, nessuna transizione,
       // nessun oggetto. L'engine non la vede nemmeno passare.
+      //
+      // Ma solo se e' una **condizione** a fermarla: li' `blocked_narration`
+      // e' la risposta prevista, e la sua assenza e' un buco vero. Un'azione
+      // gia' usata e' un'altra cosa — lo schema non ha un campo per «l'hai
+      // gia' fatto» e non deve averlo — quindi li' non si accusa l'IR di
+      // niente e si prosegue: risponderanno i verbi del player o il fallback
+      // d'autore, che sono comunque testo scritto da qualcuno. Il motivo
+      // resta in `why`, dove il collaudo lo legge.
       const nascosta = p.hidden.find((h) => h.action.id === res.actionId);
-      this.giro++;
-      return {
-        kind: 'bloccata',
-        actionId: res.actionId,
-        testo: nascosta?.action.blocked_narration,
-        nota: buco(`l'azione "${res.actionId}" non e' disponibile ora`, 'blocked_narration', nascosta?.action.blocked_narration),
-        via: res.via,
-        why: res.why,
-      };
+      if (nascosta?.perche !== 'gia-usata') {
+        this.giro++;
+        // Se l'autore la `blocked_narration` non l'ha scritta, si ripiega sul
+        // fallback per intenzione. E' comunque testo suo, ed e' molto meglio
+        // di niente: la nota resta, ma come diagnostica — chi gioca non deve
+        // leggere un messaggio di errore al posto della storia.
+        const scritto = nascosta?.action.blocked_narration;
+        const ripiego =
+          scritto ?? scegliFallback(noMatchPool(this.story, p.scene), classificaIntento(input), this.giro);
+        return {
+          kind: 'bloccata',
+          actionId: res.actionId,
+          testo: ripiego,
+          nota: buco(`l'azione "${res.actionId}" non e' disponibile ora`, 'blocked_narration', scritto),
+          via: res.via,
+          why: res.why,
+        };
+      }
+      // Il resolver aveva trovato un'azione, quindi non aveva scelto nessun
+      // fallback: da qui in poi si prosegue come se quella frase non avesse
+      // fatto match, e il fallback va scelto adesso.
+      res.why = `${res.why ? res.why + ' · ' : ''}azione "${res.actionId}" gia' usata`;
+      res.intent = res.intent ?? classificaIntento(input);
+      res.fallback = res.fallback ?? scegliFallback(noMatchPool(this.story, p.scene), res.intent, this.giro);
+      res.actionId = '';
     }
 
     // Nessuna azione. Ora, e solo ora, i verbi del player.
@@ -143,15 +189,35 @@ export class InputLibero {
           ? testoLook(p.scene, soddisfa)
           : verbo === 'inventario'
             ? testoInventario(this.story, p.state.inventory, giro)
-            : testoPresenti(this.story, p.scene, giro);
+            : verbo === 'aiuto'
+              ? testoAiuto(this.story, p.scene, p.available, soddisfa)
+              : testoPresenti(this.story, p.scene, giro);
+      // L'aiuto ripiega sul `look`, quindi quando tace e' perche' manca
+      // quello — non i `target`, che lo schema lascia opzionali e che un IR
+      // conforme puo' legittimamente non avere.
+      const campo = verbo === 'look' || verbo === 'aiuto' ? 'look' : 'player_voice';
       return {
         kind: 'verbo',
         verbo,
         testo,
-        nota: buco(`la scena "${p.scene.id}" non risponde a "${verbo}"`, verbo === 'look' ? 'look' : 'player_voice', testo),
+        nota: buco(`la scena "${p.scene.id}" non risponde a "${verbo}"`, campo, testo),
         via: res.via,
         why: res.why,
       };
+    }
+
+    // Ultima spiaggia prima del fallback: la frase nomina una cosa che si ha
+    // in mano? Il fallback d'autore e' scritto per l'*intenzione* e della cosa
+    // appena nominata non sa niente — «usa il walkie» si sentirebbe rispondere
+    // «Le mani non trovano niente», mentre la descrizione del walkie dice che
+    // e' scarico, cioe' proprio quello che si stava chiedendo. Fra due testi
+    // d'autore vince quello che parla della cosa giusta.
+    const nominato = oggettoNominato(this.story, input, p.state.inventory);
+    if (nominato) {
+      const testo = testoOggetto(this.story, nominato, soddisfa);
+      if (testo) {
+        return { kind: 'verbo', verbo: 'esamina', testo, via: res.via, why: res.why };
+      }
     }
 
     this.giro++;

@@ -184,3 +184,105 @@ test('initial_inventory e\' gia\' in inventario prima della prima scena', async 
   assert.ok(e.state.hasItem('walkie_talkie'), 'la radio doveva essere in inventario dall\'inizio');
   assert.equal(ui.hidden.size, 0, "l'azione condizionata all'oggetto non doveva risultare nascosta");
 });
+
+// --------------------------------------------------------------------------
+// Le uscite che si mostrano quando la scena e' finita.
+//
+// La regola scatta solo quando non resta piu' niente da fare, e "niente da
+// fare" ha una definizione precisa: ogni azione disponibile che non sia
+// un'uscita e' gia' stata eseguita, oppure e' pura osservazione. Senza la
+// prima meta' non scatterebbe mai dove serve — un'azione che apre un dialogo
+// resta disponibile anche dopo averlo ascoltato.
+
+const STORIA_USCITE: Story = parseStory(
+  JSON.stringify({
+    ir_version: '1.8.0',
+    id: 'u',
+    title: 'Uscite',
+    start_scene: 's0',
+    scenes: [
+      {
+        id: 's0',
+        look: 'Una stanza.',
+        background: { image_prompt: 'una stanza' },
+        actions: [
+          // Fa avanzare: finche' non e' stata fatta, la scena non e' finita.
+          { id: 'accendi', label: 'Accendere', aliases: ['accendi'], effect: { set_flag: 'acceso' } },
+          // Pura osservazione: rileggibile per sempre, non tiene aperta la scena.
+          { id: 'guarda', label: 'Guardare il muro', aliases: ['guarda il muro'], effect: { narration: 'Un muro.' } },
+          { id: 'esci', label: 'Uscire', aliases: ['esci'], effect: { goto_scene: 's1' } },
+        ],
+      },
+      {
+        id: 's1',
+        look: 'Fuori.',
+        background: { image_prompt: 'fuori' },
+        actions: [],
+      },
+    ],
+  }),
+);
+
+/** Come `FakeUI`, ma tiene da parte i prompt per poterli guardare dopo. */
+class UISpia extends FakeUI {
+  constructor(
+    private visti: ActionPrompt[],
+    toks: string[],
+  ) {
+    super(toks);
+  }
+  override async chooseAction(p: ActionPrompt): Promise<Command> {
+    this.visti.push(p);
+    return super.chooseAction(p);
+  }
+}
+
+test('le uscite restano nascoste finche resta qualcosa da fare', async () => {
+  const prompts: ActionPrompt[] = [];
+  await new Engine(STORIA_USCITE, new UISpia(prompts, ['accendi', 'esci'])).run();
+
+  // Primo turno: c'e' ancora "accendi" da fare, quindi niente uscite.
+  assert.deepEqual(prompts[0].uscite.map((u) => u.id), []);
+  // Secondo turno: "accendi" e' stata fatta e "guarda" e' pura osservazione,
+  // quindi non resta niente e l'uscita si mostra.
+  assert.deepEqual(prompts[1].uscite.map((u) => u.id), ['esci']);
+});
+
+test('un osservazione non tiene aperta la scena', async () => {
+  const prompts: ActionPrompt[] = [];
+  // Si guarda il muro all'infinito: la scena resta finita lo stesso.
+  await new Engine(STORIA_USCITE, new UISpia(prompts, ['accendi', 'guarda', 'guarda', 'esci'])).run();
+  assert.deepEqual(prompts[3].uscite.map((u) => u.id), ['esci']);
+});
+
+test('una scena che e solo un bivio non mostra niente', () => {
+  // Il caso vero: la cabina del furgone in "Metal Head" ha quattro azioni e
+  // tutte e quattro portano fuori. Li' non resta niente da fare fin dal primo
+  // istante — non perche' la scena sia esaurita, ma perche' non ha mai avuto
+  // altro — e mostrarle tutte significa stampare il menu delle scelte.
+  const bivio: Story = parseStory(
+    JSON.stringify({
+      ir_version: '1.8.0',
+      id: 'b',
+      title: 'Bivio',
+      start_scene: 's0',
+      scenes: [
+        {
+          id: 's0',
+          look: 'Una cabina che sbanda.',
+          background: { image_prompt: 'una cabina' },
+          actions: [
+            { id: 'urla', label: 'Urlare', aliases: ['urla'], effect: { goto_scene: 's1' } },
+            { id: 'afferra', label: 'Afferrare il volante', aliases: ['afferra'], effect: { goto_scene: 's1' } },
+            { id: 'batti', label: 'Battere sul tetto', aliases: ['batti'], effect: { goto_scene: 's1' } },
+          ],
+        },
+        { id: 's1', look: 'Dopo.', background: { image_prompt: 'dopo' }, actions: [] },
+      ],
+    }),
+  );
+  const prompts: ActionPrompt[] = [];
+  return new Engine(bivio, new UISpia(prompts, ['urla'])).run().then(() => {
+    assert.deepEqual(prompts[0].uscite, [], 'con piu di un uscita non si mostra niente');
+  });
+});

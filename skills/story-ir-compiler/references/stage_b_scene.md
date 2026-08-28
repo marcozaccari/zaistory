@@ -186,6 +186,23 @@ aperto, un cassetto tirato fuori, qualcuno salito su uno scaffale. Non per ogni
 flag: se il cambiamento non si vedrebbe guardandosi intorno, non e' materia di
 `look`.
 
+**Regola dura, e questa e' verificabile:** ogni flag che in *questa stessa
+scena* apre o chiude un'azione deve comparire in `look_variants`. Se un flag
+cambia cosa si puo' fare qui, per definizione qualcosa qui e' cambiato — e il
+`look` e' l'unico posto in cui il giocatore puo' accorgersene.
+
+Il caso che ha fatto scrivere la regola: una scena di fuga fra gli scaffali
+dove correre e' possibile finche' non si nota un carrello, e da quel momento
+l'azione utile e' rovesciarlo. Il flag `carrello_visto` chiudeva un'azione e ne
+apriva un'altra, ma la scena non aveva **nessuna** `look_variants`: guardandosi
+intorno si rileggeva un corridoio senza carrello, e il carrello non era nominato
+da nessuna parte, ne' nel `look` ne' altrove. Il giocatore aveva in mano tutto
+tranne la parola. Non e' una scena difficile, e' una scena muta.
+
+Vale anche al contrario: se scrivi una variante, deve **nominare la cosa** che
+il flag ha reso rilevante. «I corridoi, adesso diversi» non serve a niente; «Un
+carrello di plastica rovesciato a meta' corridoio» si.
+
 Per le `cutscene` il campo si omette: non c'e' niente da guardare, si prosegue.
 
 ### 3-bis. `no_match_narration`: cosa si legge quando il gioco non capisce
@@ -235,9 +252,13 @@ esporre informazioni che il giocatore dovrebbe scoprire tramite dialogo/azioni.
 
 ### 5. Dialogue tree
 
-- Un dialogo tipico ha 1-4 nodi. Evita alberi profondi: se una conversazione
-  ha molte diramazioni, valuta se non sia meglio spezzarla in più cicli di
-  "torna alle azioni, riparla con lo stesso personaggio".
+- Un dialogo tipico ha 1-4 **snodi** — punti in cui il giocatore sceglie.
+  Evita alberi profondi: se una conversazione ha molte diramazioni, valuta se
+  non sia meglio spezzarla in più cicli di "torna alle azioni, riparla con lo
+  stesso personaggio". Attenzione a non leggere questo numero come un tetto al
+  *totale* dei nodi: le battute in fila e le didascalie non sono diramazioni e
+  non entrano nel conto (vedi più sotto). Comprimere un dialogo fedele per
+  rientrare in "quattro nodi" è il modo in cui si perdono le didascalie.
 - Ogni nodo terminale deve avere `"end": true`.
 - Usa `choices[].condition` per nascondere scelte non ancora sensate (es. non
   puoi chiedere della lettera bruciata se non l'hai ancora notata) — verifica
@@ -279,6 +300,71 @@ esporre informazioni che il giocatore dovrebbe scoprire tramite dialogo/azioni.
   («parla con lui», «chiedigli della scatola»), e il personaggio vuole i suoi
   in `characters[]` («il ragazzo», «quello con la barba»), altrimenti il
   giocatore non ha modo di rivolgersi a lui.
+- **Le didascalie fra le battute vanno conservate, una per una.** Nella
+  sceneggiatura fra due battute c'è quasi sempre una riga di prosa — «Tommy
+  guarda Laura nello specchietto», «Laura tiene ancora il palmo chiuso»,
+  «Silenzio. Laura apre il palmo della mano: a pennarello, un codice a tre
+  cifre» — e sono quelle righe a dire *cosa succede mentre si parla*. Buttarle
+  via è l'errore più costoso che puoi fare in un dialogo: le battute restano
+  tutte, il dialogo si gioca, e a leggerlo è una sequenza di frasi a vuoto in
+  cui due persone parlano nel nulla.
+
+  Ognuna diventa **un nodo con `"speaker": "narrator"`**, nel punto esatto in
+  cui sta nella sceneggiatura, con `next` verso la battuta che segue. Non è una
+  voce fuori campo e il player non le mette nessun nome davanti: è la
+  didascalia, letta come prosa.
+
+  ```
+  sceneggiatura                          IR
+
+  > **TOMMY**                            { "speaker": "tommy",
+  > Ma tu l'hai vista?                     "text": "Ma tu l'hai vista?",
+                                           "next": "n_specchietto" }
+  Mark non risponde.
+  Tommy guarda Laura nello specchietto.  { "speaker": "narrator",
+                                           "text": "Mark non risponde. Tommy
+                                                    guarda Laura nello
+                                                    specchietto.",
+                                           "next": "tommy_4" }
+  > **TOMMY**                            { "speaker": "tommy",
+  > Tu l'hai vista?                        "text": "Tu l'hai vista?", … }
+  ```
+
+  Due precisazioni che servono, perché è qui che si sbaglia:
+
+  - **Non contano nel budget di nodi.** Il «1-4 nodi» qui sopra parla di
+    *snodi* — punti in cui il giocatore sceglie — non di righe. Un dialogo
+    fedele di dodici battute con sei didascalie è diciotto nodi ed è giusto
+    così: non comprimerlo, non fondere tre didascalie in una, non tagliarne
+    nessuna per rientrare in un numero.
+  - **Vanno dove stanno, non dove è comodo.** Metà delle didascalie *precede*
+    la battuta a cui si riferisce («Tommy guarda Laura nello specchietto» viene
+    prima della domanda, ed è la ragione per cui la domanda arriva). Un nodo
+    `narrator` sta in un punto preciso della sequenza e questo lo risolve;
+    `effect.narration` sul nodo *precedente* no, perché si applica dopo la sua
+    battuta ma il player la mostra insieme al blocco successivo, e la
+    didascalia finisce attaccata alla battuta sbagliata.
+
+  Una sola eccezione, ed è precisa: **la didascalia che sta su un ramo di
+  scelta va in `choices[].effect.narration`, non in un nodo.** L'effetto di una
+  scelta si applica dopo il tocco e prima del nodo di destinazione — cioè
+  esattamente dove la didascalia sta nella sceneggiatura — e in più non tocca
+  il `goto`, che è il nome con cui il ramo viene identificato altrove (i
+  playthrough di riferimento chiamano una scelta per la sua destinazione: un
+  nodo interposto li spezzerebbe tutti). Se lo stesso ramo arriva da più nodi,
+  la didascalia si ripete su ciascuna scelta.
+
+  ```
+  > **TOMMY**                       nodo tommy_4, con due scelte
+  > Tu l'hai vista?
+                                    scelta «Guida. Che non abbiamo…»
+  Laura tiene ancora il palmo         "goto": "laura_1",
+  chiuso.                             "effect": { "narration": "Laura tiene
+                                                   ancora il palmo chiuso." }
+  > **LAURA**                       nodo laura_1
+  > Guida. Che non abbiamo…
+  ```
+
 - Se `authoring_mode` dice **dialoghi fedeli**, le battute presenti nel testo
   sorgente si riportano come sono, nell'ordine in cui stanno: le scelte del
   giocatore possono decidere *quando* e *se* pronunciarle, non riscriverle.
@@ -332,15 +418,32 @@ scena**. NON stai costruendo un motore verbo×oggetto stile SCUMM classico
   posto sbagliato. Va scritta, va lasciata ripetibile, e il suo `effect` narra
   il fallimento con precisione: è lì che il giocatore guarda meglio la stanza.
   Non nasconderla dietro una condizione e non farle cambiare stato.
-- **Un'azione con `condition` vuole quasi sempre una `blocked_narration`.**
+- **Ogni azione con `condition` ha una `blocked_narration`. Senza eccezioni.**
   Quando il giocatore sceglieva da un menu, un'azione filtrata spariva e non
   c'era niente da dire; a parole la chiede lo stesso, e merita una risposta
   scritta da te. Non e' un effetto — non cambia stato, non fa transizioni — e
   non deve svelare la soluzione: dice cosa *si vede* del fatto che non si puo'
   ancora («la cordicella penzola a tre metri, fuori portata»), non cosa
-  bisogna fare per poterlo. Scrivila per le azioni che un giocatore prova
-  presto e volentieri; su una condizione che nessuno incontrera' mai al
-  contrario, si puo' omettere.
+  bisogna fare per poterlo.
+
+  Questa regola diceva «quasi sempre», con una deroga per «una condizione che
+  nessuno incontrera' mai al contrario». La deroga e' stata tolta perche' e'
+  stata presa **43 volte su 81** in un IR solo, e perche' la previsione su cui
+  si appoggia — «questa nessuno la chiedera' presto» — e' proprio quella che un
+  compilatore non e' in grado di fare: chi gioca a parole prova le cose
+  nell'ordine che gli viene in mente, non nel tuo.
+
+  Cosa succede quando manca, ed e' la ragione per cui non e' negoziabile: il
+  player **non ha niente da dire e lo scrive fra parentesi**, come diagnostica
+  — `(l'azione "corri_tra_gli_scaffali" non e' disponibile ora: manca
+  blocked_narration nell'IR)`. Chi sta giocando vede un messaggio di errore al
+  posto della storia, e lo vede proprio chi ha indovinato l'azione giusta un
+  momento troppo presto, cioe' chi sta giocando bene. Il linter la segnala come
+  **avviso**, non come info.
+
+  Il costo e' basso e va detto: sono due righe che *non* devono essere
+  brillanti. «La porta non si muove: dall'altra parte c'e' ancora qualcosa
+  appoggiato» basta e avanza.
 
   Il player passa al resolver **anche le azioni bloccate**, proprio per questo:
   se il giocatore ne chiede una riceve la tua `blocked_narration`, e non

@@ -26,8 +26,10 @@ import {
   type Story,
 } from '../core/index.js';
 import { CONFIG_DEFAULT, caricaEmbedder, type ConfigEmbedder } from './embedder.js';
+import { ASCOLTO_DEFAULT, Ascolto, type ImpostazioniAscolto } from './ascolto.js';
+import { Voce } from './voce.js';
 import { PLAYER_VERSION } from '../version.js';
-import { $, clear } from './dom.js';
+import { $, clear, staScrivendo } from './dom.js';
 import { renderPanel, type PanelContext, type Tab } from './panel.js';
 import { WebUI } from './webui.js';
 
@@ -62,6 +64,19 @@ let resolver: Resolver = new LexicalResolver();
 let nomeResolver = 'lessicale';
 let statoResolver = '';
 let configEmbedder: ConfigEmbedder = { ...CONFIG_DEFAULT };
+
+/**
+ * La modalita' ascolto.
+ *
+ * La `Voce` sta qui, viva quanto la pagina: e' l'altoparlante, e non ha
+ * ragione di nascere e morire con la partita. L'`Ascolto` invece nasce con
+ * l'IR — i suoi registri sono "cosa e' gia' stato descritto in *questa*
+ * partita" — mentre le impostazioni restano fuori da entrambi, perche'
+ * ricominciare non deve costringere a riscegliere la voce.
+ */
+const voce = new Voce();
+let impAscolto: ImpostazioniAscolto = { ...ASCOLTO_DEFAULT };
+let ascolto = new Ascolto({ ir_version: '', id: '', title: '', start_scene: '', scenes: [] }, voce);
 
 /**
  * Accende un backend.
@@ -125,8 +140,7 @@ interface Session {
   findings: Finding[];
   engine: Engine;
   ui: WebUI;
-  /** La partita e' guidata da uno script di playthrough. */
-  scripted: boolean;
+
 }
 
 // --------------------------------------------------------------- pannello
@@ -151,6 +165,14 @@ function panelContext(s: Session): PanelContext {
     onLoadOther: () => {
       closePanel();
       showLoader();
+    },
+    ascolto,
+    onAscolto: (imp) => {
+      impAscolto = imp;
+      ascolto.configura(imp);
+      // Niente `refreshPanel()`: i controlli mostrano gia' il valore che
+      // l'utente ha appena mosso, e ridisegnarli sotto il dito farebbe
+      // perdere il trascinamento di un cursore a meta'.
     },
     resolver: nomeResolver,
     statoResolver,
@@ -188,7 +210,7 @@ function refreshPanel(): void {
  */
 function refreshHeader(): void {
   if (!session) return;
-  const { story, findings, ui, scripted } = session;
+  const { story, findings, ui } = session;
   const parti = [`IR ${story.ir_version}`];
 
   const i = ui.scene ? story.scenes.findIndex((s) => s.id === ui.scene?.id) : -1;
@@ -197,7 +219,9 @@ function refreshHeader(): void {
 
   const { errors, warnings } = countFindings(findings);
   if (errors || warnings) parti.push(`linter: ${errors} errori, ${warnings} avvisi`);
-  if (scripted) parti.push('script');
+  // Il marchio sparisce quando la traccia si esaurisce e la partita torna in
+  // mano al giocatore: da quel momento non e' piu' una partita rigiocata.
+  if (ui.sottoTraccia) parti.push('traccia');
 
   $('#story-meta').textContent = parti.join(' · ');
 }
@@ -227,6 +251,10 @@ for (const b of document.querySelectorAll<HTMLButtonElement>('#tabs button')) {
   b.addEventListener('click', () => {
     tab = b.dataset.tab as Tab;
     for (const other of document.querySelectorAll('#tabs button')) other.classList.toggle('on', other === b);
+    // Su un telefono in verticale le schede non ci stanno tutte e la striscia
+    // scorre: quella appena scelta va portata dentro la vista, altrimenti si
+    // tocca una voce e resta mezza fuori dal bordo.
+    b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     refreshPanel();
   });
 }
@@ -244,9 +272,14 @@ function start(story: Story, findings: Finding[], script?: ScriptDriver): void {
   clear(transcript);
   clear(dock);
 
-  const ui = new WebUI({ story, resolver, transcript, dock, onUpdate: refresh, script });
+  // Una partita nuova, una memoria nuova: i registri del collapse acustico
+  // sono lunghi quanto la partita, come quello visivo dentro `WebUI`.
+  ascolto = new Ascolto(story, voce);
+  ascolto.configura(impAscolto);
+
+  const ui = new WebUI({ story, resolver, transcript, dock, onUpdate: refresh, script, ascolto });
   const engine = new Engine(story, ui);
-  session = { story, findings, engine, ui, scripted: !!script };
+  session = { story, findings, engine, ui };
 
   $('#story-title').textContent = story.title;
   refreshHeader();
@@ -356,12 +389,6 @@ function voci(): HTMLButtonElement[] {
   return [...dock.querySelectorAll<HTMLButtonElement>('button.choice:not([disabled])')].filter(
     (b) => b.offsetParent !== null,
   );
-}
-
-/** Vero se si sta scrivendo: li' le frecce muovono il cursore, e devono. */
-function staScrivendo(e: Event): boolean {
-  const t = e.target as HTMLElement | null;
-  return !!t && /^(INPUT|TEXTAREA)$/.test(t.tagName);
 }
 
 /**

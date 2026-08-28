@@ -947,19 +947,45 @@ body.debug .choice .why {
   }
 }
 
+/* `min-width: 0` due volte, qui e su `.tabs`, e servono entrambe: la testata e'
+   una cella di griglia e la striscia delle schede e' un elemento flex, e in
+   tutti e due i casi il valore automatico e' "non stringerti sotto il tuo
+   contenuto". Basta che uno dei due lo faccia valere perche' la testata esca
+   dal pannello portandosi via il tasto di chiusura, che e' quello che
+   succedeva su un telefono in verticale dalla sesta scheda in poi. */
 .panel-head {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   padding: max(8px, env(safe-area-inset-top)) 10px 8px;
   border-bottom: 1px solid var(--line);
 }
 
+/* La striscia delle schede si stringe, non spinge fuori la testata.
+   `min-width: 0` e' il pezzo che sembra superfluo e non lo e': un elemento
+   flex non scende sotto la larghezza del proprio contenuto finche' non glielo
+   si dice, quindi senza di lui l'`overflow-x` qui sotto non entra mai in
+   funzione. Si e' visto aggiungendo la sesta scheda: su un telefono in
+   verticale la testata diventava 449px dentro un pannello da 360, e il tasto
+   di chiusura finiva oltre il bordo dello schermo. */
 .tabs {
   flex: 1;
+  min-width: 0;
   display: flex;
   gap: 4px;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  /* Nessuna sfumatura in coda: si era provata e mangiava proprio la scheda
+     attiva, che sul telefono e' quasi sempre l'ultima raggiunta. Che l'elenco
+     continui lo dice gia' la scheda tagliata a meta' al bordo — e' la stessa
+     affordance, senza spegnere l'unica voce che si sta guardando. */
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tabs button {
@@ -1139,4 +1165,79 @@ body.debug .choice .why {
 .empty {
   color: var(--fg-dim);
   font-size: 13.5px;
+}
+
+/* --- Modalita' ascolto -----------------------------------------------------
+   Gli stessi mattoni della scheda del resolver (etichetta sopra, controllo,
+   didascalia sotto), con in piu' le due forme che li' non servivano: la
+   casella con la sua spiegazione accanto, e il cursore col valore letto. */
+
+.interruttore {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  align-items: start;
+  margin-bottom: 14px;
+  cursor: pointer;
+}
+
+.interruttore input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+
+.interruttore .testi {
+  display: grid;
+  gap: 3px;
+}
+
+.cursore {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+/* Il valore vive all'estremo opposto dell'etichetta: e' il numero che cambia
+   mentre si trascina, e in mezzo al testo non lo si troverebbe. */
+.cursore .gname {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cursore .valore {
+  color: var(--fg-dim);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.cursore input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.voce-scelta {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 13px;
+}
+
+.voce-scelta:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* Una didascalia dentro un dialogo: prosa, non battuta. Stessa voce grafica
+   della narrazione — l'unica differenza con una battuta e' che non c'e'
+   nessuno a dirla, e la mancanza del nome davanti deve leggersi come una
+   scelta e non come un nome che manca. */
+.entry.line.didascalia {
+  color: var(--fg-dim);
+  font-style: italic;
 }

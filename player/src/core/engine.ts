@@ -14,7 +14,7 @@
  */
 
 import type { Action, DialogueChoice, DialogueNode, Scene, Story } from './types.js';
-import { findAction, findScene, isRepeatable, sceneHasExit } from './types.js';
+import { findAction, findScene, isOsservazione, isRepeatable, sceneHasExit } from './types.js';
 import { GameState, type EffectSink, type Transition } from './state.js';
 
 /** Uscita volontaria dal player. */
@@ -31,10 +31,23 @@ export class ScriptEndedError extends Error {
   }
 }
 
-/** Un'azione filtrata da una condizione, con il motivo. */
+/**
+ * Un'azione che adesso non si puo' fare, con il motivo.
+ *
+ * `perche'` distingue i due casi, e la distinzione non e' cosmetica: a una
+ * **condizione** non soddisfatta l'autore risponde con `blocked_narration`, e
+ * se non l'ha scritta e' un buco vero dell'IR; a un'azione **gia' usata** non
+ * risponde niente, perche' lo schema non ha un campo per dirlo e non deve
+ * averlo — chiedere di nuovo una cosa gia' fatta non e' un caso da coprire con
+ * un testo per ogni azione. Confondere i due casi faceva accusare di un buco
+ * un IR che non ne aveva.
+ */
+export type PerCheNascosta = 'condizione' | 'gia-usata';
+
 export interface HiddenAction {
   action: Action;
   reason: string;
+  perche: PerCheNascosta;
 }
 
 /** Una scelta di dialogo filtrata da una condizione. */
@@ -52,6 +65,20 @@ export interface ActionPrompt {
   /** Vero se dalla scena non esce nessun goto_scene: e' un finale della
    * storia, non un vicolo cieco. */
   terminal: boolean;
+  /**
+   * Le uscite da mostrare, quando nella scena non resta piu' niente da fare.
+   *
+   * Normalmente vuoto, ed e' il caso interessante: finche' c'e' qualcosa da
+   * fare, l'elenco delle azioni non si mostra (decisione 1.8.0) e l'uscita si
+   * chiede a parole come tutto il resto. Ma quando ogni altra azione
+   * disponibile e' gia' stata fatta o e' pura osservazione, la scena e'
+   * finita: continuare a chiedere di indovinare la frase giusta non protegge
+   * piu' nessun enigma — non ce n'e' rimasto nessuno — e diventa solo un muro.
+   *
+   * Il player non decide niente al posto del giocatore: mostra le uscite che
+   * l'IR ha gia' li', con la label che l'autore ha scritto.
+   */
+  uscite: Action[];
 }
 
 export interface ChoicePrompt {
@@ -258,6 +285,7 @@ export class Engine {
           available,
           hidden,
           terminal: !sceneHasExit(sc),
+          uscite: this.usciteDaMostrare(sc, available),
         });
       } catch (err) {
         // Uno script che finisce in una scena terminale non e' un test
@@ -277,12 +305,46 @@ export class Engine {
         continue;
       }
       this.record(`a:${act.id}`);
+      this.state.segnaEseguita(sc.id, act.id);
       if (!isRepeatable(act)) this.state.consume(sc.id, act.id);
 
       const tr = this.applyEffect(act.effect);
       const followed = await this.follow(sc, tr);
       if (followed.done) return followed.next;
     }
+  }
+
+  /**
+   * Le uscite da mostrare, se la scena non ha piu' niente da dare.
+   *
+   * "Niente da fare" ha una definizione precisa, ed e' la sola che regge:
+   * ogni azione disponibile che non sia un'uscita e' **gia' stata eseguita**
+   * almeno una volta, oppure e' una pura osservazione (`isOsservazione`), che
+   * si puo' rileggere per sempre senza che la storia si muova. Senza la prima
+   * meta' la regola non scatterebbe mai dove serve: nella scena in auto di
+   * "Metal Head" l'azione che apre il dialogo resta disponibile anche dopo
+   * averlo ascoltato, e riascoltarlo non e' qualcosa che resta da fare.
+   *
+   * **Una sola uscita, altrimenti niente.** La prima versione le mostrava
+   * tutte, con l'idea che fra piu' uscite non ci sia un enigma da proteggere
+   * ma una decisione da prendere. E' sbagliato, e si vede appena si incontra
+   * una scena il cui *unico* contenuto e' un bivio: in "Metal Head" la cabina
+   * del furgone ha quattro azioni e tutte e quattro portano fuori, nessuna
+   * condizionata. Li' non resta niente da fare fin dal primo istante — non
+   * perche' la scena sia esaurita, ma perche' non ha mai avuto altro — e la
+   * regola sputava fuori l'elenco completo delle quattro scelte: esattamente
+   * il menu che le chip sotto debug esistono per non mostrare.
+   *
+   * Con una sola uscita quel caso non puo' presentarsi: mostrarla non svela
+   * nessuna alternativa, perche' alternative non ce ne sono.
+   */
+  private usciteDaMostrare(sc: Scene, available: Action[]): Action[] {
+    const uscite = available.filter((a) => !!a.effect?.goto_scene);
+    if (uscite.length !== 1) return [];
+    const restaDaFare = available.some(
+      (a) => !a.effect?.goto_scene && !isOsservazione(a) && !this.state.giaEseguita(sc.id, a.id),
+    );
+    return restaDaFare ? [] : uscite;
   }
 
   /** Esegue una transizione. */
@@ -376,12 +438,12 @@ export class Engine {
     const hidden: HiddenAction[] = [];
     for (const a of sc.actions) {
       if (!isRepeatable(a) && this.state.consumed(sc.id, a.id)) {
-        hidden.push({ action: a, reason: "gia' usata (repeatable: false)" });
+        hidden.push({ action: a, reason: "gia' usata (repeatable: false)", perche: 'gia-usata' });
         continue;
       }
       const { ok, why } = this.state.meets(a.condition);
       if (!ok) {
-        hidden.push({ action: a, reason: why });
+        hidden.push({ action: a, reason: why, perche: 'condizione' });
         continue;
       }
       available.push(a);

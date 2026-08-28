@@ -38,6 +38,7 @@ import {
   sceneLabel,
   sceneType,
   segnoTurno,
+  isDidascalia,
   speakerName,
   toneOf,
 } from '../core/index.js';
@@ -270,7 +271,8 @@ export class TermUI implements PlayerUI {
     this.lastScene = scene;
     this.dbg(`nodo ${nodeId}`);
     this.param('voice_override.style_prompt', n.voice_override?.style_prompt, 'voice');
-    this.out(this.t.bold(speakerName(this.story, n.speaker) + ':'));
+    // Le didascalie non hanno un nome davanti: non le dice nessuno.
+    if (!isDidascalia(n)) this.out(this.t.bold(speakerName(this.story, n.speaker) + ':'));
     this.para(n.text, '  ');
     this.out();
     if (!n.choices || n.choices.length === 0) await this.pause();
@@ -377,6 +379,13 @@ export class TermUI implements PlayerUI {
           this.dbg(`  effetto: ${describeEffect(h.action.effect)}`);
         }
       }
+      // La scena non ha piu' niente da dare: le uscite si mostrano, con la
+      // label che l'autore ha scritto. Non e' l'elenco delle azioni che
+      // rientra dalla finestra — e' l'unica cosa rimasta, e nasconderla non
+      // protegge nessun enigma perche' non ce n'e' piu' nessuno.
+      if (!elenco && p.uscite.length > 0) {
+        for (const u of p.uscite) this.out(`  ${this.t.green('▸')} ${u.label}`);
+      }
       if (p.terminal) {
         this.out(this.t.dim('  (scena finale: da qui non esce nessuna transizione — :esci per chiudere)'));
       }
@@ -420,7 +429,8 @@ export class TermUI implements PlayerUI {
       // chiedere. Nessun Effect e' stato applicato, e l'engine non ha nemmeno
       // saputo che e' successo qualcosa.
       if (e.testo) this.out(wrap(this.t.italic(e.testo), this.width, '  ') + this.marchio(e));
-      if (e.nota) this.notice(e.nota);
+      // Diagnostica, non narrazione: sta sotto il debug (vedi webui.ts).
+      if (e.nota) this.dbg(e.nota);
       this.out();
     }
   }

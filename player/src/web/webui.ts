@@ -25,17 +25,20 @@ import {
   GameState,
   InputLibero,
   QuitError,
+  ScriptEndedError,
   describeCondition,
   describeEffect,
   findCharacter,
   findPlace,
+  isDidascalia,
   SCENE_CUTSCENE,
   sceneType,
   segnoTurno,
   speakerName,
   toneOf,
 } from '../core/index.js';
-import { clear, el, premi } from './dom.js';
+import { clear, el, premi, staScrivendo } from './dom.js';
+import type { Ascolto } from './ascolto.js';
 
 /** Il tipo di risorsa che un prompt descrive: da' il colore all'etichetta, e
  * basta scorrere il transcript per vedere dove mancano le immagini o i suoni.
@@ -115,6 +118,10 @@ export interface WebUIOptions {
   onUpdate: () => void;
   /** Se presente, la partita e' guidata da uno script di playthrough. */
   script?: ScriptDriver;
+  /** La seconda uscita del player: la stessa storia, recitata. Arriva da
+   * fuori perche' le sue impostazioni sopravvivono alla partita — si
+   * ricomincia senza dover riscegliere la voce. */
+  ascolto: Ascolto;
 }
 
 export class WebUI implements PlayerUI {
@@ -134,6 +141,7 @@ export class WebUI implements PlayerUI {
   private dock: HTMLElement;
   private onUpdate: () => void;
   private script?: ScriptDriver;
+  private ascolto: Ascolto;
   /** Promessa in attesa di un tocco: va rifiutata se la partita viene
    * ricominciata, altrimenti resta appesa per sempre. */
   private abort?: (err: unknown) => void;
@@ -155,6 +163,19 @@ export class WebUI implements PlayerUI {
    * comportarsi come prima senza doverlo scrivere da nessuna parte.
    */
   private landing?: HTMLElement;
+  /**
+   * Come staccare l'ascoltatore di tastiera del tap-to-continue in corso.
+   *
+   * Esiste perche' quel listener vive su `document` e non sul bottone, e
+   * finora si staccava **solo** quando il bottone veniva premuto davvero. Una
+   * partita abbandonata mentre aspettava un «continua» — cioe' ogni volta che
+   * si ricomincia o si rigioca una traccia — se lo lasciava dietro, appeso a
+   * un documento che nessuno ripulisce. Da quel momento ogni spazio e ogni
+   * invio passavano prima da li', che chiamava `preventDefault()`: nella riga
+   * di input non si riusciva piu' ne' a mettere uno spazio ne' a mandare la
+   * frase, e restava solo il bottone col mouse.
+   */
+  private staccaTasti?: () => void;
   /** Il prossimo blocco stampato apre un turno nuovo: e' lui l'atterraggio. */
   private wantLanding = false;
   /** Esito dell'`Effect` in corso, in attesa di essere disposto. */
@@ -186,6 +207,7 @@ export class WebUI implements PlayerUI {
     this.dock = o.dock;
     this.onUpdate = o.onUpdate;
     this.script = o.script;
+    this.ascolto = o.ascolto;
   }
 
   /**
@@ -204,8 +226,11 @@ export class WebUI implements PlayerUI {
   /** Interrompe l'attesa in corso (usata quando si ricomincia o si cambia IR). */
   cancel(): void {
     this.dead = true;
+    this.ascolto.taci();
     this.abort?.(new QuitError());
     this.abort = undefined;
+    this.staccaTasti?.();
+    this.staccaTasti = undefined;
     this.pressing = false;
     this.dock.classList.remove('bloccato');
     clear(this.dock);
@@ -279,6 +304,10 @@ export class WebUI implements PlayerUI {
    * che in quel caso e' proprio il punto giusto.
    */
   private nuovoTurno(): void {
+    // Zittire qui e non altrove: questa e' l'unica strada per cui passano
+    // tutti i turni, e un turno nuovo che parte mentre la scena precedente sta
+    // ancora parlando e' due voci sovrapposte — cioe' nessuna delle due.
+    this.ascolto.taci();
     this.landing = undefined;
     this.wantLanding = true;
   }
@@ -433,6 +462,7 @@ export class WebUI implements PlayerUI {
     // transcript dove inseguire l'ultima riga sarebbe sbagliato.
     this.anchor = 'top';
     this.push(cover);
+    this.ascolto.copertina();
     try {
       await this.waitContinue('inizia', 'start');
     } finally {
@@ -517,6 +547,7 @@ export class WebUI implements PlayerUI {
     }
 
     this.push(card);
+    this.ascolto.scena(scene);
 
     const meta = [
       `narrazione: ${(scene.narration ?? []).length} beat`,
@@ -569,6 +600,7 @@ export class WebUI implements PlayerUI {
       ['voice.style_prompt', b.voice?.style_prompt, 'voice'],
     ]);
     this.entry('beat', b.text);
+    this.ascolto.beat(scene, b, index);
     this.dbg(`beat ${index + 1}/${total}`);
     // Un beat e' un blocco a se': senza un segno, due paragrafi in corsivo di
     // seguito sembrano lo stesso testo e non si capisce cosa abbia aggiunto il
@@ -597,9 +629,14 @@ export class WebUI implements PlayerUI {
     this.scene = scene;
     this.assets([['voice_override.style_prompt', n.voice_override?.style_prompt, 'voice']]);
 
-    const p = el('p', 'entry line');
-    p.append(el('span', 'speaker', speakerName(this.story, n.speaker)), document.createTextNode(n.text));
+    // Una didascalia e' prosa: quello che nella sceneggiatura sta fra due
+    // battute. Mettergli davanti «Narratore» inventa una voce fuori campo che
+    // non c'e' — e in ascolto la fa pure recitare a ogni riga.
+    const p = el('p', isDidascalia(n) ? 'entry line didascalia' : 'entry line');
+    if (!isDidascalia(n)) p.append(el('span', 'speaker', speakerName(this.story, n.speaker)));
+    p.append(document.createTextNode(n.text));
     this.push(p);
+    this.ascolto.battuta(n);
 
     const meta = [`nodo ${nodeId}`];
     if (n.effect) meta.push(`effetto: ${describeEffect(n.effect)}`);
@@ -626,7 +663,14 @@ export class WebUI implements PlayerUI {
     this.pending = undefined;
     if (!buf) return;
     this.assets(buf.rows);
-    for (const t of buf.texts) this.entry('narration', t);
+    for (const [, valore, media] of buf.rows) {
+      if (media === 'sound') this.ascolto.suono(valore);
+      if (media === 'voice') this.ascolto.vocePrompt({ style_prompt: valore });
+    }
+    for (const t of buf.texts) {
+      this.entry('narration', t);
+      this.ascolto.dilo(t);
+    }
     for (const c of buf.changes) this.dbg(`stato: ${c}`);
     if (buf.changes.length && !this.dead) this.onUpdate();
   }
@@ -638,7 +682,9 @@ export class WebUI implements PlayerUI {
       return;
     }
     this.assets([['narration_voice.style_prompt', voice?.style_prompt, 'voice']]);
+    this.ascolto.vocePrompt(voice);
     this.entry('narration', text);
+    this.ascolto.dilo(text);
   }
 
   /** Il player non riproduce niente: del suono resta il prompt, che e'
@@ -649,6 +695,7 @@ export class WebUI implements PlayerUI {
       return;
     }
     this.assets([['play_sound_prompt', prompt, 'sound']]);
+    this.ascolto.suono(prompt);
   }
 
   stateChange(desc: string): void {
@@ -662,12 +709,14 @@ export class WebUI implements PlayerUI {
 
   notice(text: string): void {
     this.entry('notice', text);
+    this.ascolto.dilo(text);
   }
 
   /** Un bug di giocabilita' dell'IR si vede sempre, anche fuori dal debug:
    * e' l'informazione per cui questo player esiste. */
   problem(text: string): void {
     this.entry('problem', '[! IR] ' + text);
+    this.ascolto.dilo(text);
   }
 
   chooseAction(p: ActionPrompt): Promise<Command> {
@@ -677,11 +726,14 @@ export class WebUI implements PlayerUI {
     this.onUpdate();
 
     if (this.script) {
-      const cmd = this.script.chooseAction(p);
-      const a = p.available.find((x) => x.id === cmd.actionId);
-      this.nuovoTurno();
-      this.entry('picked', `▸ ${a?.label ?? cmd.actionId} [${cmd.actionId}]`);
-      return Promise.resolve(cmd);
+      const cmd = this.consumaScript(() => this.script!.chooseAction(p));
+      if (cmd) {
+        const a = p.available.find((x) => x.id === cmd.actionId);
+        this.nuovoTurno();
+        this.entry('picked', `▸ ${a?.label ?? cmd.actionId} [${cmd.actionId}]`);
+        return Promise.resolve(cmd);
+      }
+      // La traccia e' finita: si prosegue a mano, da qui sotto.
     }
 
     // L'interfaccia e' la riga di testo; le chip sono strumento di ispezione e
@@ -699,10 +751,32 @@ export class WebUI implements PlayerUI {
     return this.waitChoice((resolve) => {
       if (!cutscene) this.dock.append(this.rigaInput(p, resolve));
 
+      /**
+       * L'unica chip di una cutscene, quando l'avanzamento automatico e'
+       * acceso.
+       *
+       * In fondo a una sequenza narrata la prosecuzione non e' un tap-to-
+       * continue ma un'azione dell'IR, e senza questo l'avanzamento
+       * automatico attraverserebbe nove beat da solo per poi fermarsi
+       * sull'ultimo bottone — quello che, a schermo spento, e' proprio il
+       * tocco impossibile da trovare.
+       *
+       * Solo con una candidata sola, e solo in cutscene. Dove le azioni sono
+       * due il player non sceglie al posto del giocatore: e' il vincolo che
+       * regge tutto il resto, e vale anche quando la scelta sembra ovvia.
+       */
+      const soloUscita = cutscene && p.available.length === 1;
+
       p.available.forEach((a, i) => {
-        const b = el('button', cutscene ? 'choice continue' : 'choice solo-debug');
-        if (!cutscene) b.append(el('span', 'idx', `${i + 1}`));
-        b.append(document.createTextNode(cutscene ? `▸ ${a.label}` : a.label));
+        // Un'uscita mostrata (`p.uscite`) non e' una chip di debug: la scena
+        // non ha piu' niente da dare, e continuare a chiedere di indovinare la
+        // frase giusta non protegge piu' nessun enigma. Si vede con la label
+        // che le ha dato l'autore — «Lasciare che la strada finisca» dice dove
+        // si sta andando, cosa che «continua» non dice.
+        const uscita = !cutscene && p.uscite.includes(a);
+        const b = el('button', cutscene || uscita ? 'choice continue' : 'choice solo-debug');
+        if (!cutscene && !uscita) b.append(el('span', 'idx', `${i + 1}`));
+        b.append(document.createTextNode(cutscene || uscita ? `▸ ${a.label}` : a.label));
         b.append(
           el(
             'span',
@@ -710,12 +784,20 @@ export class WebUI implements PlayerUI {
             `id: ${a.id} · condizione: ${describeCondition(a.condition)} · effetto: ${describeEffect(a.effect)}`,
           ),
         );
-        b.onclick = async () => {
+        const vai = async () => {
+          this.ascolto.voce.dimenticaFine();
           if (!(await this.press(b))) return;
           this.entry('picked', `▸ ${a.label}`);
           resolve({ actionId: a.id });
         };
+        b.onclick = vai;
         this.dock.append(b);
+
+        if (soloUscita && this.ascolto.attiva && this.ascolto.impostazioni.avanzamento) {
+          this.ascolto.voce.quandoFinisce(() => {
+            if (!this.dead) void vai();
+          });
+        }
       });
 
       // Le azioni filtrate restano nel DOM ma invisibili: accendendo il debug
@@ -732,6 +814,11 @@ export class WebUI implements PlayerUI {
       if (p.terminal) {
         this.dock.append(el('p', 'terminal-note', 'scena finale: da qui non esce nessuna transizione'));
       }
+
+      // La sola parte del dock che la modalita' ascolto recita: quando la
+      // scena e' finita, l'uscita non e' una voce di menu ma l'unica cosa
+      // rimasta, e il silenzio sarebbe il muro che questa funzione toglie.
+      if (!cutscene) this.ascolto.uscite(p.uscite.map((u) => u.label));
     });
   }
 
@@ -780,6 +867,12 @@ export class WebUI implements PlayerUI {
       if (e.kind === 'azione' && e.actionId) {
         const a = p.available.find((x) => x.id === e.actionId);
         this.entryVia('picked', `▸ ${a?.label ?? e.actionId}`, e);
+        // Questa sopravvive alla regola "il dock non si legge", e non e' una
+        // deroga: qui non si sta leggendo una chip, si sta dicendo *cosa il
+        // resolver ha capito* da una frase scritta. E' l'unica risposta a
+        // "ha preso l'azione che volevo?", e senza schermo non c'e' altro
+        // modo di saperlo prima che l'effetto sia gia' applicato.
+        this.ascolto.dilo(a?.label ?? e.actionId);
         this.dbg(`resolver: ${e.via ?? '-'}${e.why ? ` · ${e.why}` : ''}`);
         this.ultimoInput = '';
         this.abort = undefined;
@@ -791,9 +884,22 @@ export class WebUI implements PlayerUI {
       // Azione bloccata, verbo del player o nessun match: si mostra testo
       // d'autore e si resta qui. Nessun Effect e' stato applicato — l'engine
       // non ha nemmeno saputo che il giocatore ha scritto qualcosa.
-      if (e.testo) this.entryVia(e.kind === 'verbo' ? 'look' : 'narration', e.testo, e);
-      if (e.nota) this.entry('notice', e.nota);
-      if (!e.testo && !e.nota) this.entry('notice', 'Non succede niente.');
+      if (e.verbo === 'look') this.ascolto.riosserva(p.scene);
+      if (e.testo) {
+        this.entryVia(e.kind === 'verbo' ? 'look' : 'narration', e.testo, e);
+        this.ascolto.dilo(e.testo);
+      }
+      // La nota e' diagnostica d'autore, non narrazione: dice che un testo
+      // manca nell'IR, e chi sta giocando non deve leggere un messaggio di
+      // errore al posto della storia. Sta sotto il debug come tutto il resto
+      // della diagnostica, e il linter la elenca comunque prima di giocare.
+      // (Diverso da `problem()`, che segnala un IR *rotto* e si vede sempre:
+      // li' non c'e' niente da leggere al suo posto.)
+      if (e.nota) this.dbg(e.nota);
+      if (!e.testo && !e.nota) {
+        this.entry('notice', 'Non succede niente.');
+        this.ascolto.dilo('Non succede niente.');
+      }
       this.dbg(`resolver: ${e.via ?? '-'}${e.why ? ` · ${e.why}` : ''}`);
 
       this.ultimoInput = '';
@@ -828,10 +934,12 @@ export class WebUI implements PlayerUI {
     this.onUpdate();
 
     if (this.script) {
-      const cmd = this.script.chooseChoice(p);
-      this.nuovoTurno();
-      this.entry('picked', `▸ ${p.available[cmd.choiceIndex ?? 0]?.text ?? ''}`);
-      return Promise.resolve(cmd);
+      const cmd = this.consumaScript(() => this.script!.chooseChoice(p));
+      if (cmd) {
+        this.nuovoTurno();
+        this.entry('picked', `▸ ${p.available[cmd.choiceIndex ?? 0]?.text ?? ''}`);
+        return Promise.resolve(cmd);
+      }
     }
 
     return this.waitChoice((resolve) => {
@@ -876,10 +984,52 @@ export class WebUI implements PlayerUI {
       );
     }
     this.push(card);
+    this.ascolto.finale(o.reason);
     this.onUpdate();
   }
 
   // -------------------------------------------------------------- interni
+
+  /** Vero finche' la partita e' guidata da una traccia. */
+  get sottoTraccia(): boolean {
+    return !!this.script;
+  }
+
+  /**
+   * Consuma un passo della traccia, oppure restituisce `undefined` quando la
+   * traccia e' finita — e da quel momento la partita torna in mano a chi
+   * guarda.
+   *
+   * E' la differenza fra le due facce, ed e' voluta. In CLI una traccia che si
+   * esaurisce prima del finale e' un **test fallito**: e' il segnale per cui
+   * i playthrough di riferimento esistono, e li' l'errore deve propagarsi e far
+   * uscire con 1. Qui no: sul web la stessa traccia e' il modo in cui si
+   * riprende una partita — si incolla, la si rigioca in un istante, e si
+   * continua da dove si era rimasti. Chiudere la partita con «script esaurito»
+   * e nessuna riga di input, come faceva prima, e' l'unica cosa che non ha
+   * senso in nessuno dei due mondi.
+   */
+  private consumaScript<T>(passo: () => T): T | undefined {
+    try {
+      return passo();
+    } catch (err) {
+      this.script = undefined;
+      if (err instanceof ScriptEndedError) {
+        this.entry('notice', 'La traccia finisce qui: da adesso giochi tu.');
+      } else {
+        // Un passo che non corrisponde a niente, non una traccia finita: quasi
+        // sempre un salvataggio di una versione precedente della storia. Il
+        // messaggio dice quale passo e perche', ed e' informazione che serve —
+        // ma la partita **non** si chiude: si e' comunque arrivati fin qui, e
+        // restare bloccati davanti a una pagina senza dock e' il peggiore dei
+        // due esiti. Da qui si continua a mano.
+        this.entry('problem', `[! traccia] ${err instanceof Error ? err.message : String(err)}`);
+        this.entry('notice', 'La traccia non combacia con questa storia. Da qui in avanti giochi tu.');
+      }
+      this.onUpdate();
+      return undefined;
+    }
+  }
 
   private waitChoice(render: (resolve: (c: Command) => void) => void): Promise<Command> {
     if (this.dead) return Promise.reject(new QuitError());
@@ -915,14 +1065,26 @@ export class WebUI implements PlayerUI {
       this.abort = reject;
       clear(this.dock);
       const b = el('button', `choice continue${variant === 'start' ? ' start' : ''}`, `▸ ${label}`);
+      // Si stacca per prima cosa, non per ultima: `press` puo' uscire senza
+      // fare niente (partita gia' abbandonata), e in quel caso il listener
+      // sarebbe rimasto attaccato per sempre.
+      const stacca = () => {
+        document.removeEventListener('keydown', onKey);
+        if (this.staccaTasti === stacca) this.staccaTasti = undefined;
+      };
       const go = async () => {
+        stacca();
+        this.ascolto.voce.dimenticaFine();
         if (!(await this.press(b))) return;
         this.abort = undefined;
         clear(this.dock);
-        document.removeEventListener('keydown', onKey);
         resolve();
       };
       const onKey = (e: KeyboardEvent) => {
+        // Chi sta scrivendo ha la precedenza: puo' esserci un campo aperto nel
+        // pannello mentre il dock aspetta un «continua», e spazio e invio
+        // devono restare quelli del campo.
+        if (staScrivendo(e)) return;
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           void go();
@@ -930,9 +1092,21 @@ export class WebUI implements PlayerUI {
       };
       b.onclick = go;
       document.addEventListener('keydown', onKey);
+      this.staccaTasti = stacca;
       this.dock.append(b);
       b.focus({ preventScroll: true });
       this.scrollEnd();
+
+      // Avanzamento automatico: finito di recitare, si prosegue da soli.
+      // Il bottone resta dov'e' ed e' ancora premibile — chi guarda lo schermo
+      // non vede cambiare niente, e chi arriva prima della fine della lettura
+      // taglia corto come sempre. Si passa dallo stesso `go`, quindi la strada
+      // e' una sola: nessun secondo modo di far avanzare la storia.
+      if (this.ascolto.attiva && this.ascolto.impostazioni.avanzamento) {
+        this.ascolto.voce.quandoFinisce(() => {
+          if (!this.dead) void go();
+        });
+      }
     });
   }
 }

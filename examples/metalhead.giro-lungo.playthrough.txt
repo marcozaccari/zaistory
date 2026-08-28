@@ -10,6 +10,7 @@ a:apri_la_cassa
 a:apri_l_armadietto
 c:mark_soldi
 a:cerca_sugli_scaffali
+a:prendi_le_caramelle
 a:vai_nel_magazzino
 a:confronta_il_codice
 a:alza_la_torcia

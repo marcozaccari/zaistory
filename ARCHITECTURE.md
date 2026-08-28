@@ -377,6 +377,45 @@ Decisioni di design, con il *perché* (per non riscoprirle da capo):
     rileggere la vecchia descrizione e' una bugia che il giocatore incassa ogni
     volta che guarda.
 
+### Due controlli che nascono da una regola sola
+
+Il linter ha due avvisi che sembrano dettagli e sono la stessa cosa detta due
+volte: **una scena non deve poter restare muta**.
+
+- `blocked_narration` mancante su un'azione condizionata. La deroga che c'era
+  nello Stadio B — «su una condizione che nessuno incontrerà mai al contrario,
+  si può omettere» — è stata tolta: era stata presa **43 volte su 81** in un IR
+  solo, e la previsione su cui si appoggiava («questa nessuno la chiederà
+  presto») è proprio quella che un compilatore non può fare, perché chi gioca a
+  parole prova le cose nell'ordine che gli viene in mente.
+- `look_variants` mancanti per un flag che, **in quella stessa scena**, apre o
+  chiude un'azione. Se un flag cambia cosa si può fare qui, per definizione
+  qualcosa qui è cambiato, e il `look` è l'unico posto in cui il giocatore può
+  accorgersene. Il caso che ha fatto scrivere il controllo: una fuga fra gli
+  scaffali dove notare un carrello chiudeva «corri» e apriva «rovescia il
+  carrello», con zero varianti e il carrello mai nominato da nessuna parte. Il
+  giocatore aveva in mano tutto tranne la parola. Non una scena difficile: una
+  scena muta.
+
+Si guardano solo i flag prodotti dalla scena stessa — uno impostato altrove
+descrive qualcosa che qui non è successo. Su "Nel paese dei ciechi" il
+controllo tace del tutto, il che è il modo in cui si è verificato che non sia
+rumore.
+
+### Un punto cieco noto del linter
+
+Rendere **facoltativa** la presa di un oggetto che venti scene più avanti è
+richiesto dall'**unica** uscita di una scena apre un vicolo cieco che il linter
+non vede: staticamente l'oggetto esiste, l'azione che lo dà esiste, la
+condizione è soddisfacibile. È successo modificando "Metal Head" — le caramelle
+si prendevano da sole, e separare il gesto dalla scoperta avrebbe permesso di
+lasciare la bottega senza il pacchetto che è la sola soluzione della notte sul
+ramo. Il rimedio adottato lì è quello generale: **la porta che chiude la scena
+chiede l'oggetto** (`has_item`) invece del flag della scoperta, così la scelta
+di prenderlo resta al giocatore e la possibilità di finire la storia resta
+garantita. Chi tocca un IR esistente per dare più agency deve guardare a valle:
+la domanda è sempre «da qui, senza questo, si arriva ancora alla fine?».
+
 ## Regole di game design che il compilatore applica
 
 Non sono vincoli di schema — l'IR permetterebbe benissimo di scriverne di
@@ -579,6 +618,258 @@ Vite sono soli strumenti di build).
   il tasto `debug` (in CLI, con `--debug` o `:debug`). Nel **dialogo** invece
   non cambia niente: lì l'elenco delle battute si vede sempre, per la decisione
   di 1.7.0 — si agisce a parole, si parla a scelte.
+
+- **Modalità ascolto: la storia recitata invece che letta** (`src/web/ascolto.ts`,
+  `src/web/voce.ts`, scheda «ascolto» nel pannello). Il player mostra i prompt di
+  generazione come testo perché un giorno saranno immagine, suono e voce. Chi non
+  guarda lo schermo ha lo stesso bisogno e ce l'ha *adesso*: **la descrizione di
+  un'inquadratura letta ad alta voce è l'immagine, finché l'immagine non esiste.**
+  Da qui la modalità — non un lettore di schermo attaccato sopra, ma una seconda
+  uscita del player, che riceve gli stessi dati dell'altra e li dispone per
+  l'orecchio. Sta interamente in `src/web/`: il core non sa che esiste un
+  altoparlante, come non sa che esiste un DOM, e la CLI non deve nemmeno poterlo
+  importare. Nessuna dipendenza: `speechSynthesis` del browser, che è anche
+  l'unico modo di far parlare il file HTML autonomo aperto da `file://`.
+
+  Quattro decisioni la definiscono.
+
+  - **Il collapse acustico è lo stesso di quello visivo.** A schermo il prompt di
+    un luogo o di un personaggio si vede per intero la prima volta e poi si
+    riduce a una riga richiudibile. All'orecchio la riga richiudibile non esiste,
+    quindi la stessa regola diventa: la prima volta la composizione per intero,
+    dalla seconda **solo il nome** dell'ambiente e dei personaggi. L'unità di
+    "prima visita" è l'inquadratura (`<scena>`, `<scena>#<beat>`) per
+    l'`image_prompt` e l'entità per i prompt di luogo e personaggio — così una
+    scena nuova nello stesso luogo dice la sua inquadratura senza ridescrivere il
+    luogo, che è esattamente ciò che a schermo fa il marcatore `ereditato`. I due
+    registri sono **separati**: sono due uscite indipendenti, e giocare a schermo
+    spento non deve cambiare quello che si vedrebbe riaccendendolo. La regola
+    invece va tenuta identica, ed è il motivo per cui la chiave dei personaggi ha
+    la stessa forma nelle due (`id · campo · testo`: un override locale è un
+    valore diverso e va risentito).
+  - **«Guardati intorno» riapre tutto.** È il contrappeso del collapse: a schermo
+    quella riga si riapre con un tocco, all'orecchio si riapre chiedendolo. Il
+    verbo del player esisteva già (`verbi.ts`), qui ricompone l'intera scheda di
+    scena. Non consuma i registri: è una rilettura su richiesta, non una prima
+    visita, e la volta dopo si torna a collassare.
+  - **Il dock non si legge. Mai.** Né «continua», né «scrivi cosa fare», né le
+    scelte di dialogo, né la conferma della chip appena toccata. Si recita quello
+    che *è successo* — narrazione, battute, esito dei comandi — non l'interfaccia
+    con cui lo si è chiesto: una chip la si tocca perché la si è già vista, e
+    sentirsela rileggere raddoppia ogni turno. Unica cosa che somiglia a
+    un'eccezione e non lo è: l'azione riconosciuta da una frase *scritta* si
+    sente, perché lì non si sta leggendo una chip ma dicendo cosa il resolver ha
+    capito — l'unica risposta a «ha preso l'azione che volevo?» prima che
+    l'effetto sia applicato. Alla fine di una scena il silenzio dice che tocca al
+    giocatore.
+  - **Avanzamento automatico** (flag, acceso con la modalità): finita la lettura
+    si prosegue da soli, perché un «continua» da cercare a tentoni sullo schermo
+    è l'ostacolo che questa modalità esiste per togliere. Copre il tap-to-continue
+    fra i beat e — unico caso in cui il player preme una chip di azione — **l'unica
+    uscita di una cutscene**, che nell'IR è un'azione e non un tap. Solo con una
+    candidata sola: dove le azioni sono due il player non sceglie al posto del
+    giocatore, e vale anche quando la scelta sembra ovvia.
+
+  - **Ogni frase va spezzata prima di darla alla sintesi.** Chrome smette di
+    parlare dopo ~15 secondi di una *stessa* utterance: resta formalmente in
+    corso e non esce più niente. Non è un caso limite — la descrizione di un
+    ambiente è un luogo più un'inquadratura in un periodo solo, e sull'IR di
+    "Metal Head" sono 114 frasi su 126 sopra i 180 caratteri, con una punta da
+    627 (~44 secondi). Si tagliano sui confini che il testo ha già (frase,
+    poi virgola, poi spazio), quindi la voce respira dove respirerebbe comunque,
+    e l'invariante è che le parole in uscita siano *esattamente* quelle in
+    entrata: il testo è d'autore e questa è impaginazione, non sintesi. Il
+    limite è in **secondi, non in caratteri**, e quindi scala con la velocità:
+    tagliare a lunghezza fissa proteggerebbe solo chi lascia il cursore dov'è, e
+    chi rallenta la voce — cioè chi ha più bisogno di sentire tutto — si
+    ritroverebbe il taglio di prima. Il rimedio che gira ovunque per questo bug
+    è un `pause()`/`resume()` periodico che tiene sveglio il motore: era la
+    prima versione, ed è un espediente contro un timer che non si vede che
+    dentro l'iframe di una pagina pubblicata smette di funzionare del tutto.
+    Meglio togliere la causa che combattere l'effetto.
+
+  Il resto sono parametri, nella scheda: un flag per recitare **anche i prompt di
+  suono e di tipo di voce** (`ambient_sound_prompt`, `sound_effect_prompt`,
+  `play_sound_prompt`, i `VoiceSpec.style_prompt`) — spento di default, perché
+  giocando è una rottura del quarto muro a ogni battuta, ma è l'unico modo di
+  collaudare la resa sonora di un IR senza guardare — e la scelta della voce di
+  sistema con velocità, tono e volume. Le impostazioni vivono fuori dalla partita
+  (ricominciare non deve costringere a riscegliere la voce); i registri del
+  collapse vivono quanto la partita, come quello visivo.
+
+  Vincolo rispettato per intero: **qui non si inventa prosa.** Ogni frase recitata
+  è testo d'autore dell'IR. Le uniche parole del player sono le etichette dei
+  campi — «Ambiente:», «Personaggio:», «Voce:», «Suono:» — che a schermo stanno
+  scritte accanto al valore: dette invece che disegnate. Anche il testo del
+  bottone «prova» è il titolo della storia, non una frase di comodo — ed è pure il
+  campione più utile, perché sono i nomi propri quelli su cui una voce sintetica
+  inciampa.
+
+- **Una traccia esaurita finisce la partita in CLI e la restituisce al
+  giocatore sul web.** È lo stesso file e lo stesso `ScriptDriver`, ma serve a
+  due cose diverse, e trattarle uguale era sbagliato in entrambe le direzioni.
+  In CLI una traccia che si esaurisce prima del finale è un **test fallito**:
+  è il segnale per cui i playthrough di riferimento esistono, e lì l'errore
+  deve propagarsi e far uscire con 1. Sul web la stessa traccia è il modo in
+  cui si **riprende una partita**: si incolla, si rigioca in un istante — senza
+  tap-to-continue, quindi il transcript si riempie tutto insieme — e da lì si
+  continua a giocare. Prima la partita si chiudeva con «script di playthrough
+  esaurito» e nessuna riga di input: l'unico esito che non ha senso in nessuno
+  dei due mondi.
+
+  Perché funziona come salvataggio senza che nessuno l'abbia progettato così:
+  poiché il resolver può solo scegliere fra azioni già definite, la sequenza
+  degli id **descrive per intero la partita** — è la stessa proprietà che rende
+  un playthrough un test di regressione. Un salvataggio è quindi una traccia, e
+  la traccia continua a crescere mentre si gioca: si ricopia dal pannello e si
+  risalva. Il marchio «traccia» nella barra sparisce quando la traccia finisce,
+  perché da quel momento non è più una partita rigiocata.
+
+- **Le diagnostiche stanno sotto il debug; chi gioca legge sempre testo
+  d'autore.** *(cambio di rotta rispetto alla decisione precedente, ed è giusto
+  dirlo)* La regola era: dove l'IR non ha il testo che servirebbe, il player
+  tace e lo segnala come nota fra parentesi, così un buco si vede quando
+  capita. Nasceva quando questo era solo uno strumento di collaudo. Adesso la
+  stessa build si gioca — e chi indovina l'azione giusta un momento troppo
+  presto, cioè chi sta giocando bene, riceve `(manca blocked_narration
+  nell'IR)` al posto della storia.
+
+  Ora il player **ripiega sul fallback per intenzione** — che è comunque testo
+  d'autore, già nell'IR — e la nota resta ma si vede solo a debug acceso. Il
+  segnale non si perde, cambia posto: il linter le elenca tutte prima di
+  giocare, e le due che producevano note (`blocked_narration` mancante,
+  `look_variants` mancanti) sono state promosse ad **avviso**.
+
+  Resta fuori `problem()`, che si vede sempre: quello segnala un IR **rotto**
+  (un `goto` verso un id inesistente, un nodo di dialogo che non c'è), non una
+  prosa che manca. La differenza è che lì non c'è niente da leggere al suo
+  posto, ed è l'informazione per cui questo player esiste.
+
+- **Un tentativo che nomina una cosa che si ha in mano riceve una risposta su
+  *quella* cosa.** Ultimo passo prima del fallback: se la frase non ha trovato
+  né un'azione né un verbo, ma nomina un oggetto dell'inventario, si legge la
+  sua `description` invece del `no_match_narration`. Il motivo è che i due
+  testi sono entrambi d'autore, ma il fallback è scritto per l'*intenzione* e
+  della cosa appena nominata non sa niente: «usa il walkie» si sentiva
+  rispondere «Le mani non trovano niente», mentre la descrizione del walkie
+  dice che è scarico — cioè esattamente quello che il giocatore stava
+  chiedendo. La precedenza non cambia (prima il resolver, poi i verbi, poi
+  questo): un'azione della scena vince sempre. La soglia di somiglianza è più
+  alta di quella dell'esame, perché qui manca il filtro del verbo di percezione
+  e senza margine qualunque frase somiglierebbe vagamente a qualcosa nello
+  zaino.
+
+- **Quando nella scena non resta niente da fare, l'uscita si mostra.** Le chip
+  stanno sotto il debug perché un elenco di azioni risolve gli enigmi al posto
+  del giocatore — ma quando gli enigmi sono finiti non c'è più niente da
+  proteggere, e continuare a chiedere di indovinare la frase giusta è solo un
+  muro. Succedeva letteralmente: nella scena in auto di "Metal Head", finito il
+  dialogo, si usciva scrivendo «continua», che è un alias dell'azione — cioè
+  indovinandolo. Ora compare la chip con la label d'autore («Lasciare che la
+  strada finisca»), che oltre a non farsi indovinare dice anche *dove* si sta
+  andando.
+
+  «Niente da fare» ha una definizione precisa, ed è la sola che regge: ogni
+  azione disponibile che non sia un'uscita è **già stata eseguita almeno una
+  volta**, oppure è una **pura osservazione** (il suo `Effect` non ha flag,
+  oggetti, dialoghi né transizioni: si può rileggere per sempre senza che la
+  storia si muova). Senza la prima metà la regola non scatterebbe mai dove
+  serve — l'azione che apre un dialogo resta disponibile anche dopo averlo
+  ascoltato, e riascoltarlo non è qualcosa che resta da fare. Serve quindi che
+  `GameState` ricordi le azioni eseguite e non solo quelle *consumate*: sono
+  due domande diverse («è già stata fatta» contro «non si può più fare»), e
+  resta derivabile da quello che il giocatore ha fatto, come `history`.
+
+  **Una sola uscita, altrimenti niente.** La prima versione le mostrava tutte,
+  con l'idea che fra più uscite non ci fosse un enigma da proteggere ma una
+  decisione da prendere. È sbagliato, e si vede appena si incontra una scena il
+  cui *unico* contenuto è un bivio: la cabina del furgone di "Metal Head" ha
+  quattro azioni e tutte e quattro portano fuori, nessuna condizionata. Lì non
+  resta niente da fare fin dal primo istante — non perché la scena sia
+  esaurita, ma perché non ha mai avuto altro — e la regola stampava l'elenco
+  completo delle quattro scelte: esattamente il menu che le chip sotto debug
+  esistono per non mostrare. È il limite della condizione «non resta niente da
+  fare»: non sa distinguere una scena *esaurita* da una che è sempre stata solo
+  un bivio. Con una sola uscita quel caso non può presentarsi, perché
+  alternative da svelare non ce ne sono.
+
+  In modalità ascolto quell'unica uscita è la sola parte del dock che si
+  recita, per la stessa ragione per cui si mostra.
+
+- **«Cosa posso fare?» risponde con i bersagli, non con le azioni.** Un player
+  a parole in cui non si trova la frase giusta è un player in cui la storia si
+  ferma; ma l'elenco delle azioni la risolve al posto del giocatore, ed è la
+  ragione per cui le chip stanno sotto il debug. Il verbo del player nomina
+  quindi i **`target`** delle azioni disponibili, con il nome d'autore
+  dell'oggetto o della persona: dice dove guardare, non cosa fare. «Tommy» non
+  è «parla con Tommy»; «la cassa» non è né «apri la cassa» né «sposta la
+  cassa». L'enigma resta intero, l'attrito di indovinare *su cosa* no.
+
+  I bersagli delle azioni nascoste da una condizione non entrano (sarebbero un
+  anticipo, a volte uno spoiler), né il protagonista (non è un bersaglio, è chi
+  sta chiedendo), né i `target` che non si risolvono in un oggetto o in un
+  personaggio — `"ambiente"` è la convenzione dello schema per un bersaglio
+  generico, e un id buttato in faccia al giocatore non è una risposta.
+
+  **La risposta somma due pezzi**, e sommarli invece di sceglierne uno è la
+  parte importante: il **`look` della scena com'è adesso** (`look_variants`
+  comprese) più i **bersagli** delle azioni disponibili. Il `look` è il pezzo
+  che porta l'indizio, perché è l'unico testo della scena che cambia con lo
+  stato — nel magazzino di "Metal Head", dopo aver confrontato il codice sul
+  palmo, dice «il numero sul palmo e quello sul montante coincidono: è questo»
+  — ed è anche il posto dove l'autore nomina le cose della stanza (scaffali,
+  schedario, armadietto) che nell'IR non sono oggetti e che nessun altro campo
+  saprebbe elencare.
+
+  Due correzioni ci sono volute per arrivarci, ed entrambe dicono qualcosa di
+  generale. La prima: la versione iniziale si fermava ai `target` e dichiarava
+  «manca `actions[].target` nell'IR» quando non ne trovava — su "Metal Head"
+  **26 scene su 43**, perché `target` è opzionale nello schema e `"ambiente"`
+  è la sua convenzione documentata. Non era un buco dell'IR, era una
+  diagnostica sbagliata, e il principio che ne esce vale oltre questo caso:
+  **un IR conforme allo schema non deve poter far comparire una nota di
+  errore.** Le note esistono per i buchi veri, non per i campi opzionali. La
+  seconda: mettendo i pezzi in cascata invece che in somma, «chi è in scena»
+  arrivava per primo e rispondeva «In gioco: Mark» proprio dove il `look` aveva
+  l'indizio buono — il pezzo più povero copriva il più ricco.
+
+  I nomi vengono dai `target` delle azioni e **non** da `Scene.characters`: la
+  roster di scena contiene chiunque sia presente, anche chi il giocatore deve
+  ancora scoprire, e provandolo l'aiuto annunciava il Cane-robot mentre era
+  ancora una sagoma nel buio.
+
+  **È anche l'unica frase che si consulta prima del resolver.** L'ordine di
+  `turno.ts` — resolver, poi verbi del player — esiste perché un'azione
+  d'autore vinca sempre su un verbo di sistema, e resta valido per tutti gli
+  altri. Ma «cosa posso fare» non è un tentativo di agire sul mondo, è una
+  domanda sull'interfaccia, e trattarla come una frase qualunque significava
+  lasciarla somigliare agli alias di un'azione e farla partire: succedeva in 5
+  scene su 43, e in una di quelle il giocatore che chiedeva aiuto sparava al
+  tetto del furgone. Una domanda non può applicare un `Effect`. Il prezzo, che
+  va detto: una storia non può più avere un'azione chiamata esattamente
+  «aiuto».
+
+- **Le didascalie dentro un dialogo sono prosa, non una voce fuori campo.**
+  Nella sceneggiatura, fra due battute c'è quasi sempre una riga che dice cosa
+  succede mentre si parla — «Tommy guarda Laura nello specchietto», «Laura
+  tiene ancora il palmo chiuso». Nell'IR quella riga è un nodo con
+  `speaker: "narrator"` (in sequenza) o una `choices[].effect.narration` (su un
+  ramo di scelta: l'effetto si applica dopo il tocco e prima del nodo di
+  destinazione, che è dove la didascalia sta, e non tocca il `goto` — che è il
+  nome con cui i playthrough identificano il ramo). Il player le impagina come
+  prosa e **non ci mette nessun nome davanti**: «Narratore:» inventerebbe una
+  voce fuori campo che nella scena non c'è, e in modalità ascolto la farebbe
+  pure recitare a ogni riga.
+
+  Perché è una decisione e non un dettaglio: un dialogo a cui il compilatore ha
+  tolto le didascalie **si gioca benissimo e non se ne accorge nessuno finché
+  non lo si legge** — le battute ci sono tutte, il linter tace, i playthrough
+  passano. È successo davvero: su "Metal Head" la scena in auto aveva undici
+  battute e una sola didascalia superstite. Da qui il controllo statico: un
+  dialogo di almeno quattro nodi con meno di una descrizione ogni sei è
+  `info`, perché è la firma di quella perdita. È un *rapporto* e non un
+  conteggio proprio perché la regola "zero descrizioni" lasciava passare il
+  caso da cui è nata.
 
 - **Ogni risposta dichiara chi l'ha decisa** (⟨lessicale⟩, ⟨embedding⟩,
   ⟨verbo del player⟩), sempre, non solo in debug. Il backend a vettori esiste

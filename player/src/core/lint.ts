@@ -10,7 +10,7 @@
  */
 
 import type { Condition, Effect, Intent, Scene, Story } from './types.js';
-import { SCENE_CUTSCENE, SCENE_INTERACTIVE, displayName, findScene, sceneHasExit, sceneType, shotsOf } from './types.js';
+import { NARRATORE, SCENE_CUTSCENE, SCENE_INTERACTIVE, displayName, findScene, isDidascalia, sceneHasExit, sceneType, shotsOf } from './types.js';
 import { verboDelPlayer } from './verbi.js';
 
 export type Level = 'info' | 'avviso' | 'errore';
@@ -23,6 +23,24 @@ export type Level = 'info' | 'avviso' | 'errore';
  * coprono tre frasi; quindici cominciano a coprire un modo di parlare.
  */
 export const SOGLIA_ALIAS = 8;
+
+/**
+ * Sotto quanti nodi un dialogo e' troppo corto perche' valga la pena contare le
+ * descrizioni. Uno scambio di tre battute serrate senza didascalie e' una
+ * scelta di scrittura legittima, e segnalarlo sarebbe solo rumore.
+ */
+export const MIN_NODI_DIALOGO = 4;
+
+/**
+ * Ogni quanti nodi ci si aspetta almeno una descrizione.
+ *
+ * E' un rapporto e non un conteggio, ed e' l'unica forma che funziona: la
+ * regola "zero descrizioni" lascia passare proprio il caso da cui questo
+ * controllo e' nato — undici battute con una sola didascalia superstite, che a
+ * giocarle sono dieci frasi a vuoto di fila. Sei e' largo apposta: deve
+ * accendersi su un dialogo spogliato, non su uno scritto fitto.
+ */
+export const NODI_PER_DESCRIZIONE = 6;
 
 export interface Finding {
   level: Level;
@@ -136,6 +154,7 @@ class Linter {
         this.checkEffect(sc, aw, a.effect);
       });
 
+      this.checkLookVarianti(sc);
       this.checkDialogue(sc);
     }
   }
@@ -158,6 +177,64 @@ class Linter {
     if (e.set_flag && e.set_flag === e.unset_flag) {
       this.add('avviso', where, `set_flag e unset_flag sullo stesso flag "${e.set_flag}"`);
     }
+  }
+
+  /**
+   * Un flag che apre o chiude un'azione **in questa stessa scena**, ma che il
+   * `look` ignora.
+   *
+   * Se un flag cambia cosa si puo' fare qui, per definizione qualcosa qui e'
+   * cambiato — e il `look` e' l'unico posto in cui il giocatore puo'
+   * accorgersene, perche' e' l'unico testo della scena che si rilegge quando si
+   * vuole. Senza la variante corrispondente si rilegge la stanza di partenza e
+   * si conclude di non aver combinato niente.
+   *
+   * Il caso che ha fatto scrivere il controllo: una scena di fuga in cui
+   * `carrello_visto` chiudeva «corri» e apriva «rovescia il carrello», con zero
+   * `look_variants` e nessuna menzione del carrello da nessuna parte. Il
+   * giocatore aveva in mano tutto tranne la parola: non una scena difficile,
+   * una scena muta.
+   *
+   * Si guardano solo i flag **prodotti dalla scena stessa**: uno impostato
+   * altrove descrive qualcosa che qui non e' successo, e pretendere che la
+   * stanza lo racconti sarebbe sbagliato.
+   */
+  checkLookVarianti(sc: Scene): void {
+    if (sceneType(sc) === SCENE_CUTSCENE) return;
+
+    const impostatiQui = new Set<string>();
+    const raccogli = (e?: Effect) => {
+      if (e?.set_flag) impostatiQui.add(e.set_flag);
+    };
+    for (const a of sc.actions) raccogli(a.effect);
+    for (const f of sc.on_enter_flags_set ?? []) impostatiQui.add(f);
+    for (const n of Object.values(sc.dialogue_tree?.nodes ?? {})) {
+      raccogli(n.effect);
+      for (const c of n.choices ?? []) raccogli(c.effect);
+    }
+
+    // I flag che, qui, decidono se un'azione si puo' fare.
+    const cancelli = new Set<string>();
+    for (const a of sc.actions) {
+      const c = a.condition;
+      if (c?.flag_present && impostatiQui.has(c.flag_present)) cancelli.add(c.flag_present);
+      if (c?.flag_absent && impostatiQui.has(c.flag_absent)) cancelli.add(c.flag_absent);
+    }
+    if (cancelli.size === 0) return;
+
+    const raccontati = new Set<string>();
+    for (const v of sc.look_variants ?? []) {
+      if (v.condition.flag_present) raccontati.add(v.condition.flag_present);
+      if (v.condition.flag_absent) raccontati.add(v.condition.flag_absent);
+    }
+
+    const muti = [...cancelli].filter((f) => !raccontati.has(f)).sort();
+    if (muti.length === 0) return;
+    this.add(
+      'avviso',
+      sc.id,
+      `il flag ${muti.map((f) => `"${f}"`).join(', ')} cambia cosa si puo' fare qui, ma il look non cambia: guardandosi intorno si rilegge la stanza di prima (manca look_variants)`,
+    );
   }
 
   checkDialogue(sc: Scene): void {
@@ -210,6 +287,32 @@ class Linter {
       if (!n.end && !n.next && (n.choices ?? []).length === 0 && !leadsOut) {
         this.add('errore', nw, 'nodo monco: nessuna scelta, nessun next, nessun end - il dialogo si interrompe qui');
       }
+    }
+
+    // Un dialogo lungo senza nemmeno una didascalia.
+    //
+    // Non e' un errore di struttura — si gioca benissimo — ed e' proprio per
+    // questo che serve dirlo: e' la firma di una compilazione che ha buttato
+    // via le didascalie della sceneggiatura, quelle che stanno fra due battute
+    // e dicono cosa succede mentre si parla. A leggerlo, un dialogo cosi' e'
+    // una sequenza di frasi a vuoto, e senza questo controllo lo si scopre
+    // solo giocandolo. Conta anche `effect.narration`, che e' l'altro modo in
+    // cui una descrizione puo' stare dentro un dialogo.
+    // Le tre forme in cui una descrizione puo' stare dentro un dialogo, e
+    // contano tutte: un nodo `narrator`, una `narration` sull'effetto del
+    // nodo, e una sull'effetto di una *scelta* — che e' dove finisce ogni
+    // didascalia posata su un ramo, e dimenticarla farebbe suonare l'allarme
+    // proprio sui dialoghi appena sistemati.
+    const descrizioni = ids.filter((id) => {
+      const n = dt.nodes[id];
+      return isDidascalia(n) || !!n.effect?.narration || (n.choices ?? []).some((c) => !!c.effect?.narration);
+    }).length;
+    if (ids.length >= MIN_NODI_DIALOGO && descrizioni * NODI_PER_DESCRIZIONE < ids.length) {
+      this.add(
+        'info',
+        where,
+        `${ids.length} nodi e ${descrizioni === 0 ? 'nessuna descrizione' : `solo ${descrizioni} descrizione${descrizioni > 1 ? 'i' : ''}`}: nella sceneggiatura le didascalie fra le battute quasi certamente c'erano. Si scrivono come nodi con speaker "${NARRATORE}" (o come effect.narration), e senza si legge una sequenza di frasi a vuoto`,
+      );
     }
 
     // Raggiungibilita' dei nodi a partire dagli ingressi.
@@ -356,10 +459,16 @@ class Linter {
           this.add('avviso', `scena "${sc.id}", azione "${a.id}"`, 'blocked_narration senza condition: non si vedra\' mai');
         }
         if (a.condition && !a.blocked_narration) {
+          // Avviso e non info: la conseguenza si vede giocando, ed e' la
+          // peggiore che il player possa produrre. Il giocatore che indovina
+          // *l'azione giusta troppo presto* — cioe' quello che sta giocando
+          // bene — non riceve una risposta della storia ma una diagnostica fra
+          // parentesi. E' il caso in cui l'IR ha piu' bisogno di testo, non
+          // meno.
           this.add(
-            'info',
+            'avviso',
             `scena "${sc.id}", azione "${a.id}"`,
-            'azione condizionata senza blocked_narration: chiesta troppo presto, non dira\' niente',
+            'azione condizionata senza blocked_narration: chiesta troppo presto, il player mostra una diagnostica invece di una risposta',
           );
         }
       }

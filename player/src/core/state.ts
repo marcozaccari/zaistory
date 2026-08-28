@@ -42,6 +42,28 @@ export class GameState {
    * chiave" non deve poter essere ripetuta. */
   private consumedKeys = new Set<string>();
 
+  /**
+   * Ogni azione eseguita almeno una volta, per chiave "scena/azione" —
+   * comprese quelle ripetibili, che `consumedKeys` non registra.
+   *
+   * Non e' un doppione: `consumed` dice *non si puo' piu' fare*, questo dice
+   * *e' gia' stata fatta*. Sono due domande diverse, e la seconda serve a
+   * sapere quando in una scena non resta piu' niente da fare — che e' il
+   * momento in cui l'uscita smette di essere un enigma e va mostrata.
+   *
+   * Resta derivabile da quello che il giocatore ha fatto, come `history`:
+   * rigiocare la stessa traccia lo ricostruisce identico.
+   */
+  private eseguite = new Set<string>();
+
+  giaEseguita(sceneID: string, actionID: string): boolean {
+    return this.eseguite.has(`${sceneID}/${actionID}`);
+  }
+
+  segnaEseguita(sceneID: string, actionID: string): void {
+    this.eseguite.add(`${sceneID}/${actionID}`);
+  }
+
   hasItem(item: string): boolean {
     return this.inventory.includes(item);
   }

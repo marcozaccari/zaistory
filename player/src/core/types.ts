@@ -285,6 +285,27 @@ export function sceneType(sc: Scene): SceneType {
   return sc.scene_type ?? SCENE_INTERACTIVE;
 }
 
+/**
+ * Vero se l'azione non cambia niente: narrazione e suono, e basta.
+ *
+ * Serve a distinguere quello che nella scena **resta da fare** da quello che
+ * si puo' solo riguardare. Un'osservazione e' rileggibile all'infinito e non
+ * porta la storia da nessuna parte: contarla fra le cose da fare terrebbe ogni
+ * scena "aperta" per sempre.
+ */
+export function isOsservazione(a: Action): boolean {
+  const e = a.effect;
+  if (!e) return true;
+  return !(
+    e.set_flag ||
+    e.unset_flag ||
+    e.add_inventory ||
+    e.remove_inventory ||
+    e.goto_dialogue ||
+    e.goto_scene
+  );
+}
+
 /** Applica il default dello schema per `repeatable` (true se assente). */
 export function isRepeatable(a: Action): boolean {
   return a.repeatable === undefined || a.repeatable;
@@ -307,9 +328,33 @@ export function findCharacter(story: Story, id: string): Character | undefined {
   return story.characters?.find((c) => c.id === id);
 }
 
-/** Etichetta da mostrare per uno speaker di dialogo. */
+/**
+ * Lo `speaker` di chi non parla.
+ *
+ * Un nodo con questo speaker non e' una battuta: e' una **didascalia**, cioe'
+ * quello che nella sceneggiatura sta fra due battute — «Tommy guarda Laura
+ * nello specchietto», «Laura tiene ancora il palmo chiuso». Senza, un dialogo
+ * diventa una sequenza di frasi a vuoto in cui non si capisce cosa stia
+ * succedendo mentre si parla.
+ *
+ * Lo schema non ha un campo apposta e non deve averlo: un nodo del tree fa
+ * gia' tutto quello che serve — sta in un punto preciso della sequenza, ha il
+ * suo `next`, puo' portare un `effect`. Quello che serviva era smettere di
+ * trattarlo come una battuta in lettura.
+ */
+export const NARRATORE = 'narrator';
+
+/** Vero se il nodo e' una didascalia invece che una battuta. Le tre facce del
+ * player la impaginano come prosa: senza nome davanti, perche' non c'e'
+ * nessuno che la dice. */
+export function isDidascalia(n: DialogueNode): boolean {
+  return n.speaker === NARRATORE;
+}
+
+/** Etichetta da mostrare per uno speaker di dialogo. Sulle didascalie non si
+ * chiama: quelle non hanno un nome davanti (vedi `isDidascalia`). */
 export function speakerName(story: Story, speaker: string): string {
-  if (speaker === 'narrator') return 'Narratore';
+  if (speaker === NARRATORE) return 'Narratore';
   const c = findCharacter(story, speaker);
   return c ? displayName(c) : speaker;
 }

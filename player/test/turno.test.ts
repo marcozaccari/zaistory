@@ -207,13 +207,47 @@ const STORIA: Story = parseStory(
   }),
 );
 
+const CON_BERSAGLI: Story = parseStory(
+  JSON.stringify({
+    ir_version: '1.8.0',
+    id: 'b',
+    title: 'Bersagli',
+    start_scene: 's0',
+    characters: [{ id: 'tommy', name: 'Tommy' }],
+    items: [
+      { id: 'cassa', name: 'la cassa di legno' },
+      { id: 'fucile', name: 'il fucile' },
+    ],
+    scenes: [
+      {
+        id: 's0',
+        look: 'Un magazzino.',
+        background: { image_prompt: 'un magazzino' },
+        actions: [
+          { id: 'apri', label: 'Aprire la cassa', target: 'cassa', aliases: ['apri la cassa'], effect: { set_flag: 'aperta' } },
+          { id: 'parla', label: 'Parlare con Tommy', target: 'tommy', aliases: ['parla con tommy'], effect: { narration: 'x' } },
+          {
+            id: 'prendi',
+            label: 'Prendere il fucile',
+            target: 'fucile',
+            aliases: ['prendi il fucile'],
+            condition: { flag_present: 'aperta' },
+            blocked_narration: 'Non ancora.',
+            effect: { add_inventory: 'fucile' },
+          },
+        ],
+      },
+    ],
+  }),
+);
+
 function prompt(state: GameState): ActionPrompt {
   const sc = STORIA.scenes[0];
   const disponibili = sc.actions.filter((a) => state.meets(a.condition).ok);
   const nascoste = sc.actions
     .filter((a) => !state.meets(a.condition).ok)
-    .map((a) => ({ action: a, reason: state.meets(a.condition).why }));
-  return { story: STORIA, scene: sc, state, available: disponibili, hidden: nascoste, terminal: false };
+    .map((a) => ({ action: a, reason: state.meets(a.condition).why, perche: 'condizione' as const }));
+  return { story: STORIA, scene: sc, state, available: disponibili, hidden: nascoste, terminal: false, uscite: [] };
 }
 
 test("un'azione bloccata mostra il testo d'autore e non applica niente", async () => {
@@ -283,10 +317,34 @@ test("guardare un oggetto che si ha in mano risponde con la sua descrizione", as
   const dopo = await libero.risolvi(prompt(st), 'esamina la chiave');
   assert.match(dopo.testo ?? '', /testa lavorata a foglia/);
 
-  // Senza verbo di percezione non e' un esame: "prendi la chiave" deve poter
-  // restare un'azione della scena.
+  // Senza verbo di percezione, e senza un'azione della scena che se ne
+  // occupi, si risponde comunque con la descrizione: e' pur sempre testo
+  // d'autore su *quella* cosa, mentre il fallback per intenzione parlerebbe
+  // d'altro. Quello che conta e' che l'azione della scena, quando c'e', vinca
+  // — ed e' il test qui sotto.
   const presa = await libero.risolvi(prompt(st), 'prendi la chiave');
-  assert.notEqual(presa.verbo, 'esamina');
+  assert.equal(presa.verbo, 'esamina');
+  assert.match(presa.testo ?? '', /pesante di quanto sembri|testa lavorata a foglia/);
+});
+
+test("un'azione della scena vince sulla descrizione dell'oggetto", async () => {
+  const st = new GameState();
+  st.inventory.push('cassa');
+  const sc = CON_BERSAGLI.scenes[0];
+  const p: ActionPrompt = {
+    story: CON_BERSAGLI,
+    scene: sc,
+    state: st,
+    available: sc.actions.filter((a) => st.meets(a.condition).ok),
+    hidden: sc.actions.filter((a) => !st.meets(a.condition).ok).map((a) => ({ action: a, reason: 'x', perche: 'condizione' as const })),
+    terminal: false,
+    uscite: [],
+  };
+  const e = await new InputLibero(CON_BERSAGLI, new LexicalResolver()).risolvi(p, 'apri la cassa');
+  // La precedenza e' quella di sempre: prima il resolver, poi i verbi del
+  // player. La descrizione non deve poter scippare un'azione all'autore.
+  assert.equal(e.kind, 'azione');
+  assert.equal(e.actionId, 'apri');
 });
 
 test('la scena vince sul globale nella scelta del fallback', async () => {
@@ -399,4 +457,221 @@ test('la copertura distingue le frasi perse da quelle sbagliate', async () => {
   assert.equal(c.prese, 1);
   assert.equal(c.perse.length, 1);
   assert.equal(c.sbagliate.length, 0);
+});
+
+// --------------------------------------------------------------------------
+// «Cosa posso fare?»
+//
+// E' il compromesso fra due cose vere: un player a parole in cui non si trova
+// la frase giusta e' un player in cui la storia si ferma, ma l'elenco delle
+// azioni risolve gli enigmi al posto del giocatore. La risposta dice **cosa**
+// e' in gioco, mai **come** si usa — ed e' su questo confine che i test qui
+// sotto stanno di guardia.
+
+test('«cosa posso fare» e le sue forme sono un verbo del player', () => {
+  for (const frase of [
+    'cosa posso fare',
+    'che posso fare',
+    'cosa posso fare qui',
+    'che si fa adesso',
+    'aiuto',
+    'sono bloccato',
+    'non so cosa fare',
+    'suggerimento',
+    'suggeriscimi qualcosa',
+  ]) {
+    assert.equal(verboDelPlayer(frase), 'aiuto', `non riconosciuta: "${frase}"`);
+  }
+});
+
+test('con un complemento non e piu una richiesta di aiuto', () => {
+  // Sono azioni della scena, e scippargliele vorrebbe dire rispondere con un
+  // elenco a chi stava chiedendo di una cosa precisa.
+  for (const frase of ['cosa posso fare con la leva', 'aiuto mark', 'aiuta il ragazzo', 'cosa faccio con la corda']) {
+    assert.notEqual(verboDelPlayer(frase), 'aiuto', `scippata all'autore: "${frase}"`);
+  }
+});
+
+/** Una scena con dei bersagli veri: un oggetto, una persona, e un'azione
+ * nascosta da una condizione che non deve trapelare. */
+test('l aiuto nomina i bersagli, non le azioni', async () => {
+  const st = new GameState();
+  const sc = CON_BERSAGLI.scenes[0];
+  const disponibili = sc.actions.filter((a) => st.meets(a.condition).ok);
+  const p: ActionPrompt = {
+    story: CON_BERSAGLI,
+    scene: sc,
+    state: st,
+    available: disponibili,
+    hidden: sc.actions.filter((a) => !st.meets(a.condition).ok).map((a) => ({ action: a, reason: 'x', perche: 'condizione' as const })),
+    terminal: false,
+    uscite: [],
+  };
+  const e = await new InputLibero(CON_BERSAGLI, new LexicalResolver()).risolvi(p, 'cosa posso fare');
+
+  assert.equal(e.verbo, 'aiuto');
+  assert.ok(e.testo?.includes('la cassa di legno'), e.testo);
+  assert.ok(e.testo?.includes('Tommy'), e.testo);
+  // Nessuna label: quello sarebbe l'elenco delle azioni, cioe' la soluzione.
+  for (const a of sc.actions) assert.ok(!e.testo?.includes(a.label), `ha svelato "${a.label}"`);
+  // E niente che venga da un'azione ancora bloccata: sarebbe un anticipo.
+  assert.ok(!e.testo?.includes('il fucile'), e.testo);
+});
+
+test('senza bersagli l aiuto risponde con la scena, non con una nota di errore', async () => {
+  // `target` e' opzionale nello schema e "ambiente" e' la sua convenzione per
+  // un bersaglio generico: un IR conforme non deve poter far comparire una
+  // diagnostica. La prima versione la faceva comparire in 26 scene su 43.
+  const st = new GameState();
+  const e = await new InputLibero(STORIA, new LexicalResolver()).risolvi(prompt(st), 'cosa posso fare');
+  assert.equal(e.verbo, 'aiuto');
+  assert.equal(e.nota, undefined, 'un IR valido non deve produrre note');
+  // Il `look` c'e': e' il pezzo che porta l'indizio, e nessun pezzo piu'
+  // povero deve coprirlo.
+  assert.match(e.testo ?? '', /Una stanza vuota\./);
+  // Nessun nome da `Scene.characters`: la roster contiene anche chi il
+  // giocatore deve ancora scoprire.
+  assert.doesNotMatch(e.testo ?? '', /In gioco/);
+  for (const a of STORIA.scenes[0].actions) assert.ok(!e.testo?.includes(a.label));
+});
+
+test('il look segue lo stato anche nell aiuto', async () => {
+  // E' il pezzo che porta l'indizio: l'unico testo della scena che cambia
+  // quando cambia lo stato. Se l'aiuto non lo dicesse, l'indizio resterebbe
+  // raggiungibile solo da chi pensa di scrivere «guardati intorno».
+  const st = new GameState();
+  st.flags.add('acceso');
+  const e = await new InputLibero(STORIA, new LexicalResolver()).risolvi(prompt(st), 'cosa posso fare');
+  assert.match(e.testo ?? '', /con la luce accesa/);
+  assert.doesNotMatch(e.testo ?? '', /Una stanza vuota/);
+});
+
+test('senza bersagli e senza nessuno in scena resta il look', async () => {
+  const deserta: Story = parseStory(
+    JSON.stringify({
+      ir_version: '1.8.0',
+      id: 'd',
+      title: 'Deserta',
+      start_scene: 's0',
+      scenes: [
+        {
+          id: 's0',
+          look: 'Un corridoio che non finisce.',
+          background: { image_prompt: 'un corridoio' },
+          // Tutti i target sono generici: e' il caso di 26 scene su 43 in
+          // "Metal Head", e la risposta giusta e' l'ambiente stesso.
+          actions: [{ id: 'vai', label: 'Andare', target: 'ambiente', aliases: ['vai'], effect: { narration: 'x' } }],
+        },
+      ],
+    }),
+  );
+  const st = new GameState();
+  const sc = deserta.scenes[0];
+  const e = await new InputLibero(deserta, new LexicalResolver()).risolvi(
+    { story: deserta, scene: sc, state: st, available: sc.actions, hidden: [], terminal: false, uscite: [] },
+    'cosa posso fare',
+  );
+  assert.equal(e.nota, undefined);
+  assert.equal(e.testo, 'Un corridoio che non finisce.');
+});
+
+test('la domanda di aiuto non puo far partire un azione', async () => {
+  // Il caso vero: su "Metal Head" «cosa posso fare» somigliava abbastanza agli
+  // alias di certe azioni da eseguirle, e in una scena sparava al tetto del
+  // furgone. Qui l'azione ha come alias proprio la domanda: deve perdere.
+  const trappola: Story = parseStory(
+    JSON.stringify({
+      ir_version: '1.8.0',
+      id: 't',
+      title: 'Trappola',
+      start_scene: 's0',
+      scenes: [
+        {
+          id: 's0',
+          look: 'Una stanza con una leva.',
+          background: { image_prompt: 'una stanza' },
+          actions: [
+            {
+              id: 'spara',
+              label: 'Sparare',
+              aliases: ['cosa posso fare', 'che posso fare', 'aiuto', 'spara'],
+              effect: { set_flag: 'sparato' },
+            },
+          ],
+        },
+      ],
+    }),
+  );
+  const st = new GameState();
+  const sc = trappola.scenes[0];
+  const p: ActionPrompt = {
+    story: trappola,
+    scene: sc,
+    state: st,
+    available: sc.actions,
+    hidden: [],
+    terminal: false,
+    uscite: [],
+  };
+  for (const frase of ['cosa posso fare', 'aiuto']) {
+    const e = await new InputLibero(trappola, new LexicalResolver()).risolvi(p, frase);
+    assert.equal(e.kind, 'verbo', `"${frase}" ha fatto partire qualcosa`);
+    assert.equal(e.actionId, undefined);
+  }
+  // La stessa azione, chiesta per quello che e', continua a partire.
+  const ok = await new InputLibero(trappola, new LexicalResolver()).risolvi(p, 'spara');
+  assert.equal(ok.kind, 'azione');
+  assert.equal(ok.actionId, 'spara');
+});
+
+test("chiedere di nuovo un'azione gia' usata non accusa l'IR di un buco", async () => {
+  // `blocked_narration` risponde a una *condizione* non soddisfatta. Lo schema
+  // non ha, e non deve avere, un campo per «l'hai gia' fatto»: pretenderlo
+  // faceva comparire «manca blocked_narration nell'IR» su un IR conforme.
+  const usaEBasta: Story = parseStory(
+    JSON.stringify({
+      ir_version: '1.8.0',
+      id: 'u',
+      title: 'Una volta sola',
+      start_scene: 's0',
+      player_voice: {
+        no_match_narration: [{ intent: 'generico', text: 'Non serve a niente.' }],
+      },
+      scenes: [
+        {
+          id: 's0',
+          look: 'Una stanza con una leva.',
+          background: { image_prompt: 'una stanza' },
+          actions: [
+            {
+              id: 'tira',
+              label: 'Tirare la leva',
+              aliases: ['tira la leva', 'abbassa la leva'],
+              repeatable: false,
+              effect: { set_flag: 'tirata' },
+            },
+          ],
+        },
+      ],
+    }),
+  );
+  const st = new GameState();
+  st.consume('s0', 'tira');
+  const sc = usaEBasta.scenes[0];
+  const p: ActionPrompt = {
+    story: usaEBasta,
+    scene: sc,
+    state: st,
+    available: [],
+    hidden: [{ action: sc.actions[0], reason: "gia' usata (repeatable: false)", perche: 'gia-usata' }],
+    terminal: false,
+    uscite: [],
+  };
+  const e = await new InputLibero(usaEBasta, new LexicalResolver()).risolvi(p, 'tira la leva');
+
+  assert.notEqual(e.kind, 'bloccata');
+  assert.equal(e.nota, undefined, `nessuna nota attesa, invece: ${e.nota}`);
+  // Risponde testo d'autore, e il motivo resta nella diagnostica del collaudo.
+  assert.equal(e.testo, 'Non serve a niente.');
+  assert.match(e.why ?? '', /gia' usata/);
 });

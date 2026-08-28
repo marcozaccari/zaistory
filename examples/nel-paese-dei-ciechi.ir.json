@@ -691,14 +691,17 @@
               },
               {
                 "text": "Restare immobile e lasciarsi avvicinare.",
-                "goto": "d_esame"
+                "goto": "d_esame",
+                "effect": {
+                  "narration": "I tre si avvicinano insieme, mani protese. Nuñez arretra d'istinto — poi si lascia toccare: viso, capelli, mento non rasato, giacca ruvida. Lo esaminano come si esamina una creatura nuova."
+                }
               }
             ]
           },
           "d_vista": {
             "speaker": "pedro",
             "text": "Vista...?",
-            "next": "d_esame"
+            "next": "d_avvicinano"
           },
           "d_esame": {
             "speaker": "correa",
@@ -706,7 +709,10 @@
             "choices": [
               {
                 "text": "Toccarsi un occhio con un dito, per indicarlo.",
-                "goto": "d_occhi"
+                "goto": "d_occhi",
+                "effect": {
+                  "narration": "Nuñez si dimena. Con un dito si tocca l'occhio per indicarlo — i tre reagiscono con un sussulto, come davanti a una stranezza sgradevole, e lo tastano di nuovo, lì."
+                }
               },
               {
                 "text": "«Piano!»",
@@ -716,7 +722,7 @@
           },
           "d_occhi": {
             "speaker": "il_terzo_cieco",
-            "text": "I tre sussultano, come davanti a una stranezza sgradevole, e lo tastano di nuovo proprio lì. «Parla. È certamente un uomo.»",
+            "text": "Parla. È certamente un uomo.",
             "next": "d_creatura"
           },
           "d_creatura": {
@@ -732,6 +738,11 @@
               "goto_scene": "sala_degli_anziani"
             },
             "end": true
+          },
+          "d_avvicinano": {
+            "speaker": "narrator",
+            "text": "I tre si avvicinano insieme, mani protese. Nuñez arretra d'istinto — poi si lascia toccare: viso, capelli, mento non rasato, giacca ruvida. Lo esaminano come si esamina una creatura nuova.",
+            "next": "d_esame"
           }
         }
       },
@@ -909,11 +920,17 @@
             "choices": [
               {
                 "text": "Parlare del cielo, delle montagne, del mondo là fuori.",
-                "goto": "d_cosmogonia"
+                "goto": "d_cosmogonia",
+                "effect": {
+                  "narration": "Nuñez tenta di spiegare il mondo, il cielo, le montagne, la vista. Da quattordici generazioni questa gente è cieca e tagliata fuori dal mondo dei vedenti: i nomi di tutte le cose relative alla vista sono svaniti, e la storia del mondo esterno è diventata fiaba infantile. Non credono, non capiscono — nemmeno le parole."
+                }
               },
               {
                 "text": "Parlare della vista: dire che si possono conoscere le cose lontane senza toccarle.",
-                "goto": "d_cosmogonia"
+                "goto": "d_cosmogonia",
+                "effect": {
+                  "narration": "Nuñez tenta di spiegare il mondo, il cielo, le montagne, la vista. Da quattordici generazioni questa gente è cieca e tagliata fuori dal mondo dei vedenti: i nomi di tutte le cose relative alla vista sono svaniti, e la storia del mondo esterno è diventata fiaba infantile. Non credono, non capiscono — nemmeno le parole."
+                }
               }
             ]
           },

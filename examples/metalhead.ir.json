@@ -391,7 +391,7 @@
           "mark_1": {
             "speaker": "mark",
             "text": "C'è.",
-            "next": "tommy_2"
+            "next": "d_specchietto"
           },
           "tommy_2": {
             "speaker": "tommy",
@@ -401,12 +401,12 @@
           "mark_2": {
             "speaker": "mark",
             "text": "C'è. Vedrai che c'è.",
-            "next": "tommy_3"
+            "next": "d_palmo"
           },
           "tommy_3": {
             "speaker": "tommy",
             "text": "Ma tu l'hai vista?",
-            "next": "tommy_4"
+            "next": "d_mark_non_risponde"
           },
           "tommy_4": {
             "speaker": "tommy",
@@ -414,7 +414,10 @@
             "choices": [
               {
                 "text": "«Guida. Che non abbiamo quasi più benzina.»",
-                "goto": "laura_1"
+                "goto": "laura_1",
+                "effect": {
+                  "narration": "Laura tiene ancora il palmo chiuso."
+                }
               },
               {
                 "text": "Tenere il palmo chiuso e non rispondere.",
@@ -424,7 +427,7 @@
           },
           "silenzio": {
             "speaker": "narrator",
-            "text": "Mark non risponde. Laura tiene ancora il palmo chiuso. Nello specchietto, gli occhi di Tommy tornano su di lei e non se ne vanno.",
+            "text": "Nello specchietto, gli occhi di Tommy tornano su di lei e non se ne vanno.",
             "next": "tommy_5"
           },
           "tommy_5": {
@@ -433,14 +436,17 @@
             "choices": [
               {
                 "text": "«Guida. Che non abbiamo quasi più benzina.»",
-                "goto": "laura_1"
+                "goto": "laura_1",
+                "effect": {
+                  "narration": "Laura tiene ancora il palmo chiuso."
+                }
               }
             ]
           },
           "laura_1": {
             "speaker": "laura",
             "text": "Guida. Che non abbiamo quasi più benzina.",
-            "next": "mark_3"
+            "next": "d_volante"
           },
           "mark_3": {
             "speaker": "mark",
@@ -454,6 +460,26 @@
               "set_flag": "viaggio_ascoltato"
             },
             "end": true
+          },
+          "d_specchietto": {
+            "speaker": "narrator",
+            "text": "Tommy guarda Laura nello specchietto. Laura non ricambia.",
+            "next": "tommy_2"
+          },
+          "d_palmo": {
+            "speaker": "narrator",
+            "text": "Silenzio. Laura apre e guarda il palmo della mano: a pennarello, un codice a tre cifre. Lo richiude.",
+            "next": "tommy_3"
+          },
+          "d_mark_non_risponde": {
+            "speaker": "narrator",
+            "text": "Mark non risponde. Tommy guarda Laura nello specchietto.",
+            "next": "tommy_4"
+          },
+          "d_volante": {
+            "speaker": "narrator",
+            "text": "Tommy stringe le mani sul volante. Mark si gira appena verso il finestrino, e per un secondo lo vediamo sorridere.",
+            "next": "mark_3"
           }
         }
       },
@@ -665,7 +691,7 @@
           "mark_ordina": {
             "speaker": "mark",
             "text": "Quello lì. Mettilo in moto e tienilo acceso.",
-            "next": "tommy_dubbio"
+            "next": "d_furgone_bianco"
           },
           "tommy_dubbio": {
             "speaker": "tommy",
@@ -675,7 +701,7 @@
           "mark_secco": {
             "speaker": "mark",
             "text": "Tu fallo partire.",
-            "next": "tommy_chiede"
+            "next": "d_cacciavite"
           },
           "tommy_chiede": {
             "speaker": "tommy",
@@ -697,7 +723,10 @@
             "choices": [
               {
                 "text": "«Perché quando usciamo, forse usciamo di corsa.»",
-                "goto": "laura_chiude"
+                "goto": "laura_chiude",
+                "effect": {
+                  "narration": "Laura si carica lo zaino in spalla. Lo guarda in volto per un istante, con espressione preoccupata."
+                }
               },
               {
                 "text": "Caricarsi lo zaino in spalla e non rispondere.",
@@ -711,7 +740,10 @@
             "choices": [
               {
                 "text": "«Perché quando usciamo, forse usciamo di corsa.»",
-                "goto": "laura_chiude"
+                "goto": "laura_chiude",
+                "effect": {
+                  "narration": "Laura si carica lo zaino in spalla. Lo guarda in volto per un istante, con espressione preoccupata."
+                }
               }
             ]
           },
@@ -722,6 +754,16 @@
               "set_flag": "tommy_resta_fuori"
             },
             "end": true
+          },
+          "d_furgone_bianco": {
+            "speaker": "narrator",
+            "text": "Indica un furgone bianco parcheggiato accanto alla rampa di carico.",
+            "next": "tommy_dubbio"
+          },
+          "d_cacciavite": {
+            "speaker": "narrator",
+            "text": "Tommy apre il portabagagli dall'auto, tira fuori un cacciavite dalla cassetta degli attrezzi, poi esita.",
+            "next": "tommy_chiede"
           }
         }
       },
@@ -1051,12 +1093,17 @@
             "cerca meglio",
             "guarda dietro le scatole",
             "sposta le scatole",
-            "cerca i farmaci"
+            "cerca i farmaci",
+            "esamina gli scaffali",
+            "controlla i ripiani",
+            "guarda i ripiani",
+            "cerca sui ripiani",
+            "ispeziona gli scaffali",
+            "guarda sullo scaffale"
           ],
           "effect": {
-            "narration": "Antibiotici no. In fondo al secondo ripiano, invece, un pacchetto di caramelle dure, di quelle a strisce, con la carta ancora tesa.\n\n«Wow, non le assaggiavo da quando ero bambina.»\n\nLaura se le infila nello zaino.",
-            "set_flag": "caramelle_trovate",
-            "add_inventory": "caramelle"
+            "narration": "Antibiotici no. In fondo al secondo ripiano, invece, un pacchetto di caramelle dure, di quelle a strisce, con la carta ancora tesa.",
+            "set_flag": "caramelle_trovate"
           },
           "test_phrases": [
             "rovisto fra quello che e' rimasto sui ripiani",
@@ -1065,6 +1112,37 @@
             "vado a fondo negli scaffali"
           ],
           "blocked_narration": "Sugli scaffali c'e' polvere e cartone vuoto. Finche' non si sa che cosa si cerca, non vale la pena."
+        },
+        {
+          "id": "prendi_le_caramelle",
+          "label": "Prendere il pacchetto di caramelle",
+          "target": "caramelle",
+          "aliases": [
+            "prendi le caramelle",
+            "prendi il pacchetto",
+            "raccogli le caramelle",
+            "prendi le caramelle dure",
+            "metti le caramelle nello zaino",
+            "intasca le caramelle",
+            "infila le caramelle nello zaino",
+            "porta via le caramelle",
+            "tieni le caramelle",
+            "prendi i dolci"
+          ],
+          "test_phrases": [
+            "mi metto in tasca il pacchetto",
+            "me le porto dietro",
+            "allungo la mano verso le caramelle"
+          ],
+          "condition": {
+            "flag_present": "caramelle_trovate"
+          },
+          "blocked_narration": "Sul secondo ripiano c’è cartone vuoto e polvere. Non c’è ancora niente da prendere.",
+          "repeatable": false,
+          "effect": {
+            "narration": "«Wow, non le assaggiavo da quando ero bambina.»\n\nLaura se le infila nello zaino.",
+            "add_inventory": "caramelle"
+          }
         },
         {
           "id": "osserva_lo_schedario",
@@ -1100,7 +1178,7 @@
           "label": "Prendere la porta che dà sul magazzino",
           "target": "ambiente",
           "condition": {
-            "flag_present": "caramelle_trovate"
+            "has_item": "caramelle"
           },
           "blocked_narration": "Mark è ancora dietro la scrivania e Laura non ha finito di guardare gli scaffali.",
           "aliases": [
@@ -1132,6 +1210,18 @@
         }
       ],
       "look_variants": [
+        {
+          "condition": {
+            "flag_present": "caramelle_trovate"
+          },
+          "text": "Lo spaccio, con il cassetto della cassa fuori e l'armadietto spalancato. Sul secondo ripiano, dove Laura ha frugato, il pacchetto di caramelle a strisce. Sul fondo, la porta di servizio che da' sul magazzino."
+        },
+        {
+          "condition": {
+            "flag_present": "antibiotici_da_cercare"
+          },
+          "text": "Lo spaccio. Mark ha finito con l'armadietto, e i due scaffali polverosi sono l'unica cosa che nessuno ha ancora guardato davvero. Sul fondo, la porta di servizio."
+        },
         {
           "condition": {
             "flag_present": "armadietto_aperto"
@@ -1706,7 +1796,8 @@
           "effect": {
             "narration": "Curva, corridoio, curva. Il rumore dietro cambia tono a ogni angolo e non resta mai indietro abbastanza.\n\nA metà del corridoio 7 c'è un carrello di ferro carico di pallet vuoti.",
             "set_flag": "carrello_visto"
-          }
+          },
+          "blocked_narration": "Le gambe ci sono ancora. Ma i corridoi sono tutti uguali e il rumore dietro non si stacca mai di un metro."
         },
         {
           "id": "rovescia_il_carrello",
@@ -1797,7 +1888,8 @@
           ],
           "effect": {
             "narration": "Le dita sono già sul bordo del coperchio prima che lei se ne accorga.\n\n«Non è mia.»"
-          }
+          },
+          "blocked_narration": "Non ha nessuna scatola bianca con se'."
         },
         {
           "id": "finta_e_rampa",
@@ -1851,6 +1943,20 @@
         {
           "intent": "forza",
           "text": "Contro quella cosa, no."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "carrello_rovesciato"
+          },
+          "text": "Corridoi identici. A meta' corridoio il carrello e' giu' su un fianco con i cartoni sparsi intorno, e il rumore degli artigli lo ha gia' scavalcato. La luce della rampa di carico, sulla destra."
+        },
+        {
+          "condition": {
+            "flag_present": "carrello_visto"
+          },
+          "text": "Corridoi identici fra scaffali. A meta' corridoio, appoggiato a uno scaffale, un carrello di plastica carico di cartoni. La luce della rampa e' da qualche parte sulla destra, e il rumore dietro non resta mai indietro."
         }
       ]
     },
@@ -2148,7 +2254,8 @@
           "effect": {
             "narration": "Il tetto del furgone si deforma verso l'interno, sopra la testa di Tommy.",
             "goto_scene": "furgone_interno"
-          }
+          },
+          "blocked_narration": "Il furgone corre dritto sull'asfalto rotto. Per adesso non c'e' niente che chieda di tenersi."
         }
       ],
       "no_match_narration": [
@@ -2179,6 +2286,14 @@
         {
           "intent": "forza",
           "text": "Non qui dentro."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "tommy_ha_chiesto_di_mark"
+          },
+          "text": "L'interno del furgone in corsa. Tommy ha smesso di fare domande e stringe il volante con tutte e due le mani. Nello specchietto laterale non c'e' piu' niente."
         }
       ]
     },
@@ -2538,7 +2653,8 @@
           ],
           "effect": {
             "narration": "Le mani le tremano ancora troppo per fare qualsiasi cosa con precisione.\n\n«Con le mani così, no.»"
-          }
+          },
+          "blocked_narration": "Appesa alla cintura, con la testa in giu', non tira fuori niente da nessuno zaino."
         },
         {
           "id": "esci_dal_lunotto",
@@ -2592,6 +2708,14 @@
         {
           "intent": "forza",
           "text": "Non serve forza. Serve uscire."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "cintura_slacciata"
+          },
+          "text": "La cabina ribaltata. Laura e' sulla lamiera, che adesso e' il pavimento; Tommy, sopra di lei, e' ancora appeso alla sua cintura e non si muove. Gli attrezzi sparsi tutto intorno, e il finestrino del passeggero diventato soffitto."
         }
       ]
     },
@@ -2846,6 +2970,14 @@
           "intent": "forza",
           "text": "Con una gamba cosi', no."
         }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "gamba_osservata"
+          },
+          "text": "Il muretto a secco e le pietre. Dall'altra parte, a otto metri, qualcosa che non se ne va. Alla coscia sinistra, sotto il foro piccolissimo, il pallino nero preme contro il dito."
+        }
       ]
     },
     {
@@ -2962,7 +3094,8 @@
           "effect": {
             "narration": "Il primo è dritto e liscio per quattro metri: non c'è niente a cui aggrapparsi. Il secondo ha i rami bassi ma marci, si sbriciolano a toccarli.",
             "set_flag": "alberi_cercati"
-          }
+          },
+          "blocked_narration": "Gli alberi qui intorno li ha gia' passati in rassegna una volta, di corsa."
         },
         {
           "id": "cerca_ancora",
@@ -2988,7 +3121,8 @@
           "effect": {
             "narration": "Laura si ferma davvero, e per la prima volta guarda invece di scappare. Un faggio troppo aperto: si vedrebbe da sotto. Un altro con la forcella a due metri: troppo bassa, ci arriverebbe anche una cosa che salta.",
             "set_flag": "alberi_cercati_ancora"
-          }
+          },
+          "blocked_narration": "Il bosco e' ancora un bosco: tronchi grigi, tutti uguali, nessuno che si distingua dagli altri."
         },
         {
           "id": "albero_biforcuto",
@@ -3013,7 +3147,8 @@
           "effect": {
             "narration": "Questo sì. Il tronco si divide in due a un metro da terra, e le due metà si riavvicinano cinque metri più su, dove due rami fanno una specie di sedia.\n\nLo osserva per un istante di troppo, come si osserva una cosa in cui si sta per restare a lungo.",
             "set_flag": "albero_trovato"
-          }
+          },
+          "blocked_narration": "Nessuno di questi alberi, fin qui, ha una forma diversa dagli altri."
         },
         {
           "id": "guardati_indietro",
@@ -3102,6 +3237,26 @@
         {
           "intent": "forza",
           "text": "Contro un bosco?"
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "albero_trovato"
+          },
+          "text": "Il bosco rado, e in mezzo l'albero dal tronco biforcuto: si divide a un metro da terra e si richiude cinque metri piu' su, dove due rami fanno una forcella."
+        },
+        {
+          "condition": {
+            "flag_present": "alberi_cercati_ancora"
+          },
+          "text": "Tronchi grigi e sottobosco secco. Un faggio troppo aperto, un abete con i rami troppo fitti — e piu' in la', uno che si divide in due a un metro da terra."
+        },
+        {
+          "condition": {
+            "flag_present": "alberi_cercati"
+          },
+          "text": "Un bosco rado di tronchi grigi. Quelli qui davanti li ha gia' provati: uno liscio per quattro metri, uno con i rami bassi e marci. Piu' in la' ce ne sono altri."
         }
       ]
     },
@@ -3323,7 +3478,8 @@
           "effect": {
             "narration": "Zampe raccolte, sensori abbassati, LED spento. Sembra spento anche lui. Non lo è: è solo una cosa che aspetta meglio di come aspetta un essere umano.",
             "goto_dialogue": "laura_batteria"
-          }
+          },
+          "blocked_narration": "Sotto non c'e' niente di raccolto: quella cosa e' in piedi, e i sensori sono puntati in su."
         },
         {
           "id": "guarda_il_led_acceso",
@@ -3360,7 +3516,8 @@
             "narration": "In piedi, sensori puntati in alto, il LED che lampeggia lento e regolare. Laura smette di muoversi e aspetta.\n\nDopo un po' — minuti, forse molti — la macchina richiude le zampe e il LED si spegne.",
             "set_flag": "cane_a_riposo",
             "play_sound_prompt": "servomotori che si richiudono uno alla volta, poi silenzio"
-          }
+          },
+          "blocked_narration": "Sotto, la macchina e' chiusa su se' stessa. Il LED non lampeggia piu'."
         },
         {
           "id": "muoviti_sul_ramo",
@@ -3386,7 +3543,8 @@
             "narration": "Le mani non le sente più. Cambia appoggio, e il legno fa quello che fa il legno.\n\nSotto, la macchina si apre di scatto e il LED riparte.",
             "unset_flag": "cane_a_riposo",
             "play_sound_prompt": "scricchiolio di ramo, poi servomotori che si aprono tutti insieme"
-          }
+          },
+          "blocked_narration": "Con quei sensori puntati addosso, muovere anche solo una mano e' fuori discussione."
         },
         {
           "id": "lancia_una_caramella",
@@ -3441,7 +3599,8 @@
             "remove_inventory": "caramelle",
             "set_flag": "notte_delle_caramelle",
             "goto_scene": "bosco_alba"
-          }
+          },
+          "blocked_narration": "Non ancora. Non sa cosa succede."
         },
         {
           "id": "apri_la_scatola",
@@ -3474,7 +3633,8 @@
           ],
           "effect": {
             "narration": "Laura se la mette sulle ginocchia e guarda i cinque metri di vuoto sotto di sé.\n\n«Da quassù? Se mi cade non la ritrovo più. Non tutta.»"
-          }
+          },
+          "blocked_narration": "Non ha nessuna scatola bianca con se'."
         }
       ],
       "no_match_narration": [
@@ -3508,6 +3668,12 @@
         }
       ],
       "look_variants": [
+        {
+          "condition": {
+            "flag_present": "caramella_provata"
+          },
+          "text": "Notte piena, incastrata fra due rami a cinque metri. Sotto, la macchina si e' richiusa e il LED si e' spento un'altra volta. Nello zaino il pacchetto e' mezzo pieno."
+        },
         {
           "condition": {
             "flag_present": "cane_a_riposo"
@@ -3665,7 +3831,8 @@
           ],
           "effect": {
             "narration": "Liscio, senza scritte, con una fessura all'estremità. Contro il grigio del cielo sembra lampeggiare, ma potrebbe essere solo la luce che passa."
-          }
+          },
+          "blocked_narration": "Non ha in mano nessun cilindretto."
         },
         {
           "id": "infila_nella_pecora",
@@ -3688,7 +3855,8 @@
             "narration": "Nell'erba alta, a venti passi, una carcassa di pecora che il tempo ha lasciato quasi intatta. Laura si trascina fin lì e infila il cilindretto in profondità nella lana, dove non si vede e non si sposta.",
             "remove_inventory": "tracker",
             "set_flag": "tracker_nella_pecora"
-          }
+          },
+          "blocked_narration": "Non ha niente da infilare da nessuna parte."
         },
         {
           "id": "apri_la_scatola",
@@ -3721,7 +3889,8 @@
           ],
           "effect": {
             "narration": "Adesso ha le mani ferme, la luce buona, il tempo che vuole. Non ha nessuna scusa, e allora ne dice una vera.\n\n«Se la apro, poi devo decidere.»"
-          }
+          },
+          "blocked_narration": "Non ha nessuna scatola bianca con se'."
         },
         {
           "id": "vai_nella_direzione_opposta",
@@ -3775,6 +3944,20 @@
         {
           "intent": "forza",
           "text": "Non serve."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "tracker_nella_pecora"
+          },
+          "text": "Ai piedi dell'albero biforcuto, prima luce. Nell'erba alta, a venti passi, la carcassa della pecora con il cilindretto dentro la lana. La coscia sinistra brucia sotto la manica legata."
+        },
+        {
+          "condition": {
+            "flag_present": "coscia_guardata"
+          },
+          "text": "Ai piedi dell'albero biforcuto, prima luce. La coscia sinistra e' calda e tirata, e sotto il foro si sente qualcosa di duro che non e' osso. Nell'erba alta, a venti passi, la carcassa di una pecora."
         }
       ]
     },
@@ -4203,7 +4386,8 @@
           ],
           "effect": {
             "narration": "La appoggia sul tavolo, si pulisce le mani sui pantaloni, la guarda.\n\n«Ancora no.»"
-          }
+          },
+          "blocked_narration": "Non ha nessuna scatola bianca con se'."
         },
         {
           "id": "sali_di_sopra",
@@ -4256,6 +4440,20 @@
         {
           "intent": "forza",
           "text": "Non c'e' niente da rompere che non sia gia' rotto."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "scatoletta_mangiata"
+          },
+          "text": "Il grande soggiorno con la parete di vetro sulla valle. Sul piano della cucina, una scatoletta vuota e due ancora chiuse. Una scala porta al piano di sopra."
+        },
+        {
+          "condition": {
+            "flag_present": "scatoletta_trovata"
+          },
+          "text": "Il grande soggiorno con la parete di vetro. Gli armadietti della cucina a vista sono aperti, e in fondo a uno ci sono tre scatolette con la linguetta ancora intatta. Una scala porta al piano di sopra."
         }
       ]
     },
@@ -4874,7 +5072,8 @@
             "narration": "Va altissimo. Prende il soffitto del pianerottolo, e giù piovono cartongesso e una cordicella tranciata — quella della botola, che adesso resta a penzolare a tre metri, fuori portata.\n\nLaura non la guarda nemmeno.",
             "set_flag": "colpo_alla_cieca",
             "play_sound_prompt": "una fucilata in un vano scala, cartongesso che si sbriciola e cade, un'eco lunghissima"
-          }
+          },
+          "blocked_narration": "Il colpo e' gia' partito, e il soffitto del pianerottolo se n'e' accorto."
         },
         {
           "id": "mira_e_spara",
@@ -4899,7 +5098,8 @@
             "narration": "Laura si volta per un istante e fa la cosa che si fa quando si ha paura: tira il grilletto prima di aver finito di alzare le canne.\n\nVa altissimo. Prende il soffitto del pianerottolo, e giù piovono cartongesso e una cordicella tranciata — quella della botola, che adesso resta a penzolare a tre metri, fuori portata.\n\nLaura non la guarda nemmeno.",
             "set_flag": "colpo_alla_cieca",
             "play_sound_prompt": "una fucilata in un vano scala, cartongesso che si sbriciola e cade, un'eco lunghissima"
-          }
+          },
+          "blocked_narration": "Non c'e' piu' tempo per mirare. Quello che doveva partire e' partito."
         },
         {
           "id": "corri_in_bagno",
@@ -4921,7 +5121,8 @@
             "narration": "La prima porta del pianerottolo. Laura ci entra dentro con la spalla.",
             "set_flag": "botola_scoperta",
             "goto_scene": "bagno_primo"
-          }
+          },
+          "blocked_narration": "Le porte del pianerottolo sono ancora tutte lontane, e sui gradini dietro di lei qualcosa sale piu' in fretta."
         }
       ],
       "no_match_narration": [
@@ -4952,6 +5153,14 @@
         {
           "intent": "forza",
           "text": "Solo quella del grilletto."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "colpo_alla_cieca"
+          },
+          "text": "La scala interna, la tromba aperta sul vuoto. In cima, il soffitto del pianerottolo sbriciolato dalla fucilata, con una cordicella tranciata che penzola. Sotto, sui gradini, gli artigli che slittano."
         }
       ]
     },
@@ -5153,7 +5362,8 @@
           "effect": {
             "narration": "Il rumore delle canne che si chiudono, di nuovo. Fa bene sentirlo. Non serve contare quello che le resta in tasca: ce n'è, e ce ne sarà.",
             "play_sound_prompt": "due canne che si chiudono, secco"
-          }
+          },
+          "blocked_narration": "Non ha nessun fucile fra le mani."
         },
         {
           "id": "svita_le_farfalle",
@@ -5231,6 +5441,14 @@
         {
           "intent": "forza",
           "text": "Spingere e sbattere serve solo a dire dove si e'."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "farfalle_svitate"
+          },
+          "text": "Il bagno padronale, la porta bloccata dal mobiletto. Sopra il lavabo il pannello del controsoffitto e' svitato e appoggiato di traverso: sopra c'e' il buio dell'intercapedine. Accanto allo specchio, la presa a muro."
         }
       ]
     },
@@ -5398,7 +5616,8 @@
           ],
           "effect": {
             "goto_dialogue": "laura_legge"
-          }
+          },
+          "blocked_narration": "Nessun foglietto, per ora. Solo carte domestiche e cassetti in ordine."
         },
         {
           "id": "rovescia_i_cassetti",
@@ -5492,6 +5711,14 @@
         {
           "intent": "forza",
           "text": "Rompere qui dentro non apre niente."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "biglietto_trovato"
+          },
+          "text": "La stanza piccola, i cassetti aperti. Sulla scrivania, accanto alla cornice, il foglietto strappato da un quaderno. La finestra da' sul patio, e da li' al suolo c'e' un metro e mezzo."
         }
       ]
     },
@@ -5692,7 +5919,8 @@
           "effect": {
             "narration": "Serve tutta e due le mani. La leva arriva a metà corsa, resta lì un istante e torna indietro da sola, con uno scatto che fa male al polso.\n\nSi può riprovare quante volte si vuole. Farà sempre così.",
             "play_sound_prompt": "una leva industriale che scatta a meta' corsa e ritorna, molla pesante"
-          }
+          },
+          "blocked_narration": "Quella leva, tirata cosi', ha gia' fatto tutto quello che poteva fare."
         },
         {
           "id": "tira_la_leva_piccola",
@@ -5737,7 +5965,8 @@
             "narration": "Con tutte e due le mani. La leva va a fondo corsa e ci resta.\n\nUn ronzio parte da dentro il muro — e si spegne subito. Sul quadro resta acceso un solo punto: rosso.\n\nNiente.\n\nLaura tira di nuovo. Rosso. Resta lì a fissare quel puntino. Poi si volta e guarda il soffitto, come se potesse vederci attraverso.",
             "set_flag": "leve_tirate",
             "play_sound_prompt": "un contattore pesante che chiude, un ronzio che parte da dentro il muro e muore dopo un secondo"
-          }
+          },
+          "blocked_narration": "La leva grande e' li'. Tirarla adesso non sarebbe diverso da tirarla un minuto fa."
         },
         {
           "id": "risali",
@@ -5793,6 +6022,12 @@
             "flag_present": "leve_tirate"
           },
           "text": "Lo stanzino, con tutte e due le leve alzate e il quadro che ronza piano. La casa, da qualche parte sopra, si e' svegliata."
+        },
+        {
+          "condition": {
+            "flag_present": "leva_piccola_tirata"
+          },
+          "text": "Lo stanzino cieco. Nel quadro elettrico la leva piccola e' giu'; la grande e' ancora a riposo. Sotto, l'armadio di batterie."
         }
       ]
     },
@@ -5859,7 +6094,8 @@
             "narration": "Una mano sul muro, il vuoto della tromba sotto il tallone. Si allunga. Afferra. Si lascia cadere all'indietro col proprio peso.\n\nLa scala si apre di scatto e le arriva addosso.\n\nIl fracasso si sente in tutta la casa. Da qualche parte, sotto, i colpi si interrompono a metà.",
             "set_flag": "botola_aperta",
             "play_sound_prompt": "una scala retrattile che si apre di scatto e sbatte sul pavimento, eco in tutta la casa, poi un silenzio totale"
-          }
+          },
+          "blocked_narration": "Il corrimano corre lungo il vuoto della tromba. Sale li' sopra chi ha gia' capito che da terra non ci arriva."
         },
         {
           "id": "sali_sul_tetto",
@@ -5967,6 +6203,20 @@
         {
           "intent": "forza",
           "text": "Non c'e' niente da forzare quassu'."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "botola_aperta"
+          },
+          "text": "Il pianerottolo, e sopra la testa la botola aperta con la scala sfilata fino a terra. Intorno, la porta del bagno bucata, la porta dello studio, la tromba delle scale."
+        },
+        {
+          "condition": {
+            "flag_present": "salto_provato"
+          },
+          "text": "Il pianerottolo. La cordicella della botola penzola a tre metri, e da terra ne mancano venti centimetri buoni. Il corrimano corre lungo la tromba delle scale."
         }
       ]
     },
@@ -6114,7 +6364,8 @@
           ],
           "effect": {
             "narration": "I due capi entrano nei morsetti, e nei morsetti non succede niente. Il vetro è a ragnatela: quel pannello non produce più niente e non lo farà mai più.\n\nNon si rompe nient'altro. Si può riprovare quante volte si vuole, e verrà uguale."
-          }
+          },
+          "blocked_narration": "I due capi oscillano nel vento. Da qui non si vede nemmeno dove andrebbero."
         },
         {
           "id": "unisci_col_nastro",
@@ -6180,7 +6431,8 @@
           "effect": {
             "narration": "Poi il sorriso le muore in faccia.",
             "goto_dialogue": "linea"
-          }
+          },
+          "blocked_narration": "Il prato e' erba alta di prima mattina, e basta."
         },
         {
           "id": "guardati_la_gamba",
@@ -6216,7 +6468,8 @@
           "effect": {
             "narration": "La manica strappata legata sopra il ginocchio è nera e dura.",
             "goto_dialogue": "laura_non_era_il_tracker"
-          }
+          },
+          "blocked_narration": "La gamba tira. Tira da ieri notte, e non e' una novita'."
         },
         {
           "id": "rientra_dalla_botola",
@@ -6238,7 +6491,8 @@
           "effect": {
             "narration": "Il quadrato di cielo si richiude sopra di lei, e dentro la casa qualcosa adesso ronza.",
             "goto_scene": "soggiorno_casa_sveglia"
-          }
+          },
+          "blocked_narration": "Tornare dentro adesso vuol dire tornare dentro esattamente com'era."
         },
         {
           "id": "rientra_senza_fare_niente",
@@ -6260,7 +6514,8 @@
           "effect": {
             "narration": "Il pannello resta com'è, i due capi continuano a oscillare, e dentro il muro non ronza niente. Quello che serviva quassù, Laura lo dovrà venire a fare un'altra volta.",
             "goto_scene": "pianerottolo"
-          }
+          },
+          "blocked_narration": "Non piu': quello che c'era da fare quassu' e' stato fatto."
         }
       ],
       "no_match_narration": [
@@ -6302,9 +6557,21 @@
         },
         {
           "condition": {
+            "flag_present": "linea_vista"
+          },
+          "text": "Il tetto piano, il vento. Dal bordo, nell'erba alta del prato, una riga sola parte dal punto bianco lontano, attraversa tutto e finisce contro l'angolo della casa. Sotto i suoi piedi."
+        },
+        {
+          "condition": {
             "flag_present": "pecora_osservata"
           },
           "text": "Il tetto piano, il vento, i dodici pannelli. In fondo al prato, un mucchio di lana ferma che da qui si riconosce appena."
+        },
+        {
+          "condition": {
+            "flag_present": "pannello_esaminato"
+          },
+          "text": "Il tetto piano, dodici pannelli in file da sei. Da quello col vetro a ragnatela escono due monconi di cavo strappati che oscillano piano. Dal bordo si vede tutta la valle."
         }
       ]
     },
@@ -6516,7 +6783,8 @@
             "unset_flag": "piastra_integra",
             "play_sound_prompt": "una fucilata in un garage di cemento, eco durissima, poi una lamiera che sbatte a ogni passo",
             "goto_scene": "bagno_finale"
-          }
+          },
+          "blocked_narration": "Il fianco di quella cosa non e' piu' quello di prima."
         },
         {
           "id": "nasconditi",
@@ -6547,7 +6815,8 @@
           "effect": {
             "narration": "Gli artigli entrano dal fondo del garage e girano intorno al cofano. Lentamente. La piastra rotta che sbatte a ogni passo.\n\nLaura resta sotto il paraurti finché il rumore non passa dall'altra parte, poi si alza e sale le scale.",
             "goto_scene": "bagno_finale"
-          }
+          },
+          "blocked_narration": "Il fianco della macchina e' chiuso e liscio come il primo giorno."
         },
         {
           "id": "esci_subito",
@@ -6597,6 +6866,14 @@
         {
           "intent": "forza",
           "text": "Contro la carrozzeria, no."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "piastra_scardinata"
+          },
+          "text": "Il garage interrato, la luce di servizio. La berlina sotto il telo, il banco da lavoro, il caricabatterie con la spia verde, l'avvolgicavo arancione appeso. In mezzo alla stanza, quella cosa con la piastra del fianco destro scardinata che sbatte a ogni passo."
         }
       ]
     },
@@ -6736,7 +7013,8 @@
           "effect": {
             "narration": "Qui non c'è niente con cui fare quello che ha in mente. Quello che serve è di sotto, appeso a un muro, e bisogna riattraversare la casa per andarlo a prendere.",
             "goto_scene": "garage"
-          }
+          },
+          "blocked_narration": "Il cavo ce l'ha gia'. Di sotto non e' rimasto niente che le serva."
         },
         {
           "id": "prendi_la_spina_e_aspetta",
@@ -6796,6 +7074,12 @@
         }
       ],
       "look_variants": [
+        {
+          "condition": {
+            "flag_present": "sul_lavabo"
+          },
+          "text": "Il bagno visto dall'alto del lavabo, senza piu' porta. Sotto, l'acqua che continua a salire dai due rubinetti aperti. La presa a muro con lo sportellino di plastica e' a portata di mano."
+        },
         {
           "condition": {
             "flag_present": "acqua_alta"
@@ -6928,7 +7212,8 @@
           "effect": {
             "narration": "Laura infila la spina.",
             "goto_scene": "bagno_arco"
-          }
+          },
+          "blocked_narration": "La spina in mano, cosi', non serve a niente."
         },
         {
           "id": "spara_dal_lavabo",
@@ -6966,7 +7251,8 @@
             "set_flag": "piastra_scardinata",
             "unset_flag": "piastra_integra",
             "play_sound_prompt": "una fucilata dentro una stanza piccola piastrellata, eco insopportabile, poi metallo che sbatte contro una vasca"
-          }
+          },
+          "blocked_narration": "Il fianco di quella cosa non e' piu' intero. Sparargli addosso adesso sarebbe buttare via l'ultima."
         },
         {
           "id": "infila_la_spina_a_secco",
@@ -6989,7 +7275,8 @@
             "narration": "Non succede assolutamente niente.\n\nLa macchina resta in mezzo alla stanza. Laura ha tutto il tempo — tutto quello che vuole — per guardare i due fili scoperti appoggiati sul bordo della pozza, asciutti, a dieci centimetri dall'acqua. E per capire.\n\nPuò sfilare la spina e rimetterla quante volte vuole: la corrente c'è, e continua ad esserci.\n\nSotto di lei la macchina gira su sé stessa, non trova un modo di salire, e dopo un po' esce a cercare in un'altra stanza. Il giro ricomincia.",
             "set_flag": "spina_provata_a_vuoto",
             "goto_scene": "bagno_finale"
-          }
+          },
+          "blocked_narration": "Adesso i due fili pescano nell'acqua, e questa non e' piu' la stessa cosa."
         }
       ],
       "no_match_narration": [
@@ -7162,7 +7449,8 @@
           "effect": {
             "narration": "Laura allunga una gamba verso l'acqua. La ritira prima di arrivarci.",
             "set_flag": "piede_ritirato"
-          }
+          },
+          "blocked_narration": "La gamba l'ha gia' allungata una volta."
         },
         {
           "id": "scendi_due",
@@ -7193,7 +7481,8 @@
           "effect": {
             "narration": "La allunga di nuovo, più in basso, fino a sfiorare la superficie con la suola. La ritira di nuovo. Non è paura di quella cosa: è che l'acqua adesso è una superficie e sotto la superficie c'è tutto quello che è successo.",
             "set_flag": "piede_ritirato_ancora"
-          }
+          },
+          "blocked_narration": "Non e' ancora arrivata a provarci."
         },
         {
           "id": "scendi_tre",
@@ -7224,7 +7513,8 @@
             "narration": "Poi scende, e l'acqua le arriva alla caviglia, ed è tiepida.\n\nRide — un colpo di tosse, non una risata.\n\nChiude i rubinetti. Il silenzio, dopo, è la cosa più forte della stanza.",
             "set_flag": "scesa_dal_lavabo",
             "play_sound_prompt": "due rubinetti che si chiudono uno dopo l'altro, poi un silenzio pieno"
-          }
+          },
+          "blocked_narration": "Ci ha provato una volta sola. Non basta."
         },
         {
           "id": "apri_la_scatola",
@@ -7257,7 +7547,8 @@
           ],
           "effect": {
             "narration": "Laura si tocca la tasca dello zaino, dove la scatola c'è ancora. Poi guarda l'acqua nera, e quello che c'è dentro l'acqua.\n\n«Non davanti a lui.»"
-          }
+          },
+          "blocked_narration": "Non ha nessuna scatola bianca con se'."
         },
         {
           "id": "osserva_la_carcassa",
@@ -7292,7 +7583,8 @@
           ],
           "effect": {
             "narration": "Da vicino è più piccola di come è stata per tre giorni. Sul fianco destro, lo sportello del lanciatore è aperto."
-          }
+          },
+          "blocked_narration": "Da quassu', al buio, e' solo una massa scura sotto il lavabo."
         },
         {
           "id": "guarda_il_petto",
@@ -7328,7 +7620,8 @@
           "effect": {
             "narration": "Si appoggia al muro, e lì, mentre riprende fiato, sente un bruciore appena sopra il cuore. Si scopre il petto e guarda.\n\nQuattro fori. Piccolissimi. Come punture d'insetto. Quattro puntini neri lampeggiano. Regolari. Pazienti.\n\nNon se n'era accorta.",
             "set_flag": "petto_osservato"
-          }
+          },
+          "blocked_narration": "Aggrappata al lavabo con tutte e due le mani, non si guarda niente."
         },
         {
           "id": "vai_in_soggiorno",
@@ -7352,7 +7645,8 @@
           "effect": {
             "narration": "Laura esce dall'acqua e lascia due impronte scure per tutto il corridoio.",
             "goto_scene": "valle_tre_sagome"
-          }
+          },
+          "blocked_narration": "Le gambe reggerebbero. Ma c'e' qualcosa che le brucia, e non ha ancora guardato cosa."
         }
       ],
       "no_match_narration": [
@@ -7383,6 +7677,32 @@
         {
           "intent": "forza",
           "text": "E' finita."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "petto_osservato"
+          },
+          "text": "Il bagno al buio, l'acqua alla caviglia, i rubinetti chiusi. Sotto il lavabo la carcassa con i sensori spenti. Appena sopra il cuore, il segno che brucia."
+        },
+        {
+          "condition": {
+            "flag_present": "scesa_dal_lavabo"
+          },
+          "text": "Il bagno al buio, in piedi nell'acqua tiepida alla caviglia. Sotto il lavabo, la carcassa con i sensori spenti e la piastra del fianco spalancata."
+        },
+        {
+          "condition": {
+            "flag_present": "piede_ritirato_ancora"
+          },
+          "text": "Il bagno al buio, ancora dall'alto del lavabo. La suola ha sfiorato la superficie e si e' tirata indietro. Sotto, la carcassa con i sensori spenti."
+        },
+        {
+          "condition": {
+            "flag_present": "piede_ritirato"
+          },
+          "text": "Il bagno al buio, dall'alto del lavabo. L'acqua nera, ferma, allagata fino alla caviglia. Sotto, la carcassa con i sensori spenti e la piastra spalancata. I rubinetti sono ancora aperti."
         }
       ]
     },
@@ -7579,7 +7899,8 @@
           "effect": {
             "narration": "Il coperchio non è nemmeno sigillato. Viene via al primo dito.",
             "set_flag": "scatola_aperta"
-          }
+          },
+          "blocked_narration": "Non ha nessuna scatola bianca con se'."
         },
         {
           "id": "osserva_il_contenuto",
@@ -7735,6 +8056,20 @@
         {
           "intent": "forza",
           "text": "Non serve piu'."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "contenuto_osservato"
+          },
+          "text": "Il soggiorno con la vetrata sfondata, la luce del pomeriggio. La scatola bianca e' aperta sul divano, accanto al walkie talkie. Fuori, sul prato, i tre punti scuri sono piu' vicini."
+        },
+        {
+          "condition": {
+            "flag_present": "scatola_aperta"
+          },
+          "text": "Il soggiorno con la vetrata sfondata. La scatola bianca e' aperta, il coperchio appoggiato di fianco. Fuori, sul prato, tre punti scuri che si avvicinano senza fretta."
         }
       ]
     },

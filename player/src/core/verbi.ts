@@ -20,11 +20,11 @@
  * non ha scritto, il player lo dice come diagnostica e non inventa prosa.
  */
 
-import type { Condition, Scene, Story } from './types.js';
+import type { Action, Condition, Scene, Story } from './types.js';
 import { descrizioneOra, displayName, findCharacter, lookNow } from './types.js';
 import { affinita, normalizza, radice, radici } from './lexical.js';
 
-export type Verbo = 'look' | 'inventario' | 'presenti' | 'esamina' | 'nessuno';
+export type Verbo = 'look' | 'inventario' | 'presenti' | 'esamina' | 'aiuto' | 'nessuno';
 
 /**
  * Quanto deve somigliare la frase al nome di un oggetto perche' «guarda il
@@ -35,6 +35,55 @@ export type Verbo = 'look' | 'inventario' | 'presenti' | 'esamina' | 'nessuno';
  * si hanno in mano — di solito tre o quattro, non quindici.
  */
 export const SOGLIA_OGGETTO = 0.45;
+
+/**
+ * Quanto deve somigliare la frase perche' un tentativo *fallito* si consideri
+ * rivolto a una cosa che si ha in mano.
+ *
+ * Piu' alta di `SOGLIA_OGGETTO` perche' qui manca il filtro del verbo di
+ * percezione: la frase puo' essere qualunque cosa, e con una soglia bassa
+ * qualunque cosa finirebbe per assomigliare vagamente a un oggetto dello
+ * zaino.
+ */
+export const SOGLIA_OGGETTO_NOMINATO = 0.6;
+
+/**
+ * «Cosa posso fare?» — la domanda di chi e' bloccato.
+ *
+ * Si riconosce per forma intera e non per parole sparse, ed e' la piu' stretta
+ * di tutte: «cosa posso fare con la leva» e' un'azione della scena, non una
+ * richiesta di aiuto, e la differenza sta tutta nel complemento. Ogni forma
+ * qui sotto e' quindi ancorata a inizio e fine frase.
+ */
+/**
+ * Vera se la frase e' la domanda di chi e' bloccato.
+ *
+ * Sta fuori da `verboDelPlayer` perche' viene consultata **prima del
+ * resolver**, unica fra tutte, e la ragione e' un difetto vero: «cosa posso
+ * fare» somigliava abbastanza agli alias di certe azioni da farle partire, e
+ * su "Metal Head" succedeva in 5 scene su 43 — in una di quelle sparava al
+ * tetto del furgone. Una domanda sull'interfaccia non e' un tentativo di agire
+ * sul mondo, e non deve poter applicare nessun `Effect`.
+ *
+ * Il prezzo, e va detto: una storia non puo' piu' avere un'azione che si
+ * chiama esattamente «aiuto» — un grido, per dire. E' un prezzo accettabile
+ * per non far sparare nessuno a caso.
+ */
+export function isDomandaDiAiuto(input: string): boolean {
+  const piatto = normalizza(input);
+  return piatto !== '' && AIUTO.some((r) => r.test(piatto));
+}
+
+const AIUTO = [
+  /^(ma |e |allora )?(che|cosa) (posso|potrei|si puo|devo|dovrei) fare( adesso| ora| qui)?$/,
+  /^(ma |e |allora )?(che|cosa) (faccio|si fa)( adesso| ora| qui)?$/,
+  /^(che|cosa) (c e|ce) da fare( qui| adesso| ora)?$/,
+  /^aiuto$/,
+  /^(sono |mi sono )?blocc(ato|ata)$/,
+  /^non so (che|cosa) fare$/,
+  /^(dammi un |un )?(suggerimento|indizio)$/,
+  /^suggerisci(mi)?( qualcosa| un azione)?$/,
+];
 
 /** Radici che parlano dell'ambiente invece che di una cosa precisa. */
 // 'post' non c'e' di proposito: la radice di "posto" e' anche quella di
@@ -129,6 +178,13 @@ export function verboDelPlayer(input: string): Verbo {
   // che non sia l'ambiente in generale o una parola funzionale. Basta un
   // complemento vero in piu' — "guarda il camino", "guarda lei", "osserva
   // ancora" — perche' non sia piu' questo ma un'azione della scena.
+  // L'aiuto prima del look: «cosa posso fare qui» contiene "qui", che e' una
+  // parola funzionale, e senza questo controllo cadrebbe fra i guardarsi
+  // intorno alla prima occasione. (In pratica `InputLibero` lo intercetta gia'
+  // prima del resolver: questo resta perche' la funzione dev'essere completa
+  // per conto suo.)
+  if (isDomandaDiAiuto(input)) return 'aiuto';
+
   if (/^dove (sono|mi trovo|siamo|ci troviamo)\??$/.test(piatto)) return 'look';
   const haPercezione = rs.some((r) => PERCEZIONE.has(r));
   if (haPercezione && rs.every((r) => PERCEZIONE.has(r) || AMBIENTE.has(r) || FUNZIONALI.has(r))) return 'look';
@@ -188,7 +244,33 @@ export function testoInventario(story: Story, posseduti: string[], giro: number)
 export function oggettoDaEsaminare(story: Story, input: string, posseduti: string[]): string | undefined {
   const interi = radiciIntere(input);
   if (!interi.some((r) => PERCEZIONE.has(r))) return undefined;
+  return piuVicino(story, input, posseduti, SOGLIA_OGGETTO);
+}
 
+/**
+ * L'oggetto dell'inventario che una frase **nomina**, qualunque cosa la frase
+ * chiedesse di farci.
+ *
+ * Si consulta per ultima, quando ormai non ha risposto nessuno: non c'e'
+ * un'azione della scena, non c'e' un verbo del player, e la sola cosa rimasta
+ * sarebbe un fallback d'autore scritto per l'*intenzione* — «Le mani non
+ * trovano niente» — che della cosa che il giocatore ha appena nominato non sa
+ * niente. Se quella cosa e' nello zaino, la sua descrizione e' una risposta
+ * molto migliore, ed e' scritta dallo stesso autore.
+ *
+ * E' il caso di «usa il walkie» in una scena che sul walkie non ha nessuna
+ * azione: la descrizione dice che e' scarico, che e' esattamente quello che il
+ * giocatore stava chiedendo. Senza, la storia risponde parlando d'altro.
+ *
+ * Non e' un verbo di percezione mascherato: qui non c'e' nessun filtro sul
+ * verbo, e proprio per questo la soglia e' piu' alta.
+ */
+export function oggettoNominato(story: Story, input: string, posseduti: string[]): string | undefined {
+  return piuVicino(story, input, posseduti, SOGLIA_OGGETTO_NOMINATO);
+}
+
+/** L'oggetto posseduto piu' vicino alla frase, se supera la soglia. */
+function piuVicino(story: Story, input: string, posseduti: string[], soglia: number): string | undefined {
   const frase = radici(input);
   let migliore = 0;
   let quale: string | undefined;
@@ -203,7 +285,7 @@ export function oggettoDaEsaminare(story: Story, input: string, posseduti: strin
       }
     }
   }
-  return migliore >= SOGLIA_OGGETTO ? quale : undefined;
+  return migliore >= soglia ? quale : undefined;
 }
 
 /** La descrizione dell'oggetto com'e' adesso: testo d'autore, mai generato. */
@@ -239,6 +321,101 @@ export function testoPresenti(story: Story, sc: Scene, giro: number): string | u
   const intro = scegli(voce?.presence_intro, giro);
   if (!intro) return undefined;
   return `${intro} ${elenca(presenti)}.`;
+}
+
+/**
+ * La risposta a «cosa posso fare?»: **cosa** e' in gioco, non **come** si usa.
+ *
+ * E' il compromesso fra due cose vere. La prima: un player a parole in cui non
+ * si trova la frase giusta e' un player in cui la storia si ferma, e chi si
+ * blocca non ha nessun appiglio. La seconda: l'elenco delle azioni risolve gli
+ * enigmi al posto del giocatore, e finche' resta acceso non si puo' giudicare
+ * quanto una storia sia difficile davvero (decisione 1.8.0) — per questo le
+ * chip stanno sotto il debug.
+ *
+ * Quello che esce di qui non e' mai un verbo. Sono i **bersagli**: gli oggetti
+ * e le persone su cui questa scena risponde, con il nome che l'autore ha dato
+ * loro. Dice dove guardare, non cosa fare — «Tommy» non e' «parla con Tommy»,
+ * «la cassa» non e' «apri la cassa» ne' «sposta la cassa». L'enigma resta
+ * intero, l'attrito di indovinare *su cosa* no.
+ *
+ * Due pezzi, e si sommano invece di escludersi:
+ *
+ *  - il **`look`** della scena com'e' adesso, `look_variants` comprese. E' il
+ *    pezzo che porta l'indizio vero, perche' e' l'unico testo della scena che
+ *    cambia con lo stato: dopo aver confrontato il codice sul palmo, il
+ *    magazzino di "Metal Head" dice «il numero sul palmo e quello sul montante
+ *    coincidono: e' questo». E' anche il posto dove l'autore nomina le cose
+ *    della stanza — scaffali, schedario, armadietto — che nell'IR non sono
+ *    oggetti e che nessun altro campo saprebbe elencare.
+ *  - i **bersagli**: i `target` delle azioni **disponibili**, cioe' le cose a
+ *    cui la scena reagisce adesso.
+ *
+ * Sommarli invece di metterli in cascata e' una correzione, non un dettaglio:
+ * la prima versione si fermava al primo pezzo che trovava, e siccome «chi e'
+ * in scena» viene quasi sempre prima, rispondeva «In gioco: Mark» proprio
+ * dove il `look` aveva l'indizio buono. Il pezzo piu' povero copriva il piu'
+ * ricco.
+ *
+ * Quello che non esce di qui, e non deve: **un verbo**. «Tommy» non e' «parla
+ * con Tommy», «la cassa» non e' «apri la cassa» ne' «sposta la cassa». Si dice
+ * dove guardare, non cosa fare — l'elenco delle azioni risolverebbe gli enigmi
+ * al posto del giocatore, ed e' la ragione per cui le chip stanno sotto il
+ * debug (decisione 1.8.0).
+ *
+ * I bersagli vengono dalle azioni e **non** da `Scene.characters`, e non e'
+ * un dettaglio: la roster di scena contiene chiunque sia presente, anche chi
+ * il giocatore deve ancora scoprire. Provandolo, nel magazzino di "Metal Head"
+ * l'aiuto annunciava il Cane-robot mentre era ancora una sagoma nel buio. Un
+ * `target` di un'azione disponibile, invece, e' per costruzione qualcosa a cui
+ * si puo' gia' parlare o mettere le mani.
+ *
+ * Le azioni nascoste da una condizione non entrano: sarebbero un anticipo, a
+ * volte uno spoiler. Il protagonista nemmeno: non e' un bersaglio, e' chi sta
+ * chiedendo. E nemmeno i `target` che non si risolvono
+ * in un oggetto o in un personaggio — `"ambiente"` e' la convenzione dello
+ * schema per un bersaglio generico, e un id buttato in faccia al giocatore non
+ * e' una risposta. Se non resta niente di niente, tace: e' il caso di una
+ * scena senza `look`, che il linter segnala gia' per conto suo, ed e' l'unico
+ * in cui questo verbo produce una diagnostica.
+ */
+export function testoAiuto(
+  story: Story,
+  sc: Scene,
+  disponibili: Action[],
+  soddisfa: (c?: Condition) => boolean,
+): string | undefined {
+  const dove = lookNow(sc, soddisfa);
+
+  const nomi = nomiDei(
+    story,
+    disponibili.map((a) => a.target),
+  );
+
+  const chi = nomi.length > 0 ? `In gioco: ${elenca(nomi)}.` : undefined;
+  if (dove && chi) return `${dove}\n\n${chi}`;
+  return dove ?? chi;
+}
+
+/** Da id a nomi d'autore, in ordine e senza ripetizioni. Salta quello che non
+ * si lascia nominare: il protagonista, e ogni id che non e' un oggetto ne' un
+ * personaggio — `"ambiente"` compreso, che e' la convenzione dello schema per
+ * un bersaglio generico e non un nome da dire al giocatore. */
+function nomiDei(story: Story, ids: Array<string | undefined>): string[] {
+  const visti = new Set<string>();
+  const nomi: string[] = [];
+  for (const id of ids) {
+    if (!id || visti.has(id)) continue;
+    visti.add(id);
+    const item = story.items?.find((i) => i.id === id);
+    if (item) {
+      nomi.push(item.name);
+      continue;
+    }
+    const pg = findCharacter(story, id);
+    if (pg && pg.id !== story.protagonist) nomi.push(displayName(pg));
+  }
+  return nomi;
 }
 
 /** "a, b e c" invece di "a, b, c": la differenza fra una frase e un dump. */
