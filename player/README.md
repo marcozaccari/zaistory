@@ -160,6 +160,14 @@ In `principale` le cose si chiamano con le parole della storia — il titolo
 della scena, il nome dell'oggetto — mentre gli id restano in `stato`, che è
 dove si va quando si sta collaudando invece di giocando.
 
+**Gli oggetti dell'inventario si toccano**: il menu si chiude e la descrizione
+compare nel transcript, identica a quella che si otterrebbe nominandoli mentre
+si gioca — stesso `items[].description`, stesse `description_variants`, quindi
+il walkie scarico e quello carico restano due risposte diverse. Non è un turno
+di gioco: nessun `Effect`, niente nella traccia. Un oggetto senza
+`description` non è toccabile: non c'è niente da leggere e il player non lo
+inventa (il linter lo segnala come errore, ed è lì che va risolto).
+
 In fondo al menu, accanto al numero di versione, stanno i due comandi che non
 appartengono a nessuna scheda: **ricomincia**, che vale per tutta la partita, e
 **debug**, che vale per tutto il player. Ricominciare chiede conferma, e nella

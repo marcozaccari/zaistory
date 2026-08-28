@@ -169,6 +169,13 @@ function panelContext(s: Session): PanelContext {
       closePanel();
       showLoader();
     },
+    // Guardare una cosa che si ha in mano: il menu si chiude perche' la
+    // risposta e' testo della storia, e il posto del testo della storia e' il
+    // transcript, non un pannello che gli sta sopra.
+    onEsamina: (id) => {
+      closePanel();
+      s.ui.esaminaOggetto(id);
+    },
     debug: document.body.classList.contains('debug'),
     // Il codice si ricalcola a ogni disegno del pannello, che e' anche a ogni
     // mossa: quello che si copia e' sempre la partita fino a un istante fa.

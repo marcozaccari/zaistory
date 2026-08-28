@@ -902,6 +902,30 @@ body.debug .choice.solo-debug {
   border-color: var(--line);
 }
 
+/* Gli oggetti dell'inventario si toccano, e si vede che si toccano: colore
+   d'accento come un collegamento, e il testo nel carattere della storia invece
+   che nel monospazio dei dati — qui non sono id, sono cose che si hanno in
+   mano. Quelli senza `description` restano `.chip` e basta: niente da leggere,
+   niente da toccare. */
+.chip.oggetto {
+  padding: 5px 11px;
+  border-color: var(--accent-soft);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chip.oggetto:hover,
+.chip.oggetto:focus-visible {
+  border-color: var(--accent);
+}
+
+.chip.oggetto:active,
+.chip.oggetto.premuto {
+  background: var(--accent-soft);
+}
+
 .chip.scelta.on {
   border-color: var(--accent);
   background: var(--accent-soft);

@@ -50,6 +50,9 @@ export interface PanelContext {
   onRestart: () => void;
   onReplay: (script: string) => void;
   onLoadOther: () => void;
+  /** Guardare un oggetto dell'inventario: chiude il menu e lo fa raccontare
+   * nel transcript, come se lo si fosse nominato giocando. */
+  onEsamina: (id: string) => void;
   /** Il debug e' acceso: qui serve solo alle diagnostiche in mezzo al testo —
    * quali schede si vedono lo decide il CSS, come per il resto della
    * diagnostica. */
@@ -217,22 +220,53 @@ function renderPrincipale(body: HTMLElement, ctx: PanelContext): void {
   else body.append(el('p', 'empty', "La partita non e' ancora cominciata."));
 
   body.append(el('h3', undefined, 'inventario'));
-  body.append(chips(nomiInventario(ctx), 'non hai niente con te'));
+  body.append(chipsInventario(ctx));
 }
 
 /**
- * I nomi degli oggetti, non le loro chiavi.
+ * L'inventario: i nomi degli oggetti, e ognuno si puo' guardare.
  *
- * Un oggetto senza scheda in `items` non ha un nome da mostrare: resta l'id, e
- * che manchi la scheda si dice solo a debug acceso — e' una diagnostica
- * sull'IR, e chi gioca non c'entra niente.
+ * Toccare un oggetto chiude il menu e ne fa leggere la descrizione nel
+ * transcript — la stessa che si otterrebbe nominandolo mentre si gioca, presa
+ * dallo stesso `items[].description` d'autore. E' il motivo per cui questa
+ * scheda e' la prima: quello che si ha in mano e' l'unica cosa che il giocatore
+ * non puo' rileggere scorrendo indietro, perche' non e' mai stata scritta tutta
+ * insieme da nessuna parte.
+ *
+ * Un oggetto senza `description` non e' toccabile. Non c'e' niente da leggere e
+ * il player non lo inventa: resta li' come etichetta, e a debug acceso dice
+ * anche perche' non risponde. Il linter intanto lo segnala come errore, che e'
+ * il posto dove quel buco va risolto.
+ *
+ * Un oggetto senza scheda in `items` non ha nemmeno un nome: resta l'id, e che
+ * manchi la scheda si dice solo a debug acceso.
  */
-function nomiInventario(ctx: PanelContext): string[] {
-  return (ctx.ui.state?.inventory ?? []).map((id) => {
-    const nome = ctx.story.items?.find((i) => i.id === id)?.name;
-    if (nome) return nome;
-    return ctx.debug ? `${id} [senza scheda]` : id;
-  });
+function chipsInventario(ctx: PanelContext): HTMLElement {
+  const inv = ctx.ui.state?.inventory ?? [];
+  if (inv.length === 0) return el('p', 'empty', 'non hai niente con te');
+
+  const box = el('div', 'chips');
+  for (const id of inv) {
+    const scheda = ctx.story.items?.find((i) => i.id === id);
+    const nome = scheda?.name ?? (ctx.debug ? `${id} [senza scheda]` : id);
+    const descrizione = ctx.ui.descrizioneOggetto(id);
+
+    if (!descrizione) {
+      const fermo = el('span', 'chip', nome);
+      if (ctx.debug) fermo.title = "senza items[].description: non c'e' niente da mostrare";
+      box.append(fermo);
+      continue;
+    }
+
+    const b = el('button', 'chip oggetto', nome);
+    b.type = 'button';
+    b.onclick = async () => {
+      await premi(b);
+      ctx.onEsamina(id);
+    };
+    box.append(b);
+  }
+  return box;
 }
 
 /**

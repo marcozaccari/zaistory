@@ -35,6 +35,7 @@ import {
   sceneType,
   segnoTurno,
   speakerName,
+  testoOggetto,
   toneOf,
 } from '../core/index.js';
 import { clear, el, premi, staScrivendo } from './dom.js';
@@ -928,6 +929,45 @@ export class WebUI implements PlayerUI {
       requestAnimationFrame(() => campo.focus({ preventScroll: true }));
     }
     return form;
+  }
+
+  /**
+   * La descrizione che un oggetto dell'inventario ha *adesso*.
+   *
+   * Passa da `testoOggetto` del core, quindi tiene conto delle
+   * `description_variants`: il walkie scarico e il walkie carico sono lo stesso
+   * oggetto con due descrizioni, e quale delle due valga lo decide lo stato.
+   * Niente vuol dire che nell'IR non c'e' una `description` — e allora non c'e'
+   * niente da mostrare, e chi chiama non deve fingere il contrario.
+   */
+  descrizioneOggetto(id: string): string | undefined {
+    const st = this.state;
+    return st ? testoOggetto(this.story, id, (c) => st.meets(c).ok) : undefined;
+  }
+
+  /**
+   * Guardare una cosa che si ha in mano, scegliendola invece di nominarla.
+   *
+   * E' lo stesso verbo che si ottiene scrivendo «guarda il walkie», e passa
+   * dallo stesso testo d'autore: dal menu si arriva alla stessa risposta, senza
+   * dover indovinare come si chiama l'oggetto in una frase. Il risultato va nel
+   * transcript e non nel pannello perche' e' testo della storia, e il posto del
+   * testo della storia e' la storia — chi chiama chiude il menu prima.
+   *
+   * Non e' un turno di gioco: nessun `Effect`, nessuna azione, niente che
+   * finisca nella traccia. Guardare nello zaino non muove la partita, ed e' la
+   * ragione per cui questo puo' stare in un menu senza romperne la
+   * riproducibilita'.
+   */
+  esaminaOggetto(id: string): void {
+    if (this.dead) return;
+    const testo = this.descrizioneOggetto(id);
+    if (!testo) return;
+    this.nuovoTurno();
+    this.entry('echo', `· ${this.story.items?.find((i) => i.id === id)?.name ?? id}`);
+    this.entry('look', testo);
+    this.ascolto.dilo(testo);
+    this.scrollEnd();
   }
 
   /** Una riga di transcript con il marchio di chi ha deciso il turno. Si vede
