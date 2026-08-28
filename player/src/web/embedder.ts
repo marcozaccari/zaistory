@@ -10,43 +10,61 @@
  * dinamico, sta dietro alla scelta del backend, e chi non lo sceglie non
  * scarica un byte.
  *
- * Prezzo da dichiarare a chi lo accende: la prima volta servono rete e un
- * centinaio di megabyte di modello. Dopo, il browser lo tiene in cache e
- * funziona anche offline — ma da `file://` la cache e le richieste
- * cross-origin sono terreno incerto, quindi il posto giusto per provarlo e' il
- * player servito da http.
+ * Tre indirizzi, tutti configurabili dal pannello e non incisi nel codice: da
+ * dove viene la libreria, quale modello, e da quale host prendere i pesi.
+ * Servono davvero — un mirror interno, una copia locale servita da un static
+ * server, un modello diverso da provare — e servono soprattutto perche' il
+ * posto dove questo backend fallisce e' sempre uno di quei tre, e senza poterli
+ * cambiare l'unica diagnosi possibile e' "Failed to fetch".
  */
 
 import type { Embed } from '../core/index.js';
 
-export const MODELLO_DEFAULT = 'Xenova/paraphrase-multilingual-MiniLM-L12-v2';
-const CDN = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4/+esm';
+export interface ConfigEmbedder {
+  /** Modulo ESM da importare (la libreria di inferenza). */
+  libreria: string;
+  /** Identificatore del modello. */
+  modello: string;
+  /** Host da cui scaricare i pesi. */
+  host: string;
+}
+
+export const CONFIG_DEFAULT: ConfigEmbedder = {
+  libreria: 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4/+esm',
+  // Un encoder di frasi multilingua piccolo, non un modello generativo: qui
+  // serve un vettore, non della prosa.
+  modello: 'Xenova/paraphrase-multilingual-MiniLM-L12-v2',
+  host: 'https://huggingface.co/',
+};
 
 export interface Embedder {
   embed: Embed;
   etichetta: string;
 }
 
-export async function caricaEmbedder(modello = MODELLO_DEFAULT, avviso?: (s: string) => void): Promise<Embedder> {
-  avviso?.(`scarico la libreria di inferenza da ${new URL(CDN).host}…`);
+export async function caricaEmbedder(cfg: ConfigEmbedder, avviso?: (s: string) => void): Promise<Embedder> {
+  avviso?.(`carico la libreria da ${dominio(cfg.libreria)}…`);
   // `@vite-ignore`: l'URL non deve essere risolto in fase di build, o la
   // libreria finirebbe dentro il file unico — cioe' esattamente cio' che
   // questo modulo esiste per evitare.
-  const lib = (await import(/* @vite-ignore */ CDN)) as Record<string, unknown>;
+  const lib = (await import(/* @vite-ignore */ cfg.libreria)) as Record<string, unknown>;
 
-  const env = lib.env as { allowLocalModels?: boolean } | undefined;
-  if (env) env.allowLocalModels = false;
+  const env = lib.env as { allowLocalModels?: boolean; remoteHost?: string } | undefined;
+  if (env) {
+    env.allowLocalModels = false;
+    if (cfg.host) env.remoteHost = cfg.host.endsWith('/') ? cfg.host : cfg.host + '/';
+  }
 
-  avviso?.(`scarico il modello ${modello} (la prima volta sono un centinaio di MB, poi resta in cache)…`);
+  avviso?.(`scarico ${cfg.modello} da ${dominio(cfg.host)} (la prima volta sono un centinaio di MB, poi resta in cache)…`);
   const pipeline = lib.pipeline as (task: string, model: string, opts?: unknown) => Promise<unknown>;
   let pipe: unknown;
   try {
-    pipe = await pipeline('feature-extraction', modello, { dtype: 'q8', device: 'webgpu' });
+    pipe = await pipeline('feature-extraction', cfg.modello, { dtype: 'q8', device: 'webgpu' });
   } catch {
     // Niente WebGPU (o niente quantizzazione): si ripiega su WASM, che gira
     // ovunque — mobile compreso — ed e' piu' lento ma per una frase di cinque
     // parole resta nell'ordine dei millisecondi.
-    pipe = await pipeline('feature-extraction', modello, { dtype: 'q8' });
+    pipe = await pipeline('feature-extraction', cfg.modello, { dtype: 'q8' });
   }
   const estrai = pipe as (testi: string[], opts: unknown) => Promise<{ tolist(): number[][] }>;
 
@@ -54,5 +72,13 @@ export async function caricaEmbedder(modello = MODELLO_DEFAULT, avviso?: (s: str
     const out = await estrai(testi, { pooling: 'mean', normalize: true });
     return out.tolist();
   };
-  return { embed, etichetta: `embedding ${modello}` };
+  return { embed, etichetta: `embedding ${cfg.modello}` };
+}
+
+function dominio(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
 }

@@ -614,8 +614,19 @@ Vite sono soli strumenti di build).
      il backend di gioco ma **l'oracolo di riferimento**: si fa girare lo
      stesso set di frasi di prova sui tre e si misura quanto si perde.
 
-  Il backend si sceglie all'avvio (nel player web anche a partita in corso, dal
-  pannello). Il resto del player non cambia.
+  Il backend si sceglie all'avvio; nel player web anche a partita in corso,
+  dalla scheda **resolver** del pannello, che è dove va guardato: non è stato
+  di gioco, è uno strumento di misura, e la cosa da farci è accendere
+  l'embedder nella scena in cui il lessicale ha appena detto di no e riscrivere
+  la stessa frase. Il resto del player non cambia.
+
+  Quella scheda espone anche i tre indirizzi da cui il backend a vettori
+  dipende — libreria, modello, host dei pesi. Non è configurabilità per gusto:
+  quando questo backend fallisce, fallisce sempre su uno di quei tre, e con
+  gli indirizzi incisi nel codice l'unica diagnosi che arriva a chi gioca è
+  «Failed to fetch» — che non dice né quale, né se il problema è suo. Nella
+  pagina pubblicata non funziona affatto (nessuna richiesta verso l'esterno) e
+  il player lo dice a parole invece di mostrare l'errore grezzo.
 
 - **Il backend a menu è stato tolto** (1.8.0), e vale la pena dire perché. Non
   serviva più a niente di quello per cui era nato: i test di regressione non

@@ -25,7 +25,7 @@ import {
   type Resolver,
   type Story,
 } from '../core/index.js';
-import { MODELLO_DEFAULT, caricaEmbedder } from './embedder.js';
+import { CONFIG_DEFAULT, caricaEmbedder, type ConfigEmbedder } from './embedder.js';
 import { PLAYER_VERSION } from '../version.js';
 import { $, clear } from './dom.js';
 import { renderPanel, type PanelContext, type Tab } from './panel.js';
@@ -61,14 +61,25 @@ let tab: Tab = 'stato';
 let resolver: Resolver = new LexicalResolver();
 let nomeResolver = 'lessicale';
 let statoResolver = '';
+let configEmbedder: ConfigEmbedder = { ...CONFIG_DEFAULT };
 
-async function scegliResolver(nome: string): Promise<void> {
-  if (nome === nomeResolver) return;
+/**
+ * Accende un backend.
+ *
+ * Il lessicale non puo' fallire — non va da nessuna parte — quindi il caso
+ * interessante e' l'altro, ed e' l'unico posto del player dove qualcosa
+ * dipende dalla rete. Quando salta, si resta su quello che funzionava e si
+ * dice **dove** e' saltato: senza, l'unica diagnosi che arriva all'utente e'
+ * "Failed to fetch", che non dice ne' quale dei tre indirizzi era sbagliato
+ * ne' se il problema e' suo.
+ */
+async function scegliResolver(nome: string, riprova = false): Promise<void> {
+  if (nome === nomeResolver && !riprova) return;
   try {
     if (nome === 'embedding') {
       statoResolver = 'attivo il backend a vettori…';
       refreshPanel();
-      const { embed, etichetta } = await caricaEmbedder(MODELLO_DEFAULT, (m) => {
+      const { embed, etichetta } = await caricaEmbedder(configEmbedder, (m) => {
         statoResolver = m;
         refreshPanel();
       });
@@ -79,12 +90,34 @@ async function scegliResolver(nome: string): Promise<void> {
     nomeResolver = nome;
     statoResolver = '';
   } catch (err) {
-    // Il fallimento va detto e basta: si resta sul backend che funzionava,
-    // che e' sempre quello che non ha bisogno di rete.
-    statoResolver = `non riesco ad attivarlo: ${(err as Error).message}`;
+    resolver = new LexicalResolver();
+    nomeResolver = 'lessicale';
+    statoResolver = spiega(err as Error);
   }
   session?.ui.usaResolver(resolver);
   refresh();
+}
+
+/**
+ * Da un errore di rete a una frase che dice cosa fare.
+ *
+ * Il caso che capita davvero: la pagina pubblicata gira sotto una politica che
+ * blocca le richieste verso l'esterno, quindi la libreria si carica ma i pesi
+ * del modello no. Chi lo incontra vede "Failed to fetch" e non ha nessun modo
+ * di sapere che il problema non e' il suo indirizzo.
+ */
+function spiega(err: Error): string {
+  const msg = err.message || String(err);
+  if (/fetch|network|load|import|cors|blocked/i.test(msg)) {
+    return (
+      `Non riesco a caricarlo: ${msg}\n\n` +
+      "Se stai giocando dalla pagina pubblicata, e' probabile che sia questo: quella pagina non puo' " +
+      "fare richieste verso l'esterno, quindi il modello non si scarica. Il backend a vettori funziona " +
+      'aprendo il file del player in locale, o servendolo da http — oppure puntando gli indirizzi qui ' +
+      'sotto a una copia raggiungibile.'
+    );
+  }
+  return `Non riesco ad attivarlo: ${msg}`;
 }
 
 interface Session {
@@ -104,15 +137,34 @@ function panelContext(s: Session): PanelContext {
     findings: s.findings,
     ui: s.ui,
     trace: () => s.engine.trace(),
-    onRestart: () => start(s.story, s.findings),
-    onReplay: (text) => start(s.story, s.findings, new ScriptDriver(parseScript(text))),
+    // Ricominciare e rigiocare fanno ripartire la partita *dietro* al
+    // pannello: lasciarlo aperto significa coprire con un pannello di
+    // ispezione la prima scena che si voleva vedere.
+    onRestart: () => {
+      closePanel();
+      start(s.story, s.findings);
+    },
+    onReplay: (text) => {
+      closePanel();
+      start(s.story, s.findings, new ScriptDriver(parseScript(text)));
+    },
     onLoadOther: () => {
       closePanel();
       showLoader();
     },
     resolver: nomeResolver,
     statoResolver,
+    configEmbedder,
     onResolver: (nome) => void scegliResolver(nome),
+    onConfigEmbedder: (c) => {
+      configEmbedder = c;
+      void scegliResolver('embedding', true);
+    },
+    onResetEmbedder: () => {
+      configEmbedder = { ...CONFIG_DEFAULT };
+      statoResolver = '';
+      refreshPanel();
+    },
   };
 }
 

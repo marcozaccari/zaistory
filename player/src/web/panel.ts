@@ -21,9 +21,10 @@ import {
   toneOf,
 } from '../core/index.js';
 import { clear, el, kv, premi } from './dom.js';
+import type { ConfigEmbedder } from './embedder.js';
 import type { WebUI } from './webui.js';
 
-export type Tab = 'stato' | 'scena' | 'linter' | 'traccia';
+export type Tab = 'stato' | 'scena' | 'linter' | 'traccia' | 'resolver';
 
 export interface PanelContext {
   story: Story;
@@ -36,7 +37,10 @@ export interface PanelContext {
   /** Il backend attivo e il modo di cambiarlo a partita in corso. */
   resolver: string;
   statoResolver: string;
+  configEmbedder: ConfigEmbedder;
   onResolver: (nome: string) => void;
+  onConfigEmbedder: (c: ConfigEmbedder) => void;
+  onResetEmbedder: () => void;
 }
 
 export function renderPanel(body: HTMLElement, tab: Tab, ctx: PanelContext): void {
@@ -54,6 +58,9 @@ export function renderPanel(body: HTMLElement, tab: Tab, ctx: PanelContext): voi
     case 'traccia':
       renderTraccia(body, ctx);
       break;
+    case 'resolver':
+      renderResolver(body, ctx);
+      break;
   }
 }
 
@@ -65,22 +72,23 @@ function chips(values: string[], vuoto: string): HTMLElement {
 }
 
 /**
- * Il selettore del backend, dentro il pannello e non fra le impostazioni.
+ * La scheda del resolver.
  *
- * Sta qui perche' e' uno strumento di misura, non una preferenza: la cosa da
- * fare e' accendere l'embedder *nella scena in cui il lessicale ha appena
- * detto di no*, riscrivere la stessa frase e vedere se cambia qualcosa. Il
- * marchio in coda a ogni risposta nel transcript dice poi quale dei due ha
- * deciso, turno per turno.
+ * Ha una scheda sua e non un angolo di "stato" perche' non e' stato di gioco:
+ * e' uno **strumento di misura**, e la cosa da fare con lui e' accendere
+ * l'embedder nella scena in cui il lessicale ha appena detto di no, riscrivere
+ * la stessa frase e vedere se cambia qualcosa. Il marchio in coda a ogni
+ * risposta nel transcript dice poi quale dei due ha deciso, turno per turno.
+ *
+ * Gli indirizzi stanno qui e non nel codice per una ragione molto pratica:
+ * quando questo backend fallisce, fallisce sempre su uno di quei tre, e senza
+ * poterli cambiare l'unica diagnosi che arriva all'utente e' "Failed to fetch".
  */
 function renderResolver(body: HTMLElement, ctx: PanelContext): void {
-  body.append(el('h3', undefined, 'resolver'));
+  body.append(el('h3', undefined, 'backend'));
   const riga = el('div', 'chips');
-  for (const [nome, etichetta] of [
-    ['lessicale', 'lessicale'],
-    ['embedding', 'embedding'],
-  ] as const) {
-    const b = el('button', `chip scelta${ctx.resolver === nome ? ' on' : ''}`, etichetta);
+  for (const nome of ['lessicale', 'embedding'] as const) {
+    const b = el('button', `chip scelta${ctx.resolver === nome ? ' on' : ''}`, nome);
     b.onclick = async () => {
       if (ctx.resolver === nome) return;
       await premi(b);
@@ -93,17 +101,62 @@ function renderResolver(body: HTMLElement, ctx: PanelContext): void {
     el(
       'p',
       'empty',
-      ctx.statoResolver ||
-        (ctx.resolver === 'embedding'
-          ? 'i vettori intervengono solo dove il lessicale tace, e sempre nella scelta del fallback'
-          : 'deterministico, nessun modello, nessuna rete'),
+      ctx.resolver === 'embedding'
+        ? "I vettori intervengono solo dove il lessicale tace, e sempre nella scelta del fallback: dove sbagliare non costa niente."
+        : 'Deterministico, nessun modello, nessuna rete, nessun byte scaricato.',
     ),
   );
+
+  if (ctx.statoResolver) {
+    body.append(el('p', 'stato-resolver', ctx.statoResolver));
+  }
+
+  body.append(el('h3', undefined, 'da dove viene il modello'));
+  body.append(
+    el('p', 'empty', "Serve solo al backend a vettori. Cambiarli e premere «attiva» rifa il tentativo."),
+  );
+
+  const campi: Array<[keyof ConfigEmbedder, string, string]> = [
+    ['libreria', 'libreria', 'URL del modulo ESM da importare'],
+    ['modello', 'modello', 'identificatore del modello'],
+    ['host', 'host dei modelli', 'da dove scaricare i pesi'],
+  ];
+  const inputs = new Map<keyof ConfigEmbedder, HTMLInputElement>();
+  for (const [chiave, etichetta, aiuto] of campi) {
+    const wrap = el('label', 'campo-cfg');
+    wrap.append(el('span', 'gname', etichetta));
+    const i = el('input');
+    i.type = 'text';
+    i.spellcheck = false;
+    i.autocomplete = 'off';
+    i.value = ctx.configEmbedder[chiave];
+    i.title = aiuto;
+    wrap.append(i, el('span', 'aiuto', aiuto));
+    inputs.set(chiave, i);
+    body.append(wrap);
+  }
+
+  const btns = el('div', 'rowbtns');
+  const attiva = el('button', 'btn primary', 'attiva');
+  attiva.onclick = async () => {
+    await premi(attiva);
+    ctx.onConfigEmbedder({
+      libreria: inputs.get('libreria')!.value.trim(),
+      modello: inputs.get('modello')!.value.trim(),
+      host: inputs.get('host')!.value.trim(),
+    });
+  };
+  const reset = el('button', 'btn', 'valori di default');
+  reset.onclick = async () => {
+    await premi(reset);
+    ctx.onResetEmbedder();
+  };
+  btns.append(attiva, reset);
+  body.append(btns);
 }
 
 function renderStato(body: HTMLElement, ctx: PanelContext): void {
   const { ui, story } = ctx;
-  renderResolver(body, ctx);
   const st = ui.state;
   if (!st) {
     body.append(el('p', 'empty', 'La partita non e\' ancora cominciata.'));

@@ -39,6 +39,26 @@ volo, un linter può controllarlo.
 
 ## Provare subito
 
+### Giocare dal telefono
+
+```bash
+./start_local_player.sh          # costruisce, incorpora le storie, serve su http
+```
+
+Stampa gli indirizzi di rete della macchina: dal telefono, sulla stessa wi-fi,
+si apre uno di quelli. Per *giocare* basterebbe mandarsi il file `.html`, che
+funziona anche offline; passare da http serve a una cosa sola, ma importante
+per collaudare il resolver — è l'unico modo di provare il backend a **vettori**
+da mobile, perché da `file://` il browser tratta la pagina come origine opaca e
+il modello non si scarica.
+
+```bash
+./start_local_player.sh 8080                          # altra porta
+./start_local_player.sh 8080 examples/metalhead.ir.json   # una storia sola
+```
+
+### A mano
+
 ```bash
 cd player && npm install
 
@@ -52,6 +72,9 @@ npm run build:node
 node dist-node/src/cli/zaiplay.js ../examples/metalhead.ir.json                    # gioca (si scrive cosa si fa)
 node dist-node/src/cli/zaiplay.js --lint ../examples/nel-paese-dei-ciechi.ir.json  # solo controlli statici
 node dist-node/src/cli/zaiplay.js --copertura ../examples/metalhead.ir.json        # quanto capisce il resolver
+
+# player web servito in rete locale (equivalente di start_local_player.sh)
+npm run serve
 node dist-node/src/cli/zaiplay.js \
   --script ../examples/nel-paese-dei-ciechi.playthrough.txt \
   ../examples/nel-paese-dei-ciechi.ir.json                                        # rigioca la partita di riferimento
@@ -65,6 +88,7 @@ node dist-node/src/cli/zaiplay.js \
 | `skills/story-ir-compiler/references/engine-ir.schema.json` | Lo schema dell'IR — il contratto stabile del progetto |
 | `skills/story-ir-compiler/scripts/` | Validatore dell'IR e segmentatore delle scene |
 | `player/` | Il player di test: web e CLI (`zaiplay`) sullo stesso core, linter di giocabilità, script di playthrough |
+| `start_local_player.sh` | Costruisce il player, ci incorpora le storie e lo serve in rete locale (per giocare dal telefono) |
 | `examples/` | Sceneggiature di riferimento e l'IR compilato da usare come banco di prova |
 
 ## Documentazione

@@ -74,7 +74,13 @@ node dist-node/src/cli/zaiplay.js \
 
 npm run dev                                # player web con ricarica a caldo
 npm run build:web                          # -> dist/index.html, file unico
+npm run serve                              # serve dist/ in rete locale
 ```
+
+Dalla radice del repository, `./start_local_player.sh` fa build + embed +
+serve in un colpo: e' il modo di provare il player dal telefono, e l'unico
+modo di provare il backend a vettori da mobile (da `file://` il modello non si
+scarica).
 
 Entrambi gli IR di esempio sono a **IR 1.8.0** e passano il linter con zero
 errori: se una modifica ne introduce, e' la modifica a essere sbagliata, non

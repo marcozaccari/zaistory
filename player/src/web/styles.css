@@ -834,6 +834,51 @@ body.debug .choice.solo-debug {
   display: block;
 }
 
+/* Lo stato del backend: puo' essere una riga sola ("carico la libreria…") o
+   un paragrafo che spiega perche' non ha funzionato, quindi va a capo dove il
+   testo lo chiede invece di scorrere. */
+.stato-resolver {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--bg-soft);
+  color: var(--fg-dim);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+/* Gli indirizzi da cui viene il modello. Etichetta sopra, campo, e sotto la
+   riga che dice a cosa serve: sono tre URL che si somigliano, e senza
+   didascalia si incollano nel posto sbagliato. */
+.campo-cfg {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.campo-cfg input {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.campo-cfg input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.campo-cfg .aiuto {
+  color: var(--fg-dim);
+  font-size: 12px;
+}
+
 /* Il selettore del backend nel pannello. */
 .chip.scelta {
   cursor: pointer;

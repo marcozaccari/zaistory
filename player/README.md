@@ -30,8 +30,11 @@ npm install
 npm run dev                     # apre un dev server con ricarica a caldo
 
 # player web, file unico da mandare/aprire ovunque
-npm run build:web               # -> dist/index.html (~45 KB, tutto dentro)
+npm run build:web               # -> dist/index.html (~80 KB, tutto dentro)
 npm run embed -- ../examples/nel-paese-dei-ciechi.ir.json paese.html
+
+# ...e per giocarlo dal telefono (o per provare il backend a vettori)
+npm run serve                   # serve dist/ e stampa gli indirizzi di rete
 
 # CLI
 npm run build:node
@@ -41,6 +44,31 @@ node dist-node/src/cli/zaiplay.js ../examples/nel-paese-dei-ciechi.ir.json
 Serve solo Node 22+. Nessuna dipendenza a runtime: TypeScript e Vite sono
 soltanto strumenti di build, e il codice spedito al browser non importa niente
 da `node_modules`.
+
+## Giocare dal telefono
+
+```bash
+npm run build:web
+npm run embed -- ../examples/metalhead.ir.json dist/metalhead.html
+npm run serve
+```
+
+Stampa gli indirizzi di rete della macchina; dal telefono, sulla stessa wi-fi,
+si apre uno di quelli. Il server è una cinquantina di righe di Node senza
+dipendenze, serve `dist/` e non fa altro.
+
+Due modi, e la differenza conta solo per un motivo:
+
+| come | quando |
+|---|---|
+| mandare il file `.html` e aprirlo | basta e avanza per giocare: è un file solo, funziona offline, non serve niente |
+| `npm run serve` e aprire l'indirizzo | l'unico modo di provare il backend a **vettori** dal telefono |
+
+Da `file://` il browser tratta la pagina come origine opaca e il modello non si
+scarica; servita da http è una pagina web normale e si scarica. Nota che su
+`http://` senza TLS non c'è WebGPU — non è un contesto sicuro — quindi
+l'inferenza gira in WASM: più lenta, ma per una frase di cinque parole resta
+nell'ordine dei millisecondi.
 
 ## Tastiera
 
@@ -225,8 +253,22 @@ Backend, si sceglie con `--resolver`:
 2. `embedding` — vettori locali. Il modello non è una dipendenza del player: la
    CLI lo prende da una dipendenza opzionale (`npm i --no-save
    @huggingface/transformers`), il player web da CDN al momento in cui lo si
-   accende dal pannello. Chi non lo usa non scarica niente, e il file HTML
-   unico resta unico.
+   accende dalla scheda **resolver** del pannello. Chi non lo usa non scarica
+   niente, e il file HTML unico resta unico.
+
+   Quella scheda espone i tre indirizzi da cui il backend dipende — la
+   libreria, il modello, l'host dei pesi — perché è sempre uno di quei tre a
+   fallire, e senza poterli cambiare l'unica diagnosi possibile è «Failed to
+   fetch». Servono anche per puntare a un mirror interno o a una copia servita
+   in locale.
+
+   **Dove il backend a vettori non funziona, e perché.** Da `file://` il
+   browser tratta la pagina come origine opaca e le richieste esterne cadono;
+   nella pagina *pubblicata* non passa nessuna richiesta verso l'esterno per
+   politica del sito. In tutti e due i casi la libreria o il modello non
+   arrivano, e il player lo dice a parole invece di lasciare l'errore grezzo,
+   restando sul lessicale. Servito da http è una pagina web come un'altra e
+   funziona: è esattamente il motivo per cui esiste `npm run serve`.
 3. `claude` — via API. Non ancora implementato.
 
 Il backend a menu non c'è più: i test di regressione non passano dal resolver

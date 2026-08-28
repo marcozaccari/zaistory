@@ -14,7 +14,8 @@
     "dev": "vite",
     "test": "npm run build:node && node --test \"dist-node/test/*.test.js\"",
     "zaiplay": "node dist-node/src/cli/zaiplay.js",
-    "embed": "node scripts/embed.mjs"
+    "embed": "node scripts/embed.mjs",
+    "serve": "node scripts/serve.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
