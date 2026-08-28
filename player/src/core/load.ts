@@ -41,6 +41,7 @@ type SpecName =
   | 'VoiceSpec'
   | 'Character'
   | 'Place'
+  | 'Item'
   | 'Condition'
   | 'Effect'
   | 'DialogueChoice'
@@ -72,7 +73,7 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       places: { arr: 'Place' },
       start_scene: 'string',
       state_flags_schema: 'string[]',
-      inventory_schema: 'string[]',
+      items: { arr: 'Item' },
       initial_inventory: 'string[]',
       scenes: { arr: 'Scene' },
     },
@@ -99,6 +100,7 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
     fields: {
       id: 'string',
       name: 'string',
+      aliases: 'string[]',
       visual_prompt: 'string',
       voice: { obj: 'VoiceSpec' },
     },
@@ -106,6 +108,16 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
   Place: {
     required: ['id'],
     fields: { id: 'string', name: 'string', visual_prompt: 'string' },
+  },
+  Item: {
+    required: ['id', 'name'],
+    fields: {
+      id: 'string',
+      name: 'string',
+      aliases: 'string[]',
+      description: 'string',
+      visual_prompt: 'string',
+    },
   },
   Condition: {
     required: [],
@@ -164,6 +176,7 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       target: 'string',
       aliases: 'string[]',
       condition: { obj: 'Condition' },
+      blocked_narration: 'string',
       effect: { obj: 'Effect' },
       repeatable: 'boolean',
     },
@@ -200,6 +213,7 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       id: 'string',
       title: 'string',
       background: { obj: 'Background' },
+      look: 'string',
       scene_tone: 'string',
       scene_type: { enum: ['interactive', 'cutscene'] },
       characters: { arr: 'SceneCharacter' },

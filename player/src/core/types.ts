@@ -43,6 +43,10 @@ export interface GlobalStyle {
 export interface Character {
   id: string;
   name?: string;
+  /** Come il giocatore lo chiamera' scrivendo: "il ragazzo", "quello con la
+   * barba". Entrare in un dialogo e' un'azione a input libero, anche se la
+   * conversazione poi si gioca a scelte. */
+  aliases?: string[];
   visual_prompt?: string;
   voice?: VoiceSpec;
 }
@@ -58,6 +62,17 @@ export interface Place {
   id: string;
   name?: string;
   visual_prompt: string;
+}
+
+/** Anagrafica di un oggetto di inventario. Esiste perche' il player definitivo
+ * si comanda a parole: un id non e' una risposta a "cosa ho nello zaino", e
+ * "usa il coltellino" ha bisogno di qualcosa a cui agganciarsi. */
+export interface Item {
+  id: string;
+  name: string;
+  aliases?: string[];
+  description?: string;
+  visual_prompt?: string;
 }
 
 /** Condizione di visibilita' di un'azione o di una scelta.
@@ -85,6 +100,9 @@ export interface Effect {
 /** Scelta offerta al giocatore dentro un dialogo.
  * Nota: lo schema non prevede un id per le scelte; il player le identifica con
  * il nodo di destinazione (campo `goto`), che e' stabile. */
+/** Una scelta di dialogo si tocca, non si scrive: il parlato resta a scelte
+ * esplicite, e l'input libero non entra mai in un dialogue_tree. Per questo qui
+ * non ci sono `aliases` — c'erano in 1.6.0 e sono stati tolti in 1.7.0. */
 export interface DialogueChoice {
   text: string;
   goto: string;
@@ -113,6 +131,10 @@ export interface Action {
   target?: string;
   aliases?: string[];
   condition?: Condition;
+  /** Cosa si vede se il giocatore chiede l'azione ma la condition non e'
+   * soddisfatta. Testo d'autore, nessun effetto: un'azione filtrata in un menu
+   * spariva, a parole viene chiesta lo stesso e merita una risposta. */
+  blocked_narration?: string;
   effect?: Effect;
   repeatable?: boolean;
 }
@@ -148,6 +170,9 @@ export type SceneType = typeof SCENE_INTERACTIVE | typeof SCENE_CUTSCENE;
 export interface Scene {
   id: string;
   title?: string;
+  /** La stanza com'e' adesso: la risposta a "guardati intorno" / "dove mi
+   * trovo". Rileggibile, non fa avanzare niente, non e' un'azione. */
+  look?: string;
   background?: Background;
   scene_tone?: string;
   scene_type?: SceneType;
@@ -170,7 +195,7 @@ export interface Story {
   places?: Place[];
   start_scene: string;
   state_flags_schema?: string[];
-  inventory_schema?: string[];
+  items?: Item[];
   /** Oggetti gia' in inventario quando la partita comincia, prima della
    * start_scene: quello che il personaggio si porta dietro da prima che la
    * storia inizi. */

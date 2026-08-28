@@ -10,7 +10,7 @@
  */
 
 import type { Condition, Effect, Scene, Story } from './types.js';
-import { SCENE_CUTSCENE, displayName, findScene, sceneHasExit, sceneType, shotsOf } from './types.js';
+import { SCENE_CUTSCENE, SCENE_INTERACTIVE, displayName, findScene, sceneHasExit, sceneType, shotsOf } from './types.js';
 
 export type Level = 'info' | 'avviso' | 'errore';
 
@@ -331,10 +331,42 @@ class Linter {
       }
     }
 
-    if (this.story.inventory_schema?.length) {
-      const declared = new Set(this.story.inventory_schema);
-      for (const it of [...addItems].sort()) {
-        if (!declared.has(it)) this.add('info', '', `oggetto "${it}" usato ma non elencato in inventory_schema`);
+    // L'anagrafica degli oggetti non e' documentale come lo era
+    // inventory_schema: un oggetto senza scheda non ha un nome da mostrare a chi
+    // chiede cosa ha nello zaino, ne' sinonimi con cui nominarlo. In un player
+    // che si comanda a parole e' un oggetto che il giocatore non puo' usare.
+    // Il player definitivo si comanda a parole: "dove mi trovo" e' la domanda
+    // piu' frequente di tutte, e senza `look` non ha una risposta d'autore.
+    for (const sc of this.story.scenes) {
+      if (sceneType(sc) === SCENE_INTERACTIVE && !sc.look) {
+        this.add('avviso', `scena "${sc.id}"`, 'scena interattiva senza look: a input libero "guardati intorno" non ha risposta');
+      }
+      for (const a of sc.actions ?? []) {
+        if (a.blocked_narration && !a.condition) {
+          this.add('avviso', `scena "${sc.id}", azione "${a.id}"`, 'blocked_narration senza condition: non si vedra\' mai');
+        }
+        if (a.condition && !a.blocked_narration) {
+          this.add(
+            'info',
+            `scena "${sc.id}", azione "${a.id}"`,
+            'azione condizionata senza blocked_narration: chiesta troppo presto, non dira\' niente',
+          );
+        }
+      }
+    }
+
+    const schede = new Set((this.story.items ?? []).map((i) => i.id));
+    for (const it of [...addItems].sort()) {
+      if (!schede.has(it)) {
+        this.add('errore', '', `oggetto "${it}" usato ma senza scheda in items[]: niente nome, niente sinonimi`);
+      }
+    }
+    for (const i of this.story.items ?? []) {
+      if (!addItems.has(i.id)) {
+        this.add('info', '', `oggetto "${i.id}" con scheda in items[] ma che nessuna azione mette mai in inventario`);
+      }
+      if (!i.aliases?.length) {
+        this.add('avviso', '', `oggetto "${i.id}" senza aliases: a input libero si potra' nominare solo con "${i.name}"`);
       }
     }
   }

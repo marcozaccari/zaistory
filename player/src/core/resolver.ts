@@ -12,12 +12,32 @@
  * scena, ma senza alcun potere sullo stato del gioco.
  */
 
-/** Un'azione tra cui il resolver puo' scegliere. */
+/**
+ * Un'azione tra cui il resolver puo' scegliere.
+ *
+ * Solo azioni di scena: le scelte di dialogo non arrivano mai qui. Il parlato
+ * si gioca a scelte esplicite come nelle avventure grafiche classiche, e
+ * quando un dialogue_tree e' aperto il player mostra l'elenco e il resolver non
+ * viene nemmeno interpellato.
+ */
 export interface Candidate {
   id: string;
   label: string;
   target?: string;
   aliases?: string[];
+  /**
+   * L'azione esiste in questa scena ma la sua `Condition` non e' soddisfatta.
+   *
+   * Le azioni bloccate vanno passate lo stesso al resolver, ed e' la differenza
+   * fra un menu e una conversazione: in un menu una voce filtrata sparisce e non
+   * c'e' niente da dire, a parole il giocatore la chiede comunque. Se il
+   * resolver ne sceglie una, il player mostra `blocked_narration` e **non
+   * applica nessun effetto**: nessun flag, nessuna transizione, nessun oggetto.
+   * Il vincolo "il resolver non genera logica" resta intatto — qui non genera
+   * nemmeno il testo, che e' d'autore.
+   */
+  blocked?: boolean;
+  blocked_narration?: string;
 }
 
 export interface ResolveRequest {
@@ -26,7 +46,7 @@ export interface ResolveRequest {
   tone: string;
 }
 
-/** O un id di azione esistente, o niente. */
+/** O un id di azione esistente (anche bloccata), o niente. */
 export interface ResolveResult {
   /** "" = nessun match. */
   actionId: string;
@@ -72,6 +92,7 @@ export class MenuResolver implements Resolver {
 
     const low = input.toLowerCase();
     for (const c of req.candidates) {
+      if (c.blocked) continue; // il menu non elenca le azioni bloccate, quindi non le sceglie
       if (c.id.toLowerCase() === low || c.label.toLowerCase() === low) return { actionId: c.id };
     }
     return { actionId: '', fallback: 'Scegli il numero di una delle azioni elencate (oppure :aiuto).' };

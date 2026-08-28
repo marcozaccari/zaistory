@@ -1,5 +1,5 @@
 {
-  "ir_version": "1.4.0",
+  "ir_version": "1.7.0",
   "generated_by": {
     "compiler": "story-ir-compiler",
     "compiler_version": "1.0.0"
@@ -26,6 +26,11 @@
     {
       "id": "nunez",
       "name": "Nuñez",
+      "aliases": [
+        "io",
+        "l'uomo che vede",
+        "lo straniero"
+      ],
       "visual_prompt": "uomo di trent'anni, guida alpina sudamericana, viso segnato dal sole, sguardo acuto e mobile, giacca ruvida da montagna, barba non rasata",
       "voice": {
         "style_prompt": "voce sicura e calda, che nel corso della storia si incrina e si fa roca"
@@ -34,6 +39,12 @@
     {
       "id": "medina_sarote",
       "name": "Medina-saroté",
+      "aliases": [
+        "medina",
+        "la ragazza",
+        "la figlia di yacob",
+        "la giovane"
+      ],
       "visual_prompt": "giovane donna dai tratti netti e ciglia lunghissime, palpebre chiuse e incavate, capelli scuri raccolti, veste di alpaca chiara",
       "voice": {
         "style_prompt": "voce piena, un poco troppo forte per l'orecchio fino dei valligiani, dolce nelle pause"
@@ -42,6 +53,12 @@
     {
       "id": "yacob",
       "name": "Yacob",
+      "aliases": [
+        "yacob",
+        "il padre",
+        "il vecchio",
+        "il padrone"
+      ],
       "visual_prompt": "uomo anziano robusto, palpebre chiuse e incavate, mani grandi da lavoro, mantello di alpaca scuro",
       "voice": {
         "style_prompt": "voce bonaria e pratica, che si indurisce quando viene contrariata"
@@ -50,6 +67,11 @@
     {
       "id": "pedro",
       "name": "Pedro",
+      "aliases": [
+        "pedro",
+        "il cieco",
+        "l'uomo del sentiero"
+      ],
       "visual_prompt": "uomo giovane, berretto di alpaca con paraorecchi, secchio aggiogato sulle spalle, palpebre chiuse",
       "voice": {
         "style_prompt": "voce curiosa e prudente, che assaggia le parole nuove"
@@ -58,6 +80,11 @@
     {
       "id": "il_dottore",
       "name": "Il dottore cieco",
+      "aliases": [
+        "il dottore",
+        "il medico",
+        "il guaritore"
+      ],
       "visual_prompt": "uomo magro dalle dita lunghissime e sensibili, tunica scura, volto immobile e compiaciuto",
       "voice": {
         "style_prompt": "voce didattica ed entusiasta, come chi annuncia una buona notizia"
@@ -66,6 +93,10 @@
     {
       "id": "correa",
       "name": "Correa",
+      "aliases": [
+        "correa",
+        "l'altro cieco"
+      ],
       "visual_prompt": "uomo dalle mani morbide e curiose, palpebre chiuse e incavate, tunica di alpaca chiara",
       "voice": {
         "style_prompt": "voce lenta e ragionevole, che spiega l'assurdo con perfetta calma"
@@ -74,6 +105,10 @@
     {
       "id": "il_terzo_cieco",
       "name": "Il terzo cieco",
+      "aliases": [
+        "il terzo",
+        "l'altro uomo"
+      ],
       "visual_prompt": "uomo più anziano, secchio ancora sulle spalle, testa inclinata all'ascolto",
       "voice": {
         "style_prompt": "voce ferma, poche parole"
@@ -82,6 +117,11 @@
     {
       "id": "anziano",
       "name": "L'anziano del consiglio",
+      "aliases": [
+        "l'anziano",
+        "il vecchio",
+        "il capo degli anziani"
+      ],
       "visual_prompt": "uomo molto vecchio seduto su una panca di pietra, mani ferme sulle ginocchia, palpebre chiuse e incavate",
       "voice": {
         "style_prompt": "voce lenta e paziente, di chi spiega una cosa ovvia a un bambino"
@@ -90,6 +130,11 @@
     {
       "id": "voce_cieca",
       "name": "Una voce fra i ciechi",
+      "aliases": [
+        "la voce",
+        "quello che ha parlato",
+        "la voce nel buio"
+      ],
       "visual_prompt": "figura di cieco appena distinguibile contro il muro di cinta, palpebre chiuse e incavate, testa girata di lato per ascoltare, tunica di alpaca chiara, mani abbandonate lungo i fianchi",
       "voice": {
         "style_prompt": "voce piatta e paziente, che interroga senza curiosita, come chi ripete una formula gia nota"
@@ -145,9 +190,31 @@
     "visione_avuta",
     "vista_derisa"
   ],
-  "inventory_schema": [
-    "fronda_di_felce",
-    "vanga"
+  "items": [
+    {
+      "id": "fronda_di_felce",
+      "name": "fronda di felce",
+      "aliases": [
+        "felce",
+        "fronda",
+        "picciolo",
+        "erba"
+      ],
+      "description": "Una felce dal picciolo grasso e acquoso, di una specie che a Bogotà non cresce. Masticandola si cava la sete.",
+      "visual_prompt": "fronda di felce dal picciolo carnoso, verde chiaro, appena staccata"
+    },
+    {
+      "id": "vanga",
+      "name": "vanga",
+      "aliases": [
+        "pala",
+        "badile",
+        "attrezzo",
+        "zappa"
+      ],
+      "description": "Legno liscio e ferro consumato dall'uso di più generazioni. Nella valle è un attrezzo; in mano a lui è diventata un'altra cosa.",
+      "visual_prompt": "vanga di legno consumato con lama di ferro annerita, manico lucido dall'uso"
+    }
   ],
   "scenes": [
     {
@@ -334,6 +401,7 @@
         ],
         "ambient_sound_prompt": "canto di uccelli, acqua corrente nei canali, vento leggero tra i pini"
       },
+      "look": "L'imbocco della valle, in piena luce: prati geometrici, canali d'acqua regolari, casupole di pietra intonacate a chiazze e senza una finestra. Accanto a lui una sorgiva all'ombra di un macigno e una felce dal picciolo grasso. Il pendio scende verso un muro di cinta.",
       "characters": [
         {
           "id": "nunez"
@@ -429,6 +497,7 @@
         ],
         "ambient_sound_prompt": "acqua nei canali, passi lenti su pietra, respiri vicini"
       },
+      "look": "Un sentiero lastricato lungo il muro di cinta, alto quanto un petto d'uomo. Tre uomini in fila indiana, secchi aggiogati sulle spalle, vestiti di alpaca e berretti calcati. Le loro palpebre sono chiuse e infossate, e camminano spediti come se la strada la conoscessero a memoria.",
       "characters": [
         {
           "id": "nunez"
@@ -569,6 +638,7 @@
         "place": "sala_degli_anziani",
         "ambient_sound_prompt": "voci basse in una stanza chiusa, crepitio lontano di brace"
       },
+      "look": "Un interno buio come la pece: solo il bagliore lontano di un fuoco in un forno di pietra. Intorno, sagome sedute in cerchio che si sentono più che vedersi. Odore di latte di lama e di pane salato.",
       "characters": [
         {
           "id": "nunez"
@@ -764,6 +834,7 @@
         ],
         "ambient_sound_prompt": "passi sicuri intorno, voci che chiamano nel buio, vento leggero"
       },
+      "look": "I viottoli della valle di notte, dove tutti si muovono spediti e sicuri e lui urta ogni cosa. Contro un muro, appoggiati in fila, gli attrezzi del villaggio: fra questi, delle vanghe.",
       "characters": [
         {
           "id": "nunez"
@@ -862,6 +933,7 @@
         "place": "valle",
         "ambient_sound_prompt": "silenzio teso, passi lenti sull'erba, respiri profondi che annusano"
       },
+      "look": "I prati della valle visti dall'alto. Una linea di uomini con vanghe e bastoni avanza a raggiera, lenta e metodica, fermandosi ad ascoltare ogni pochi passi. La linea è larga quanto la valle e non ha buchi evidenti.",
       "characters": [
         {
           "id": "nunez"
@@ -950,6 +1022,7 @@
         ],
         "ambient_sound_prompt": "vento tra i pini, belati lontani, nessuna voce umana"
       },
+      "look": "Un pendio di pini fuori dal muro di cinta, luce fredda, niente da mangiare. Poco più in là dei lama lo guardano da lontano con occhi bruni e diffidenti. In basso, il muro e il cancello del villaggio.",
       "characters": [
         {
           "id": "nunez"
@@ -1065,6 +1138,7 @@
         ],
         "ambient_sound_prompt": "flauti lontani, canti sommessi, grilli"
       },
+      "look": "Un campo al chiaro di luna, dove Medina-saroté fila. La luce la trasforma in una figura d'argento, e lei non sa di essere illuminata. Intorno, il villaggio dorme con le sue abitudini precise.",
       "characters": [
         {
           "id": "nunez"
@@ -1314,6 +1388,7 @@
         ],
         "ambient_sound_prompt": "voci contente in lontananza, vento leggero sui prati"
       },
+      "look": "Fuori, nella luce piena del giorno. Yacob parla di una cura, e degli occhi come di due corpi estranei che irritano il cervello. Le mani, alla luce, sono ancora quelle di sempre.",
       "characters": [
         {
           "id": "nunez"
@@ -1582,6 +1657,7 @@
         ],
         "ambient_sound_prompt": "vento sulla roccia, acqua lontana, nessuna voce"
       },
+      "look": "Un pendio roccioso sopra la valle. In alto, un canalone che risale verso un camino di roccia e la cortina di montagne. In basso, i narcisi bianchi e il villaggio dove lo aspettano.",
       "characters": [
         {
           "id": "nunez"

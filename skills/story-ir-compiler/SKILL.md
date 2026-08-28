@@ -18,7 +18,7 @@ description: >-
 
 # Story IR Compiler
 
-**Versione di questo compilatore: 1.1.0.** Va riportata in `generated_by` di
+**Versione di questo compilatore: 1.3.0.** Va riportata in `generated_by` di
 ogni IR prodotto (passo 7); alzala quando cambi le regole di compilazione, non
 a ogni ritocco di forma.
 
@@ -36,6 +36,37 @@ Se l'utente chiede solo di discutere/rivedere la sceneggiatura, dare
 feedback narrativo, o scrivere altre scene in prosa libera — è scrittura
 normale, non compilazione. Questa skill serve quando l'output atteso è la
 struttura giocabile (JSON conforme allo schema), non altro testo narrativo.
+
+## Per chi stai compilando: un giocatore che scrive, non che sceglie
+
+Tienilo presente da prima di cominciare, perché cambia cosa scrivi in ogni
+scena. Il player di test mostra le azioni come bottoni, ma **quella è
+impalcatura di collaudo**: il player definitivo si comanda a parole — «guardati
+intorno», «dove mi trovo», «prendi il coltello», «cosa ho nello zaino», «apri la
+porta con la chiave», «parla con Mark». Un modulo separato (il resolver) prende
+la frase e sceglie fra le azioni che hai definito; non ne inventa nessuna.
+
+**Il parlato però no.** I dialoghi restano a scelte esplicite, come nelle
+avventure grafiche classiche: dentro un `dialogue_tree` il giocatore vede
+l'elenco delle battute e ne tocca una, e l'input libero non entra mai. Il
+confine è netto e sta all'ingresso: «parla con Mark» è un'azione e passa dal
+resolver, quello che si dice a Mark è un menu.
+
+Tre conseguenze pratiche, e sono le tre cose che si sbagliano di più:
+
+1. **Niente si scopre da una `label`.** Con i bottoni, l'etichetta "Prendi il
+   rotolo di nastro isolante" è metà della scoperta; a parole, quel rotolo
+   esiste solo se il testo che il giocatore legge lo nomina. Tutto ciò che deve
+   essere trovato va nominato in `narration`, in `look`, o nell'esito di
+   un'altra azione. La difficoltà viene da cosa il testo dice e non dice, mai
+   da un menu che si accorcia.
+2. **Ogni scena interattiva ha un `look`**: la stanza com'è adesso, rileggibile,
+   che è la risposta a «dove mi trovo». Non è un'azione e non pesa sul numero
+   di azioni della scena.
+3. **Gli agganci vanno scritti**: `aliases` sulle azioni, `name` e `aliases`
+   sugli oggetti, `aliases` sui personaggi («il ragazzo», «quello con la
+   barba»). Sono il modo in cui una frase arriva alla cosa giusta. Le scelte di
+   dialogo non ne hanno bisogno: quelle si vedono e si toccano.
 
 ## Regole di gioco — valgono per ogni scena, non sono negoziabili
 
@@ -183,7 +214,7 @@ compilatore CLI, non riscrivere la scena da zero per un errore di schema.
 
 ```json
 {
-  "ir_version": "1.5.0",
+  "ir_version": "1.7.0",
   "generated_by": {
     "compiler": "story-ir-compiler",
     "compiler_version": "<la versione dichiarata in cima a questo file>",
@@ -197,7 +228,7 @@ compilatore CLI, non riscrivere la scena da zero per un errore di schema.
   "places": "<story_map.places + i new_places emessi dallo Stadio B, deduplicati per id>",
   "start_scene": "<story_map.start_scene>",
   "state_flags_schema": "<story_map.state_flags_schema>",
-  "inventory_schema": "<story_map.inventory_schema>",
+  "items": "<story_map.items + i new_items emessi dallo Stadio B, deduplicati per id>",
   "initial_inventory": "<story_map.initial_inventory, se la storia comincia con qualcosa gia' in mano>",
   "scenes": ["<tutte le Scene compilate, nell'ordine dei segmenti>"]
 }

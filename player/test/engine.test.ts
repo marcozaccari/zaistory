@@ -159,7 +159,7 @@ test('initial_inventory e\' gia\' in inventario prima della prima scena', async 
     id: 'zaino',
     title: 'Con qualcosa nello zaino',
     start_scene: 'unica',
-    inventory_schema: ['walkie_talkie'],
+    items: [{ id: 'walkie_talkie', name: 'walkie talkie', aliases: ['radio', 'ricetrasmittente'] }],
     initial_inventory: ['walkie_talkie'],
     scenes: [
       {

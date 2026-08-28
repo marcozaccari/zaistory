@@ -60,7 +60,7 @@ function chips(values: string[], vuoto: string): HTMLElement {
   return box;
 }
 
-function renderStato(body: HTMLElement, { ui }: PanelContext): void {
+function renderStato(body: HTMLElement, { ui, story }: PanelContext): void {
   const st = ui.state;
   if (!st) {
     body.append(el('p', 'empty', 'La partita non e\' ancora cominciata.'));
@@ -73,7 +73,12 @@ function renderStato(body: HTMLElement, { ui }: PanelContext): void {
   body.append(chips(st.sortedFlags(), 'nessun flag impostato'));
 
   body.append(el('h3', undefined, 'inventario'));
-  body.append(chips([...st.inventory], 'inventario vuoto'));
+  body.append(
+    chips(
+      st.inventory.map((id) => story.items?.find((i) => i.id === id)?.name ?? `${id} [senza scheda]`),
+      'inventario vuoto',
+    ),
+  );
 
   body.append(el('h3', undefined, 'scene visitate'));
   body.append(el('p', undefined, st.history.length ? st.history.join(' → ') : '—'));
@@ -91,6 +96,10 @@ function renderScena(body: HTMLElement, ctx: PanelContext): void {
   kv(dl, 'id', sc.id);
   if (sc.title) kv(dl, 'title', sc.title);
   kv(dl, 'scene_type', sceneType(sc));
+  // `look` non e' un'azione e non compare nel dock di proposito: nel player
+  // definitivo e' una domanda che si fa a parole. Qui si legge perche' senza
+  // non si potrebbe collaudare (ne' accorgersi che manca).
+  kv(dl, 'look', sc.look || '— mancante');
   kv(dl, 'scene_tone', sc.scene_tone || `${toneOf(ctx.story, sc)} (default globale)`);
   if (sc.background) {
     kv(dl, 'background.image_prompt', sc.background.image_prompt);

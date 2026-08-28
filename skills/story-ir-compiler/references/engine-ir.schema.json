@@ -11,7 +11,7 @@
       "type": "string",
       "description": "Versione dello schema IR, per compatibilita' futura tra compilatore e player (semver).",
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
-      "examples": ["1.5.0"]
+      "examples": ["1.7.0"]
     },
     "generated_by": {
       "$ref": "#/$defs/Provenance"
@@ -50,10 +50,10 @@
       "description": "Elenco documentale (opzionale) di tutti i flag di stato usati nella storia, utile per validazione incrociata e debug.",
       "items": { "type": "string" }
     },
-    "inventory_schema": {
+    "items": {
       "type": "array",
-      "description": "Elenco documentale (opzionale) di tutti gli oggetti di inventario possibili nella storia.",
-      "items": { "type": "string" }
+      "description": "Anagrafica degli oggetti di inventario: e' per gli oggetti quello che characters[] e' per le persone e places[] per i luoghi. Sostituisce il vecchio inventory_schema, che era un elenco di id nudi: un id non ha un nome da mostrare a chi chiede cosa ha nello zaino, ne' sinonimi su cui agganciare 'usa il coltellino'. Ogni id usato in add_inventory/remove_inventory/has_item dovrebbe comparire qui.",
+      "items": { "$ref": "#/$defs/Item" }
     },
     "initial_inventory": {
       "type": "array",
@@ -147,6 +147,11 @@
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
         "name": { "type": "string", "description": "Nome visualizzato, se diverso dall'id." },
+        "aliases": {
+          "type": "array",
+          "description": "Altri modi in cui il giocatore puo' nominarlo scrivendo liberamente: 'il ragazzo', 'quello con la barba', 'il vecchio'. Servono perche' *entrare* in un dialogo e' un'azione come le altre — «parla con Mark» passa dal resolver — anche se poi dentro il dialogo si sceglie da un elenco e non si scrive piu' niente. Un personaggio a cui il giocatore non sa come rivolgersi e' un personaggio con cui non parlera'.",
+          "items": { "type": "string" }
+        },
         "visual_prompt": { "type": "string", "description": "Prompt per generazione immagine/sprite del personaggio." },
         "voice": { "$ref": "#/$defs/VoiceSpec" }
       }
@@ -163,6 +168,33 @@
         "visual_prompt": {
           "type": "string",
           "description": "Descrizione stabile del luogo, riusata come riferimento da ogni inquadratura ambientata li'."
+        }
+      }
+    },
+
+    "Item": {
+      "type": "object",
+      "description": "Un oggetto che il giocatore puo' avere in inventario. Esiste perche' il player definitivo si comanda a parole: 'cosa ho nello zaino' deve poter rispondere con un nome e non con uno slug, e 'usa il rotolo di scotch' deve poter agganciare l'oggetto giusto. Non e' un elenco di tutto cio' che si vede nella storia: solo di cio' che si puo' portare via.",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
+        "name": {
+          "type": "string",
+          "description": "Come l'oggetto si chiama per il giocatore, es. 'coltello da lavoro'. E' quello che il player elenca nell'inventario."
+        },
+        "aliases": {
+          "type": "array",
+          "description": "Altri modi in cui il giocatore puo' nominarlo scrivendo liberamente ('coltellino', 'lama', 'serramanico'). Stessa funzione degli aliases di Action, applicata agli oggetti.",
+          "items": { "type": "string" }
+        },
+        "description": {
+          "type": "string",
+          "description": "Cosa vede il giocatore se guarda l'oggetto che ha in mano. Testo d'autore, rileggibile: non cambia niente e non fa avanzare niente."
+        },
+        "visual_prompt": {
+          "type": "string",
+          "description": "Prompt per generare l'immagine dell'oggetto (icona d'inventario). Stessa logica di Character.visual_prompt: un'ancora per entita', non una singola inquadratura."
         }
       }
     },
@@ -253,6 +285,7 @@
 
     "DialogueTree": {
       "type": "object",
+      "description": "Un dialogo si gioca SEMPRE a scelte esplicite, come nelle avventure grafiche classiche: le battute disponibili si vedono tutte e se ne tocca una. L'input libero non entra mai qui - vale per osservazioni e azioni, mai per il parlato. Conseguenza per chi compila: dentro un dialogo l'elenco e' visibile, quindi non ci si nasconde niente che il giocatore debba scoprire da solo.",
       "required": ["start", "nodes"],
       "additionalProperties": false,
       "properties": {
@@ -287,6 +320,11 @@
           "items": { "type": "string" }
         },
         "condition": { "$ref": "#/$defs/Condition" },
+        "blocked_narration": {
+          "type": "string",
+          "description": "Cosa si vede quando il giocatore chiede questa azione ma la sua condition non e' soddisfatta. Ha senso solo insieme a condition. Serve al player a input libero: un'azione filtrata non e' piu' una voce che sparisce da un menu, e' una cosa che il giocatore chiede e che deve ricevere una risposta d'autore ('la cordicella penzola a tre metri') invece del non-ho-capito generico. NON e' un effetto: non cambia lo stato, non fa transizioni, e il resolver che sceglie un'azione bloccata non ha applicato niente.",
+          "examples": ["La cordicella penzola a tre metri, fuori portata."]
+        },
         "effect": { "$ref": "#/$defs/Effect" },
         "repeatable": {
           "type": "boolean",
@@ -321,6 +359,11 @@
               "items": { "type": "string" }
             }
           }
+        },
+        "look": {
+          "type": "string",
+          "description": "La stanza com'e' adesso: la risposta d'autore a 'guardati intorno' / 'dove mi trovo'. Rileggibile quante volte si vuole, non fa avanzare niente e non consuma un turno - e' un verbo del player, come l'inventario, non un'azione della scena, e per questo non sta in actions[] e non pesa sul loro numero. Distinta da narration[], che si legge una volta sola entrando, e da background.image_prompt, che e' un prompt di generazione e non prosa per il giocatore. Obbligatoria in pratica per ogni scena interactive: senza, un player a input libero non sa cosa rispondere alla domanda che il giocatore fa piu' spesso.",
+          "examples": ["Un bagno stretto, la porta bloccata con un mobiletto, una vasca sotto una finestrella troppo piccola."]
         },
         "scene_tone": {
           "type": "string",

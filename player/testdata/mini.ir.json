@@ -1,5 +1,5 @@
 {
-  "ir_version": "1.4.0",
+  "ir_version": "1.7.0",
   "generated_by": {
     "compiler": "story-ir-compiler",
     "compiler_version": "1.0.0",
@@ -25,6 +25,11 @@
     {
       "id": "oste",
       "name": "L'oste",
+      "aliases": [
+        "l'oste",
+        "il tavernaio",
+        "l'uomo dietro il bancone"
+      ],
       "visual_prompt": "uomo tarchiato sulla cinquantina, grembiule macchiato, barba corta",
       "voice": {
         "style_prompt": "roco, burbero, leggero accento del nord"
@@ -43,8 +48,17 @@
     "prologo_visto",
     "oste_parlato"
   ],
-  "inventory_schema": [
-    "chiave"
+  "items": [
+    {
+      "id": "chiave",
+      "name": "chiave di ottone",
+      "aliases": [
+        "chiave",
+        "chiavetta",
+        "chiave dell'ottone"
+      ],
+      "description": "Piccola, pesante, con la testa lavorata a foglia. L'oste non l'ha guardata mentre la prendevi."
+    }
   ],
   "scenes": [
     {
@@ -91,6 +105,7 @@
           "oste"
         ]
       },
+      "look": "La sala bassa di una taverna: il camino acceso, quattro tavoli, il bancone dietro cui sta l'oste. Sul bancone, fra i boccali, qualcosa di metallico.",
       "characters": [
         {
           "id": "oste"
@@ -158,7 +173,8 @@
             "narration": "La chiave e' fredda e piu' pesante di quanto sembri.",
             "add_inventory": "chiave",
             "play_sound_prompt": "metallo che tintinna"
-          }
+          },
+          "blocked_narration": "Il bancone e' vuoto: qualunque cosa ci fosse, l'oste non l'ha ancora tirata fuori."
         },
         {
           "id": "esci",
@@ -179,6 +195,7 @@
       "background": {
         "image_prompt": "soglia della taverna, pioggia che rallenta"
       },
+      "look": "La strada fuori dal paese, di notte. Alle spalle la taverna, davanti il buio.",
       "narration": [
         {
           "text": "Fuori la pioggia sta smettendo. La chiave, in tasca, pesa come una promessa."

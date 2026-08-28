@@ -22,7 +22,7 @@ trascrittore.
   global_style: {...}            // tono di default, stile immagini
   all_scene_ids: ["...", "..."]  // per riferimenti goto_scene validi
   state_flags_schema: [...]
-  inventory_schema: [...]
+  items: [...]                   // anagrafica degli oggetti: id, name, aliases
   authoring_mode: {...}          // quanto inventare, quanto rielaborare i dialoghi
 </story_context>
 
@@ -151,13 +151,37 @@ anche quando l'esito è scritto e non può fallire. Il fatto che tutte le
 strade portino allo stesso posto non toglie la scelta: la toglie solo il non
 avere niente da scegliere.
 
-### 3. Narrazione d'ingresso (scene interactive)
+### 3. `look`: la stanza com'e' adesso
+
+Ogni scena `interactive` ha un `look`. E' la risposta d'autore a «guardati
+intorno» e «dove mi trovo» — le due frasi che in un'avventura a input libero si
+scrivono piu' spesso di tutte le altre messe insieme.
+
+- **Non e' `narration[]`**: quella si legge una volta sola entrando e racconta
+  un momento ("Laura sbatte la porta e ci appoggia contro tutto quello che
+  pesa"). `look` e' uno stato, si rilegge quante volte si vuole e resta vero
+  finche' la scena non cambia ("La porta e' bloccata dal mobiletto. Una vasca
+  sotto una finestrella troppo piccola, un lavabo, uno specchio.").
+- **Non e' `background.image_prompt`**: quello e' un prompt per generare
+  un'immagine, scritto per una macchina. `look` e' prosa per una persona.
+- **Non e' un'azione**: sta fuori da `actions[]`, non pesa sul loro numero e
+  non va mai duplicato come azione "osserva l'ambiente". Le osservazioni che
+  scrivi come azioni sono altre: guardare *una cosa specifica* e scoprirci
+  qualcosa.
+- **E' il posto dove le cose diventano trovabili.** Se una scena nasconde un
+  oggetto, il `look` deve dare al giocatore abbastanza da poterlo chiedere —
+  non l'oggetto in chiaro, ma la cosa che lo contiene: "sul mobiletto c'e'
+  della roba da bagno" basta perche' qualcuno provi a frugarci.
+
+Per le `cutscene` il campo si omette: non c'e' niente da guardare, si prosegue.
+
+### 4. Narrazione d'ingresso (scene interactive)
 
 Per le scene interactive, `narration[]` sono le righe mostrate PRIMA che il
 giocatore possa interagire: 1-3 righe brevi per stabilire atmosfera, non per
 esporre informazioni che il giocatore dovrebbe scoprire tramite dialogo/azioni.
 
-### 4. Dialogue tree
+### 5. Dialogue tree
 
 - Un dialogo tipico ha 1-4 nodi. Evita alberi profondi: se una conversazione
   ha molte diramazioni, valuta se non sia meglio spezzarla in più cicli di
@@ -185,13 +209,31 @@ esporre informazioni che il giocatore dovrebbe scoprire tramite dialogo/azioni.
   esatte. Stessa regola per `DialogueNode.text`, dove però il parlante è già
   esplicito nel campo `speaker`: lì le virgolette servono solo se la battuta
   contiene a sua volta una citazione.
+- **Un dialogo si gioca a scelte, sempre.** L'input libero vale per
+  osservazioni e azioni, mai per il parlato: dentro un `dialogue_tree` il
+  giocatore vede l'elenco delle battute e ne tocca una, come nelle avventure
+  grafiche classiche. Le scelte quindi non hanno alias e non ne avranno: si
+  leggono, non si indovinano.
+
+  Questo cambia **cosa** ci metti dentro. Il dialogo e' l'unico posto della
+  scena dove l'elenco e' in chiaro — le azioni no, quelle vanno scritte a
+  parole e trovate. Quindi nel dialogo non si nasconde niente che il giocatore
+  debba scoprire da solo: gli enigmi stanno nelle azioni e nel testo, mentre il
+  parlato caratterizza, informa e fa scegliere. Una scelta di dialogo che
+  esiste solo per essere mancata e' un enigma messo nel posto sbagliato.
+
+  L'ingresso al dialogo invece e' un'azione come tutte le altre e passa dal
+  resolver: l'azione che apre la conversazione vuole i suoi `aliases`
+  («parla con lui», «chiedigli della scatola»), e il personaggio vuole i suoi
+  in `characters[]` («il ragazzo», «quello con la barba»), altrimenti il
+  giocatore non ha modo di rivolgersi a lui.
 - Se `authoring_mode` dice **dialoghi fedeli**, le battute presenti nel testo
   sorgente si riportano come sono, nell'ordine in cui stanno: le scelte del
   giocatore possono decidere *quando* e *se* pronunciarle, non riscriverle.
   Il testo che aggiungi di tuo è quello che il testo sorgente non ha:
   narrazioni d'ingresso, esiti delle azioni, rifiuti e osservazioni.
 
-### 5. Azioni contestuali — il cuore della giocabilità (scene interactive)
+### 6. Azioni contestuali — il cuore della giocabilità (scene interactive)
 
 Questa è la parte più importante per le scene `interactive` (per le
 `cutscene`, vedi il punto 2: un'unica azione di prosecuzione basta e va
@@ -238,14 +280,27 @@ scena**. NON stai costruendo un motore verbo×oggetto stile SCUMM classico
   posto sbagliato. Va scritta, va lasciata ripetibile, e il suo `effect` narra
   il fallimento con precisione: è lì che il giocatore guarda meglio la stanza.
   Non nasconderla dietro una condizione e non farle cambiare stato.
+- **Un'azione con `condition` vuole quasi sempre una `blocked_narration`.**
+  Quando il giocatore sceglieva da un menu, un'azione filtrata spariva e non
+  c'era niente da dire; a parole la chiede lo stesso, e merita una risposta
+  scritta da te. Non e' un effetto — non cambia stato, non fa transizioni — e
+  non deve svelare la soluzione: dice cosa *si vede* del fatto che non si puo'
+  ancora («la cordicella penzola a tre metri, fuori portata»), non cosa
+  bisogna fare per poterlo. Scrivila per le azioni che un giocatore prova
+  presto e volentieri; su una condizione che nessuno incontrera' mai al
+  contrario, si puo' omettere.
 - Usa `repeatable: false` per azioni "consuma-oggetto" (es. raccogliere un
   oggetto una sola volta), `repeatable: true` (default) per azioni di
   osservazione/atmosfera che si possono ripetere.
-- Popola `aliases` con 2-4 modi colloquiali in cui un giocatore potrebbe
-  esprimere quell'azione scrivendo in linguaggio libero — serve al resolver
-  di input testuale, non al player a bottoni.
+- **Popola sempre `aliases`**: 2-4 modi colloquiali in cui un giocatore
+  potrebbe esprimere quell'azione scrivendo. Non e' rifinitura: nel player
+  definitivo e' l'unico modo in cui una frase arriva a questa azione, e
+  un'azione senza alias e' un'azione che quasi nessuno riuscira' a chiedere.
+  Usa anche `target` (l'id dell'oggetto o del personaggio a cui si riferisce):
+  insieme al `name` e agli `aliases` dell'oggetto, e' quello che fa arrivare
+  «taglio il cavo col coltellino» all'azione giusta.
 
-### 6. Flag e inventario
+### 7. Flag e oggetti
 
 - Usa `set_flag`/`unset_flag`/`add_inventory`/`remove_inventory` con gli id
   presenti in `state_flags_schema`/`inventory_schema` quando possibile, per
@@ -253,12 +308,18 @@ scena**. NON stai costruendo un motore verbo×oggetto stile SCUMM classico
   scena lo richiede davvero e non è già coperto da uno esistente.
 - Un flag registra **che qualcosa è successo**, mai quante volte: niente
   contatori, niente misure di tempo (vedi le quattro regole in cima).
+- **Un oggetto che la scena fa raccogliere deve stare in `items`.** Se non
+  c'era nella story map, usalo e insieme alla scena emetti la sua scheda in
+  `new_items` (stessa struttura di `new_characters`): `id`, `name`, `aliases`,
+  ed eventualmente `description`. Un `add_inventory` verso un id senza
+  anagrafica da' al giocatore un oggetto che non sa come si chiama e che non
+  puo' nominare.
 - Se una scena ha più preparativi che il giocatore può fare in qualunque
   ordine, dai a ciascuno il suo flag e condiziona l'esito alla loro presenza:
   chi ne dimentica uno non deve trovarsi bloccato, deve ottenere un esito
   peggiore che gli costa un altro giro.
 
-### 7. Parlanti non previsti dalla story map
+### 8. Parlanti non previsti dalla story map
 
 Se il testo sorgente ha un parlante non presente nella roster globale
 (`story_context.characters`) — es. "voce fuori campo", "un anziano",
@@ -295,7 +356,7 @@ lì, con eventuali override locali di `visual_prompt`/`voice` quando in quella
 scena il personaggio appare o suona diverso. Se non c'è niente da
 sovrascrivere, basta `{"id": "..."}`.
 
-### 8. Dove siamo e chi si vede (ogni inquadratura)
+### 9. Dove siamo e chi si vede (ogni inquadratura)
 
 Ogni punto in cui si genera un'immagine — `background` e ogni beat di
 `narration[]` che ha un suo `image_prompt` — puo' dichiarare due cose oltre al
@@ -331,7 +392,7 @@ ricorrente che la story map non ha previsto, comportati come per i parlanti:
 usalo e aggiungi la sua scheda a `new_places`, con la stessa struttura di
 `new_characters`.
 
-### 9. scene_tone
+### 10. scene_tone
 
 Se il tono di questa scena differisce da `global_style.default_tone` (es. una
 scena di sollievo comico in una storia cupa, o una sequenza onirica), 

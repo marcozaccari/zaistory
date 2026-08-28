@@ -213,7 +213,10 @@ export class TermUI implements PlayerUI {
     // l'autore si aspettava che la storia usasse — e il linter li confronta.
     this.out();
     this.param('state_flags_schema', st.state_flags_schema?.join(', '));
-    this.param('inventory_schema', st.inventory_schema?.join(', '));
+    this.param(
+      'items',
+      st.items?.map((i) => (i.aliases?.length ? `${i.id} "${i.name}" (${i.aliases.join(', ')})` : `${i.id} "${i.name}"`)).join(' · '),
+    );
     this.param('initial_inventory', st.initial_inventory?.join(', '));
 
     if (this.debug) this.out(this.t.mag("modalita' debug attiva"));
@@ -550,7 +553,8 @@ export class TermUI implements PlayerUI {
     if (!st) return;
     this.out(
       st.inventory.length
-        ? this.t.yellow('    inventario: ') + st.inventory.join(', ')
+        ? this.t.yellow('    inventario: ') +
+          st.inventory.map((id) => this.story.items?.find((i) => i.id === id)?.name ?? `${id} [senza scheda]`).join(', ')
         : this.t.yellow('    inventario: vuoto'),
     );
   }

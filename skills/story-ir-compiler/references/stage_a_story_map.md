@@ -38,14 +38,16 @@ Un singolo oggetto JSON con questa forma (i campi extra non sono ammessi):
     "ambient_music_tags": ["...", "..."]
   },
   "characters": [
-    { "id": "...", "name": "...", "visual_prompt": "...", "voice": { "style_prompt": "..." } }
+    { "id": "...", "name": "...", "aliases": ["...", "..."], "visual_prompt": "...", "voice": { "style_prompt": "..." } }
   ],
   "places": [
     { "id": "...", "name": "...", "visual_prompt": "..." }
   ],
   "start_scene": "id-prima-scena",
   "state_flags_schema": ["..."],
-  "inventory_schema": ["..."],
+  "items": [
+    { "id": "...", "name": "...", "aliases": ["...", "..."], "description": "..." }
+  ],
   "initial_inventory": ["..."],
   "scene_segments": [
     {
@@ -131,21 +133,36 @@ passare il blocco giusto allo Stadio B.
    brevi (es. "cupo, laconico, con vena ironica") — verrà riusato per generare
    risposte di fallback quando il giocatore scrive input non riconosciuto.
 
-8. **state_flags_schema / inventory_schema**: sono liste *previsionali*, basate
-   su cosa intuisci servirà per la logica della storia (oggetti chiave, porte
-   chiuse, informazioni ottenute). Lo Stadio B può comunque introdurre flag
-   aggiuntivi non previsti qui, se la logica di una scena lo richiede: questa
-   lista è un aiuto alla coerenza, non un vincolo rigido.
+8. **state_flags_schema**: è una lista *previsionale*, basata su cosa intuisci
+   servirà per la logica della storia (porte chiuse, informazioni ottenute,
+   cose già successe). Lo Stadio B può comunque introdurre flag aggiuntivi non
+   previsti qui, se la logica di una scena lo richiede: questa lista è un aiuto
+   alla coerenza, non un vincolo rigido.
 
-   Due cose che in queste liste non ci vanno mai, perché il motore non le
-   ammette: **contatori** (`cartucce_rimaste`, `tentativi`) e **misure di
-   tempo** (`turni_passati`, `attesa`). Le risorse non si contano e il tempo
-   non esiste: un flag dice che qualcosa è successo, non quante volte.
+   Due cose che qui non ci vanno mai, perché il motore non le ammette:
+   **contatori** (`cartucce_rimaste`, `tentativi`) e **misure di tempo**
+   (`turni_passati`, `attesa`). Le risorse non si contano e il tempo non
+   esiste: un flag dice che qualcosa è successo, non quante volte.
 
-9. **initial_inventory**: gli oggetti che il protagonista ha **già addosso
+9. **items**: l'anagrafica degli oggetti che il giocatore può avere in
+   inventario — non tutto ciò che si vede nella storia, solo ciò che si porta
+   via. Non è un elenco di id: ogni oggetto ha un `name` (come si chiama per il
+   giocatore: "coltello da lavoro", non `coltello`), `aliases` (gli altri modi
+   in cui potrebbe nominarlo scrivendo: "coltellino", "lama", "serramanico") e,
+   quando serve, una `description` di cosa vede se lo guarda in mano.
+
+   Il perché sta nell'interfaccia vera del gioco: il player definitivo si
+   comanda a parole. "Cosa ho nello zaino" deve poter rispondere con dei nomi,
+   e "usa il rotolo di scotch" deve poter agganciare `nastro_isolante`. Un
+   oggetto senza nome e senza sinonimi esiste solo per chi ha letto il JSON.
+
+   Come per i flag, lo Stadio B può aggiungerne: se una scena fa raccogliere
+   qualcosa che qui non c'era, ne emette la scheda in `new_items`.
+
+10. **initial_inventory**: gli oggetti che il protagonista ha **già addosso
    quando la partita comincia**, prima della prima scena — lo zaino con dentro
    qualcosa, un'arma che porta da sempre, la lettera che ha in tasca dalla
-   pagina uno. Vanno elencati anche in `inventory_schema`. Ometti il campo se
+   pagina uno. Vanno elencati anche in `items`. Ometti il campo se
    la storia comincia a mani vuote.
 
    Il caso tipico è un oggetto che serve solo molto più tardi: il giocatore lo
@@ -153,12 +170,20 @@ passare il blocco giusto allo Stadio B.
    l'effetto voluto. Non trasformarlo in un oggetto da raccogliere nella prima
    scena solo perché così è più comodo compilare.
 
-10. **Personaggi**: nella roster globale va **chiunque parli**, anche una sola
+11. **Personaggi**: nella roster globale va **chiunque parli**, anche una sola
    volta — protagonisti, comprimari e voci di passaggio ("un anziano", "il
    terzo cieco", "una voce nel buio"). Non è un elenco dei personaggi
    importanti: è l'elenco dei parlanti, e serve al modulo assets, che assegna
    il timbro di voce una volta per parlante. Un parlante che non è qui resta
    senza voce assegnabile.
+
+   Dai a ciascuno anche degli `aliases`: i modi in cui il giocatore lo
+   nominera' scrivendo, che quasi mai sono il suo nome proprio — «il ragazzo»,
+   «quello con la barba», «il vecchio», «la donna del pozzo». Servono al
+   confine fra i due modi di giocare: *entrare* in un dialogo e' un'azione
+   scritta a parole («parla con Mark»), anche se poi la conversazione si gioca
+   a scelte. Un personaggio a cui non si sa come rivolgersi e' un personaggio
+   con cui non si parlera'.
 
    Dai a ciascuno `id` (snake_case), `name`, `visual_prompt` e `voice`, anche
    quando il testo sorgente lo nomina genericamente: un anziano che dice tre
@@ -175,7 +200,7 @@ passare il blocco giusto allo Stadio B.
    l'ancora su cui il modulo assets tiene coerente il suo aspetto, ed è quello
    che `characters_in_frame` referenzierà.
 
-11. **Luoghi**: in `places` va ogni ambientazione in cui la storia **torna piu'
+12. **Luoghi**: in `places` va ogni ambientazione in cui la storia **torna piu'
    di una volta** — la casa dove si svolgono tre scene, la piazza, la camera
    del consiglio, il crinale sopra il paese. Servono alla coerenza visiva: due
    scene ambientate nello stesso posto devono riferirsi allo stesso `Place`,
@@ -192,11 +217,11 @@ passare il blocco giusto allo Stadio B.
    dove si cammina all'indietro, le stanze in cui si ripassa sono ricorrenti
    per costruzione, anche se la sceneggiatura le descrive una volta sola.
 
-12. **La story map non porta la provenienza.** `generated_by` (compilatore,
+13. **La story map non porta la provenienza.** `generated_by` (compilatore,
    versione, modello) viene apposto in fase di assemblaggio, al passo 7 di
    `SKILL.md`: qui non serve e non va inventato.
 
-13. **Non includere MAI testo fuori dal JSON**: niente premessa, niente
+14. **Non includere MAI testo fuori dal JSON**: niente premessa, niente
    spiegazioni, niente code fence markdown. Rispondi con il solo oggetto JSON,
    che deve essere direttamente parsabile.
 

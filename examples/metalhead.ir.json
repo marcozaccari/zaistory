@@ -1,8 +1,8 @@
 {
-  "ir_version": "1.5.0",
+  "ir_version": "1.7.0",
   "generated_by": {
     "compiler": "story-ir-compiler",
-    "compiler_version": "1.1.0",
+    "compiler_version": "1.3.0",
     "model": "claude-opus-5"
   },
   "id": "metal-head",
@@ -27,6 +27,11 @@
     {
       "id": "laura",
       "name": "Laura",
+      "aliases": [
+        "lei",
+        "la donna",
+        "me stessa"
+      ],
       "visual_prompt": "donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; piu' avanti nella storia sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
       "voice": {
         "style_prompt": "voce roca e controllata, poche parole, respiro corto quando corre, quasi sempre sotto il volume normale"
@@ -35,6 +40,11 @@
     {
       "id": "mark",
       "name": "Mark",
+      "aliases": [
+        "il grosso",
+        "l'uomo con la barba",
+        "il piu' vecchio"
+      ],
       "visual_prompt": "uomo oltre i quaranta, pochi capelli e barba corta, corporatura pesante, giaccone e scarponi, si muove con la calma di chi ha gia' fatto questa cosa altre volte",
       "voice": {
         "style_prompt": "voce grave e tranquilla, frasi brevissime, ironia trattenuta"
@@ -43,6 +53,12 @@
     {
       "id": "tommy",
       "name": "Tommy",
+      "aliases": [
+        "il ragazzo",
+        "il ragazzino",
+        "quello che guida",
+        "il giovane"
+      ],
       "visual_prompt": "ragazzo di ventidue anni al massimo, magro, felpa troppo grande, mani nervose sul volante, sembra piu' giovane di quello che e'",
       "voice": {
         "style_prompt": "voce giovane e tesa, sale di tono quando ha paura, parla troppo"
@@ -51,6 +67,13 @@
     {
       "id": "cane_robot",
       "name": "Cane-robot",
+      "aliases": [
+        "il cane",
+        "il robot",
+        "la macchina",
+        "quella cosa",
+        "il quadrupede"
+      ],
       "visual_prompt": "quadrupede robotico stile Boston Dynamics, alto circa cinquanta centimetri, corpo liscio senza volto, sensori al posto degli occhi, arti sottili e articolati; si muove con l'inerzia di un animale vero, accelera male e frena peggio; un LED sul fianco destro e uno sportello di lancio"
     }
   ],
@@ -167,18 +190,138 @@
     "viaggio_ascoltato",
     "walkie_carico"
   ],
-  "inventory_schema": [
-    "caramelle",
-    "cavo_spellato",
-    "chiave_armadietto",
-    "chiave_casa",
-    "coltello",
-    "fucile",
-    "medicinali",
-    "nastro_isolante",
-    "scatola_bianca",
-    "tracker",
-    "walkie_talkie"
+  "items": [
+    {
+      "id": "walkie_talkie",
+      "name": "walkie talkie",
+      "aliases": [
+        "radio",
+        "ricetrasmittente",
+        "walkie"
+      ],
+      "description": "Un apparecchio da cantiere, plastica gialla sbucciata. La barretta della batteria è vuota da prima che la storia cominciasse.",
+      "visual_prompt": "walkie talkie da cantiere in plastica gialla consumata, antenna corta di gomma, display a cristalli liquidi spento"
+    },
+    {
+      "id": "medicinali",
+      "name": "blister di medicinali",
+      "aliases": [
+        "medicine",
+        "farmaci",
+        "pasticche",
+        "blister"
+      ],
+      "description": "Scaduti da anni, e non sono antibiotici. Ma sono medicinali, e questo da solo vale il peso.",
+      "visual_prompt": "blister di pasticche in alluminio e plastica, scatole di cartone ammaccate senza marca leggibile"
+    },
+    {
+      "id": "chiave_armadietto",
+      "name": "chiavetta piatta",
+      "aliases": [
+        "chiave",
+        "chiavetta",
+        "chiave dell'armadietto"
+      ],
+      "description": "Piccola, piatta, di quelle stampate in serie per un armadietto da spogliatoio.",
+      "visual_prompt": "chiavetta piatta di ottone da armadietto, con un numero stampigliato"
+    },
+    {
+      "id": "caramelle",
+      "name": "pacchetto di caramelle",
+      "aliases": [
+        "caramelle",
+        "dolci",
+        "pacchetto",
+        "zuccherini"
+      ],
+      "description": "Caramelle dure a strisce, la carta ancora tesa. Laura non le assaggiava da quando era bambina.",
+      "visual_prompt": "pacchetto di caramelle dure a strisce, carta lucida un po' impolverata"
+    },
+    {
+      "id": "scatola_bianca",
+      "name": "scatola bianca",
+      "aliases": [
+        "scatola",
+        "scatolone",
+        "la scatola di cartone",
+        "il pacco"
+      ],
+      "description": "Cartone bianco, piatta, più piccola di quanto uno se l'aspetti. Non è sigillata: il coperchio viene via al primo dito. Laura non l'ha ancora aperta.",
+      "visual_prompt": "scatola di cartone bianca piatta, tipo scatola da scarpe ma piu' bassa, senza scritte, angoli ammaccati"
+    },
+    {
+      "id": "coltello",
+      "name": "coltello da lavoro",
+      "aliases": [
+        "coltello",
+        "coltellino",
+        "lama",
+        "serramanico"
+      ],
+      "description": "Lama a scatto, manico di gomma, il filo ancora buono. Veniva da una cassetta degli attrezzi.",
+      "visual_prompt": "coltello da lavoro con lama a scatto e manico di gomma nera consumata"
+    },
+    {
+      "id": "tracker",
+      "name": "cilindretto metallico",
+      "aliases": [
+        "tracker",
+        "cilindretto",
+        "chicco di riso",
+        "trasmettitore",
+        "il pallino"
+      ],
+      "description": "Grande come un chicco di riso, liscio, senza scritte, con una fessura all'estremità. Contro il cielo sembra lampeggiare.",
+      "visual_prompt": "minuscolo cilindro metallico grande come un chicco di riso, tenuto fra due dita sporche di sangue"
+    },
+    {
+      "id": "chiave_casa",
+      "name": "chiave di casa",
+      "aliases": [
+        "chiave",
+        "chiave della villa",
+        "copia della chiave"
+      ],
+      "description": "Una copia, con l'etichetta di una ferramenta ancora attaccata. Stava in una borsetta sul sedile di un'utilitaria.",
+      "visual_prompt": "chiave di casa moderna con etichetta di cartoncino di una ferramenta legata con lo spago"
+    },
+    {
+      "id": "fucile",
+      "name": "fucile da caccia",
+      "aliases": [
+        "fucile",
+        "doppietta",
+        "arma",
+        "schioppo"
+      ],
+      "description": "Doppietta a due canne, oliata, di quelle tenute bene. Le cartucce non si contano: ce ne sono, e ce ne saranno.",
+      "visual_prompt": "fucile da caccia a due canne sovrapposte, calcio di legno scuro, acciaio brunito"
+    },
+    {
+      "id": "nastro_isolante",
+      "name": "rotolo di nastro isolante",
+      "aliases": [
+        "nastro",
+        "scotch",
+        "isolante",
+        "nastro adesivo"
+      ],
+      "description": "Mezzo consumato, nero, appiccicoso al punto giusto. Sembra la cosa più inutile della casa.",
+      "visual_prompt": "rotolo di nastro isolante nero mezzo consumato, il capo sollevato"
+    },
+    {
+      "id": "cavo_spellato",
+      "name": "cavo con la spina",
+      "aliases": [
+        "cavo",
+        "prolunga",
+        "filo",
+        "cavo elettrico",
+        "avvolgicavo"
+      ],
+      "description": "Qualche metro di cavo arancione da avvolgicavo. Da una parte la spina, dall'altra due fili di rame scoperti.",
+      "visual_prompt": "cavo elettrico arancione tagliato di netto, due fili di rame scoperti da un lato, una spina schuko dall'altro"
+    }
   ],
   "initial_inventory": [
     "walkie_talkie"
@@ -192,6 +335,7 @@
         "image_prompt": "dall'interno di una vecchia station wagon: parabrezza sporco di polvere e insetti secchi, oltre il vetro una strada di campagna crepata con erba nelle fessure, orizzonte piatto, luce bianca di mezzogiorno",
         "ambient_sound_prompt": "motore stanco di una station wagon a velocita' costante, fruscio dell'asfalto rovinato, un finestrino che vibra"
       },
+      "look": "L'abitacolo di una station wagon in corsa. Tommy guida, Mark occupa il sedile davanti, Laura sta dietro con la fronte al finestrino. Fuori scorre una strada di campagna crepata. Nel palmo chiuso di Laura, tre cifre a pennarello.",
       "scene_tone": "silenzio tra tre persone che si conoscono da troppo tempo, tensione trattenuta, nessuno spiega niente",
       "characters": [
         {
@@ -367,6 +511,7 @@
         "image_prompt": "piazzale di un capannone logistico abbandonato in mezzo alla campagna, recinzione abbattuta, rimorchi vuoti allineati come costole, un negozietto annesso con insegna impolverata, la station wagon ferma a motore spento",
         "ambient_sound_prompt": "vento aperto senza ostacoli, lamiera che sbatte piano molto lontano, nessun altro suono"
       },
+      "look": "Il piazzale di un capannone logistico: recinzione abbattuta, rimorchi vuoti in fila, un negozietto annesso con l'insegna impolverata. Accanto alla rampa di carico, un furgone bianco. Mark aspetta, Tommy tiene un cacciavite.",
       "characters": [
         {
           "id": "laura"
@@ -519,6 +664,7 @@
         "image_prompt": "interno di un piccolo spaccio aziendale abbandonato: due scaffali polverosi mezzi vuoti, una scrivania con registratore di cassa, uno schedario metallico e un armadietto a muro, luce grigia dalla vetrina sporca",
         "ambient_sound_prompt": "silenzio chiuso, polvere, il vento che resta fuori, qualche scricchiolio di lamiera"
       },
+      "look": "Un piccolo spaccio aziendale: due scaffali polverosi mezzi vuoti, una scrivania con il registratore di cassa, uno schedario metallico e un armadietto chiuso a muro. Sul fondo, una porta di servizio che dà sul magazzino.",
       "characters": [
         {
           "id": "laura"
@@ -600,6 +746,7 @@
           "condition": {
             "has_item": "chiave_armadietto"
           },
+          "blocked_narration": "L'armadietto è chiuso, e la serratura è piccola ma seria: senza la sua chiavetta non si apre a mani nude.",
           "aliases": [
             "apri l'armadietto",
             "usa la chiave",
@@ -651,6 +798,7 @@
           "condition": {
             "flag_present": "caramelle_trovate"
           },
+          "blocked_narration": "Mark è ancora dietro la scrivania e Laura non ha finito di guardare gli scaffali.",
           "aliases": [
             "entra nel magazzino",
             "prosegui",
@@ -677,6 +825,7 @@
           "mark"
         ]
       },
+      "look": "Corridoi fra scaffalature alte otto metri, buio a fasce, colonne di luce dai lucernari sfondati. Sui montanti, targhette con i numeri dei corridoi. Mark è qui con la sua torcia.",
       "characters": [
         {
           "id": "laura"
@@ -781,6 +930,7 @@
           "condition": {
             "flag_present": "codice_confrontato"
           },
+          "blocked_narration": "Gli scaffali sono alti otto metri e i ripiani si perdono nel buio. Illuminare a caso, in un capannone così, è un modo di perdere la notte.",
           "aliases": [
             "illumina lo scaffale",
             "guarda in alto",
@@ -798,6 +948,7 @@
           "condition": {
             "flag_present": "scatola_avvistata"
           },
+          "blocked_narration": "Mark sta ancora leggendo le targhette con la torcia bassa. Non c'è ancora niente di cui parlargli.",
           "aliases": [
             "parla con mark",
             "digli di salire",
@@ -827,6 +978,7 @@
           "condition": {
             "flag_present": "mark_sullo_scaffale"
           },
+          "blocked_narration": "Mark è a terra accanto a lei, e non sta facendo niente di cui debba essere avvertito.",
           "aliases": [
             "urla attento",
             "avverti mark",
@@ -968,6 +1120,7 @@
         "ambient_sound_prompt": "respiro affannato, passi di corsa su cemento e, dietro, artigli metallici irregolari che scivolano nelle curve e recuperano",
         "place": "magazzino_interno"
       },
+      "look": "Corridoi identici fra scaffali, la luce della rampa di carico da qualche parte sulla destra. Il rumore degli artigli sul cemento non è mai alla stessa distanza.",
       "characters": [
         {
           "id": "laura"
@@ -1008,6 +1161,7 @@
           "condition": {
             "flag_present": "carrello_visto"
           },
+          "blocked_narration": "In questo tratto di corridoio non c'è niente di abbastanza pesante da mettere in mezzo.",
           "aliases": [
             "rovescia il carrello",
             "butta giu' il carrello",
@@ -1055,6 +1209,7 @@
           "condition": {
             "flag_present": "carrello_rovesciato"
           },
+          "blocked_narration": "La luce della rampa è ancora troppo lontana: da qui, con quella cosa addosso, non ci si arriva.",
           "aliases": [
             "vai alla rampa",
             "corri verso la luce",
@@ -1077,6 +1232,7 @@
         "image_prompt": "esterno giorno, controluce fortissimo: una donna esce di corsa dal buio di una rampa di carico nel bianco del piazzale, un furgone bianco fermo col motore acceso e un ragazzo al posto di guida che non capisce",
         "ambient_sound_prompt": "motore di un furgone al minimo, vento, il proprio respiro fuori controllo"
       },
+      "look": "Il piazzale nel bianco del giorno, visto dalla bocca della rampa di carico. Il furgone bianco è a dieci metri, motore acceso, Tommy al volante.",
       "characters": [
         {
           "id": "laura"
@@ -1147,6 +1303,7 @@
         "image_prompt": "ripresa dall'interno del furgone verso lo specchietto retrovisore laterale: nello specchio, una forma quadrupede bassa che corre sull'asfalto e guadagna terreno; oltre il parabrezza una strada di campagna dritta",
         "ambient_sound_prompt": "motore di un furgone spinto al massimo, lamiera che vibra, vento dal finestrino aperto"
       },
+      "look": "L'interno del furgone in corsa. Tommy stringe il volante, la strada è dritta e vuota. Nello specchietto laterale, qualcosa di basso che corre sull'asfalto.",
       "characters": [
         {
           "id": "laura"
@@ -1272,6 +1429,7 @@
         "image_prompt": "interno cabina di un furgone in corsa, ripresa dal sedile passeggero: il tetto di lamiera sopra la testa del guidatore deformato verso il basso, un foro netto nel metallo, il ragazzo al volante che sterza",
         "ambient_sound_prompt": "motore su di giri, lamiera che si deforma, un clack metallico ripetuto sopra la testa"
       },
+      "look": "La cabina di un furgone che sbanda. Sopra la testa di Tommy il tetto si è deformato verso l'interno, e nella lamiera c'è una fila di fori che si allunga.",
       "characters": [
         {
           "id": "laura"
@@ -1365,6 +1523,7 @@
         "image_prompt": "interno di una cabina ribaltata su un fianco in un fosso di scolo: il mondo di novanta gradi, una donna appesa alla cintura di sicurezza, polvere sospesa nel fascio di luce che entra dal parabrezza crepato, il guidatore accanto a lei immobile",
         "ambient_sound_prompt": "un liquido che gocciola sulla lamiera, il tic tic di un motore che si raffredda, campagna aperta"
       },
+      "look": "La cabina ribaltata su un fianco, il mondo girato di novanta gradi. Laura è appesa alla cintura, Tommy accanto a lei non si muove. Sotto, sparsi sulla lamiera, gli attrezzi usciti da una cassetta. Sopra, il finestrino del passeggero è diventato il soffitto.",
       "characters": [
         {
           "id": "laura"
@@ -1456,6 +1615,7 @@
           "condition": {
             "flag_present": "cintura_slacciata"
           },
+          "blocked_narration": "Appesa alla cintura, a testa in giù, Laura non arriva a niente di quello che è finito sul fianco del furgone.",
           "aliases": [
             "apri la cassetta",
             "cerca tra gli attrezzi",
@@ -1488,6 +1648,7 @@
           "condition": {
             "has_item": "coltello"
           },
+          "blocked_narration": "Non con la cintura ancora allacciata, e non a mani vuote.",
           "aliases": [
             "esci",
             "scappa",
@@ -1556,6 +1717,7 @@
         "image_prompt": "dietro un muretto a secco, ripresa bassa e stretta: una donna schiacciata contro le pietre, la schiena al muro, il petto che va su e giu' troppo in fretta; oltre il muro solo cielo bianco",
         "ambient_sound_prompt": "respiro fuori controllo, battito cardiaco, vento tra le pietre"
       },
+      "look": "Un muretto a secco in mezzo a un campo, alto quanto una persona accucciata. Da questa parte ci sono Laura e le pietre; dall'altra, a otto metri, qualcosa che non se ne va. Alla coscia sinistra, un foro piccolissimo.",
       "characters": [
         {
           "id": "laura"
@@ -1629,6 +1791,7 @@
           "condition": {
             "flag_present": "gamba_osservata"
           },
+          "blocked_narration": "Fa per alzarsi e la gamba sinistra risponde in ritardo. C'è qualcosa, lì sotto, che è meglio guardare prima.",
           "aliases": [
             "corri",
             "scappa",
@@ -1700,6 +1863,7 @@
           "laura"
         ]
       },
+      "look": "Un bosco rado di tronchi grigi e sottobosco secco. Alberi dritti e lisci, alberi con i rami bassi e marci, e da qualche parte qualcosa su cui si possa davvero salire.",
       "characters": [
         {
           "id": "laura"
@@ -1787,6 +1951,7 @@
           "condition": {
             "flag_present": "albero_trovato"
           },
+          "blocked_narration": "Nessuno degli alberi che ha davanti si lascia salire: o sono lisci per quattro metri, o hanno i rami marci.",
           "aliases": [
             "sali sull'albero",
             "arrampicati",
@@ -1909,6 +2074,7 @@
         "ambient_sound_prompt": "bosco di notte, vento alto, nessun animale; ogni tanto il ronzio brevissimo di una ventola che parte e si spegne",
         "place": "bosco_albero"
       },
+      "look": "Notte piena, incastrata fra due rami a cinque metri d'altezza. Sotto, alla base dell'albero, la macchina raccolta su sé stessa con il LED sul fianco. Nello zaino c'è ancora il pacchetto di caramelle dello spaccio.",
       "characters": [
         {
           "id": "laura"
@@ -2006,6 +2172,7 @@
             "flag_present": "cane_a_riposo",
             "has_item": "caramelle"
           },
+          "blocked_narration": "Il LED lampeggia. Adesso è sveglio, e qualunque cosa gli cada addosso lo terrà sveglio e basta.",
           "aliases": [
             "lancia una caramella",
             "butta una caramella",
@@ -2067,6 +2234,7 @@
           "laura"
         ]
       },
+      "look": "Ai piedi dell'albero biforcuto, prima luce. Sotto non c'è più niente e non c'è più nessuno. La coscia sinistra è calda e tirata. Nell'erba alta, a venti passi, la carcassa di una pecora.",
       "characters": [
         {
           "id": "laura"
@@ -2119,6 +2287,7 @@
             "flag_present": "coscia_guardata",
             "has_item": "coltello"
           },
+          "blocked_narration": "Il coltello è già in mano, ma Laura non ha ancora guardato bene cosa ha lì sotto.",
           "aliases": [
             "usa il coltello",
             "taglia",
@@ -2188,6 +2357,7 @@
           "condition": {
             "flag_present": "tracker_nella_pecora"
           },
+          "blocked_narration": "Andarsene adesso vuol dire portarsi dietro qualunque cosa la stia facendo trovare.",
           "aliases": [
             "vai via",
             "cammina",
@@ -2251,6 +2421,7 @@
           "laura"
         ]
       },
+      "look": "Il vialetto di una villa: un'utilitaria parcheggiata storta con le portiere aperte da anni, aiuole diventate un cespuglio solo, una cassetta della posta che non si chiude più. In fondo il portone, e sulla destra il patio che gira dietro l'angolo.",
       "characters": [
         {
           "id": "laura"
@@ -2363,6 +2534,7 @@
           "condition": {
             "has_item": "chiave_casa"
           },
+          "blocked_narration": "Chiuso, e chiuso bene. Il vetro sarebbe più facile, ma è grande come una parete e si sentirebbe in tutta la valle.",
           "aliases": [
             "usa la chiave",
             "entra in casa",
@@ -2388,6 +2560,7 @@
           "laura"
         ]
       },
+      "look": "Un grande soggiorno con una parete di vetro sulla valle, polvere su tutto, foglie secche entrate dalla porta. Un divano modulare, un cesto di riviste, e in fondo la cucina a vista con i suoi armadietti. Una scala porta al piano di sopra.",
       "characters": [
         {
           "id": "laura"
@@ -2437,6 +2610,7 @@
           "condition": {
             "flag_present": "scatoletta_trovata"
           },
+          "blocked_narration": "Non ha ancora trovato niente che si possa aprire senza attrezzi.",
           "aliases": [
             "mangia",
             "apri la scatoletta",
@@ -2482,6 +2656,7 @@
           "condition": {
             "flag_present": "scatoletta_mangiata"
           },
+          "blocked_narration": "Non con lo stomaco così. Prima si mangia qualcosa, poi si sale in casa d'altri.",
           "aliases": [
             "sali le scale",
             "vai di sopra",
@@ -2503,6 +2678,7 @@
         "image_prompt": "camera da letto padronale con la luce filtrata dalle tapparelle abbassate; sul letto, sotto il piumino, due sagome ferme da moltissimo tempo; sul comodino due bicchieri e un flacone vuoto",
         "ambient_sound_prompt": "silenzio di stanza chiusa, un ronzio di mosche assente, solo il vento fuori"
       },
+      "look": "Una camera da letto con le tapparelle abbassate. Sul letto, sotto il piumino, due sagome ferme da molto tempo. Sul comodino due bicchieri, un flacone vuoto e un cassetto chiuso. Contro la parete, un armadio.",
       "characters": [
         {
           "id": "laura"
@@ -2592,6 +2768,7 @@
           "condition": {
             "has_item": "fucile"
           },
+          "blocked_narration": "Non è salita fin qui per tornare giù a mani vuote.",
           "aliases": [
             "scendi",
             "torna di sotto",
@@ -2616,6 +2793,7 @@
           "laura"
         ]
       },
+      "look": "Il soggiorno, adesso conosciuto. La parete di vetro dà sulla valle vuota, il pavimento è freddo, e Laura ha un fucile da caccia e mezza scatola di cartucce trovate di sopra.",
       "characters": [
         {
           "id": "laura"
@@ -2653,6 +2831,7 @@
             "flag_present": "cartucce_trovate",
             "has_item": "fucile"
           },
+          "blocked_narration": "Le canne sono aperte e vuote. Da qualche parte in questa casa ci sono delle cartucce, ma non le ha.",
           "aliases": [
             "carica",
             "metti le cartucce",
@@ -2701,6 +2880,7 @@
             "flag_present": "cane_avvistato",
             "has_item": "fucile"
           },
+          "blocked_narration": "Non c'è ancora niente da cui spostarsi.",
           "aliases": [
             "nasconditi",
             "vai nel corridoio",
@@ -2727,6 +2907,7 @@
           "cane_robot"
         ]
       },
+      "look": "Un corridoio con una parete di solo vetro sul patio e un muro dove appoggiare la schiena. Oltre il cristallo, a un metro, la macchina ferma con i sensori girati verso di lei.",
       "characters": [
         {
           "id": "laura"
@@ -2770,6 +2951,7 @@
           "condition": {
             "flag_present": "fucile_carico"
           },
+          "blocked_narration": "Il fucile è scarico. Il rumore delle canne che si chiudono, adesso, si sentirebbe fino al patio.",
           "aliases": [
             "spara",
             "spara adesso",
@@ -2790,6 +2972,7 @@
           "condition": {
             "flag_present": "fucile_carico"
           },
+          "blocked_narration": "Il fucile è scarico, e arretrare senza avere niente in canna è solo arretrare.",
           "aliases": [
             "arretra e spara",
             "spara da lontano",
@@ -2830,6 +3013,7 @@
           "laura"
         ]
       },
+      "look": "La scala interna, cemento e legno, la tromba aperta sul vuoto. In cima il pianerottolo e le porte del piano di sopra. Sotto, sui gradini, gli artigli che slittano.",
       "characters": [
         {
           "id": "laura"
@@ -2914,6 +3098,7 @@
           "laura"
         ]
       },
+      "look": "Un bagno padronale stretto: la porta bloccata con un mobiletto e il cesto della biancheria, una vasca sotto una finestrella alta e piccola, un lavabo di porcellana con un grande specchio. Accanto allo specchio una presa a muro. Sul mobiletto, roba da bagno e un rotolo di nastro isolante. In alto, sopra il lavabo, il controsoffitto.",
       "characters": [
         {
           "id": "laura"
@@ -3043,6 +3228,7 @@
           "condition": {
             "has_item": "coltello"
           },
+          "blocked_narration": "Le farfalle sono verniciate e le dita scivolano. Serve qualcosa di piatto da infilarci sotto.",
           "aliases": [
             "svita le viti",
             "apri il pannello",
@@ -3061,6 +3247,7 @@
           "condition": {
             "flag_present": "farfalle_svitate"
           },
+          "blocked_narration": "Il pannello è ancora avvitato al suo posto.",
           "aliases": [
             "sali nel controsoffitto",
             "issati",
@@ -3129,6 +3316,7 @@
           "laura"
         ]
       },
+      "look": "Una stanza piccola e ordinata: scrivania di legno chiaro con una cornice fotografica, una libreria bassa, cassetti pieni di carte domestiche. Una finestra dà sul patio, e da lì al suolo c'è un metro e mezzo. I colpi si sentono da un'altra parte della casa.",
       "characters": [
         {
           "id": "laura"
@@ -3264,6 +3452,7 @@
         "ambient_sound_prompt": "corrente d'aria dalla vetrata rotta, cristalli che si spostano sotto i piedi; molto lontano, in un'altra parte della casa, colpi sordi a intervalli regolari",
         "place": "villa_soggiorno"
       },
+      "look": "Il soggiorno di prima, con un pezzo di parete in meno: il cristallo è a terra e il vento entra. Le scale portano di sopra, il corridoio di sotto porta verso la lavanderia. I colpi arrivano sempre da un'altra stanza.",
       "characters": [
         {
           "id": "laura"
@@ -3348,6 +3537,7 @@
           "laura"
         ]
       },
+      "look": "Uno stanzino cieco in fondo al corridoio: lavatrice, lavatoio, mensole. Sulla parete di fondo un quadro elettrico aperto con un adesivo giallo e due leve, una piccola in basso e una grande. Sotto, un armadio di batterie.",
       "characters": [
         {
           "id": "laura"
@@ -3456,6 +3646,7 @@
           "laura"
         ]
       },
+      "look": "Il pianerottolo del piano di sopra, il soffitto sbriciolato da una fucilata. Dal soffitto penzola la cordicella di una botola, a tre metri: troppo in alto. Intorno, la porta del bagno bucata, la porta dello studio, e la tromba delle scale con il suo corrimano.",
       "characters": [
         {
           "id": "laura"
@@ -3508,6 +3699,7 @@
           "condition": {
             "flag_present": "botola_aperta"
           },
+          "blocked_narration": "La botola è chiusa, e la sua cordicella penzola a tre metri.",
           "aliases": [
             "vai sul tetto",
             "sali la scala",
@@ -3575,6 +3767,7 @@
           "laura"
         ]
       },
+      "look": "Il tetto piano: dodici pannelli fotovoltaici in file da sei, foglie e guano di quattro estati, vento. Su un pannello è caduto un ramo e il vetro è a ragnatela; da sotto il telaio escono due monconi di cavo strappati. Dal bordo si vede tutta la valle.",
       "characters": [
         {
           "id": "laura"
@@ -3686,6 +3879,7 @@
             "flag_present": "leve_tirate",
             "has_item": "nastro_isolante"
           },
+          "blocked_narration": "Unire i due capi adesso non accenderebbe niente: giù in casa la corrente non arriva nemmeno al quadro.",
           "aliases": [
             "collega i due cavi",
             "usa il nastro",
@@ -3842,6 +4036,7 @@
           "laura"
         ]
       },
+      "look": "Un garage interrato con la luce di servizio accesa: una berlina elettrica sotto un telo, un banco da lavoro ingombro di barattoli, un caricabatterie a muro con la spia verde, un avvolgicavo arancione appeso.",
       "characters": [
         {
           "id": "laura"
@@ -3865,6 +4060,7 @@
             "flag_present": "casa_sveglia",
             "has_item": "walkie_talkie"
           },
+          "blocked_narration": "Il caricabatterie è morto come tutto il resto della casa.",
           "aliases": [
             "carica la radio",
             "attacca il walkie",
@@ -3884,6 +4080,7 @@
           "condition": {
             "has_item": "coltello"
           },
+          "blocked_narration": "A mani nude il cavo non si taglia, e strapparlo lo rovinerebbe e basta.",
           "aliases": [
             "prendi il cavo",
             "taglia il cavo",
@@ -3976,6 +4173,7 @@
           "laura"
         ]
       },
+      "look": "Il bagno, senza più porta: una fila di fori la attraversa da parte a parte. La vasca, i due rubinetti, il lavabo che ha già retto il peso di una persona, la presa a muro accanto allo specchio con lo sportellino di plastica.",
       "characters": [
         {
           "id": "laura"
@@ -4019,6 +4217,7 @@
             "flag_present": "acqua_alta",
             "has_item": "cavo_spellato"
           },
+          "blocked_narration": "I fili scoperti appoggiati su piastrelle asciutte non sono una trappola: sono un cavo per terra.",
           "aliases": [
             "stendi il cavo",
             "metti i fili per terra",
@@ -4082,6 +4281,7 @@
             "flag_present": "sul_lavabo",
             "has_item": "cavo_spellato"
           },
+          "blocked_narration": "Da terra, con quella cosa che entra dalla porta, non serve a niente avere una spina in mano.",
           "aliases": [
             "prendi la spina",
             "aspetta",
@@ -4153,6 +4353,7 @@
           "laura"
         ]
       },
+      "look": "Il bagno visto dall'alto del lavabo, l'acqua che copre tutte le piastrelle. Sulla soglia sfondata c'è la macchina, i sensori fermi su di lei. Da quassù non ci si muove più: si guarda, e si sceglie il momento.",
       "characters": [
         {
           "id": "laura"
@@ -4311,6 +4512,7 @@
           "cane_robot"
         ]
       },
+      "look": "Il bagno al buio, allagato fino alla caviglia. Sotto il lavabo, nell'acqua nera, la carcassa con i sensori spenti e la piastra del fianco spalancata. I rubinetti sono ancora aperti.",
       "characters": [
         {
           "id": "laura"
@@ -4505,6 +4707,7 @@
           "laura"
         ]
       },
+      "look": "Il soggiorno con la vetrata sfondata, la luce del pomeriggio, il divano. Nello zaino: la scatola bianca di cartone e il walkie talkie. Fuori, sul prato, tre punti scuri che si avvicinano senza fretta.",
       "characters": [
         {
           "id": "laura"
@@ -4613,6 +4816,7 @@
           "condition": {
             "flag_present": "scatola_aperta"
           },
+          "blocked_narration": "La scatola è ancora chiusa.",
           "aliases": [
             "guarda dentro",
             "osserva cosa c'e'",
@@ -4631,6 +4835,7 @@
             "flag_present": "walkie_carico",
             "has_item": "walkie_talkie"
           },
+          "blocked_narration": "La radio è scarica come è sempre stata, da prima del magazzino.",
           "aliases": [
             "accendi la radio",
             "usa il walkie",
@@ -4661,6 +4866,7 @@
             "flag_present": "contenuto_osservato",
             "has_item": "coltello"
           },
+          "blocked_narration": "Non ancora. Prima c'è una cosa da guardare.",
           "aliases": [
             "prendi il coltello",
             "apri il coltello",

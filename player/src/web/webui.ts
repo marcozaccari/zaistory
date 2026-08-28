@@ -393,7 +393,10 @@ export class WebUI implements PlayerUI {
       dettagli.append(box);
     };
     list('state_flags_schema', st.state_flags_schema);
-    list('inventory_schema', st.inventory_schema);
+    list(
+      'items',
+      st.items?.map((i) => (i.aliases?.length ? `${i.name} (${i.aliases.join(', ')})` : i.name)),
+    );
     list('initial_inventory', st.initial_inventory);
 
     if (dettagli.childElementCount) cover.append(dettagli);

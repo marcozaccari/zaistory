@@ -45,7 +45,7 @@ PWA (principale) + eventuale bot Telegram (secondario, testuale)
 ## Il formato IR: decisioni chiave
 
 Schema: `engine-ir.schema.json` (JSON Schema draft 2020-12), versione
-corrente **1.5.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
+corrente **1.7.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
 
 Decisioni di design, con il *perché* (per non riscoprirle da capo):
 
@@ -161,6 +161,71 @@ Decisioni di design, con il *perché* (per non riscoprirle da capo):
   l'elenco documentale di *tutti* gli oggetti possibili) e il player lo applica
   allo stato iniziale prima di entrare in `start_scene`.
 
+- **Il contratto e' scritto per un player che si comanda a parole** (1.6.0).
+  Le chip del player di test sono il banco di prova, non l'interfaccia: quella
+  decisa e' il resolver — testo libero in, id di un'azione gia' esistente out.
+  Provando "Metal Head" con le chip e' emerso che l'IR reggeva il *matching* ma
+  non il *parlare*: quattro campi mancavano, e mancavano tutti dalla stessa
+  parte, quella del giocatore che scrive invece di scegliere.
+
+  - **`items[]` sostituisce `inventory_schema`.** Era un elenco di id nudi. A
+    "cosa ho nello zaino" un id non e' una risposta, e "usa il coltellino" non
+    ha niente a cui agganciarsi. Ora gli oggetti hanno l'anagrafica che avevano
+    gia' persone e luoghi: `id`, `name`, `aliases`, `description`. E' lo stesso
+    errore corretto due volte prima — i parlanti fuori dalla roster, i luoghi
+    senza `Place` — e la stessa correzione: **una sola lista, per identita'**.
+    Due elenchi paralleli degli stessi id sono una fabbrica di derive, quindi
+    l'anagrafica non si affianca al vecchio campo, lo rimpiazza.
+  - **`DialogueChoice.aliases`.** `Action` aveva gli alias dal primo giorno, le
+    scelte di dialogo no: dentro una conversazione l'unico appiglio era il testo
+    letterale della battuta, e una battuta non e' come la si chiede. Con questa
+    asimmetria, parlare a parole restava piu' difficile che agire a parole.
+  - **`Action.blocked_narration`.** In un menu, un'azione filtrata da una
+    `Condition` semplicemente non compare — e la sua *scomparsa* e'
+    informazione. A input libero il giocatore la chiede lo stesso, e merita una
+    risposta scritta dall'autore ("la cordicella penzola a tre metri") invece
+    del non-ho-capito generico. Non e' un effetto: nessun cambio di stato,
+    nessuna transizione. Il resolver che sceglie un'azione bloccata non ha
+    applicato niente, e il vincolo "il resolver non genera logica" regge.
+  - **`Scene.look`.** "Dove mi trovo" e "guardati intorno" sono le domande piu'
+    frequenti di un'avventura testuale e non avevano risposta: `narration[]` si
+    legge una volta entrando e `background.image_prompt` e' un prompt di
+    generazione, non prosa per il giocatore. `look` e' la stanza com'e' adesso,
+    rileggibile. Sta fuori da `actions[]` di proposito: e' un **verbo del
+    player**, come l'inventario, e non deve consumare il budget di azioni della
+    scena ne' comparire come suggerimento.
+
+  Corollario di compilazione, che vale piu' di tutti e quattro i campi: **niente
+  si scopre da una `label`.** Con le chip visibili, l'etichetta e' meta' della
+  scoperta; spente le chip, un oggetto nominato solo li' e' invisibile. Tutto
+  cio' che il giocatore deve trovare va nominato nel testo che legge —
+  `narration`, `look`, l'esito di un'altra azione. La difficolta' deve venire da
+  cosa il testo dice e non dice, mai da un menu che si accorcia.
+
+- **Si agisce a parole, si parla a scelte** (1.7.0). L'input libero vale per
+  osservazioni e azioni — «guardati intorno», «prendi il coltello», «usa il
+  cavo sulla presa», «parla con Mark» — e **non entra mai in un dialogo**: una
+  conversazione si gioca a scelte esplicite, come nelle avventure grafiche
+  classiche. Non e' una limitazione tecnica, e' una scelta di gioco: nel
+  parlato l'elenco delle battute *e'* il piacere, e far indovinare al giocatore
+  la formula giusta per dire una cosa che il suo personaggio saprebbe dire e'
+  frustrazione senza guadagno.
+
+  La conseguenza sullo schema e' che **`DialogueChoice.aliases`, aggiunto in
+  1.6.0, e' rimosso in 1.7.0**: nessun consumatore lo leggerebbe piu', e un
+  campo che nessuno produce ne' consuma e' peggio di un campo assente — invita
+  il compilatore a riempirlo. Al suo posto arriva **`Character.aliases`**, che
+  serve al confine fra i due mondi: *entrare* in un dialogo e' un'azione come
+  le altre e passa dal resolver, quindi «parla con il ragazzo» deve poter
+  arrivare a `tommy`. Dentro il dialogo, da li' in poi, si tocca e basta.
+
+  La conseguenza sulla compilazione e' piu' importante del campo: **il dialogo
+  e' l'unico posto dove l'elenco si vede**. Le azioni di scena non si vedono
+  piu' — si scrivono — mentre le battute disponibili sono tutte in chiaro.
+  Quindi nel dialogo non si nasconde niente che il giocatore debba scoprire da
+  solo: gli enigmi stanno nelle azioni e nel testo, il parlato serve a
+  caratterizzare, informare e scegliere, non a fare da rompicapo.
+
 - **Riferimenti a scene esterne** (una scena come file separato, per storie
   molto grandi) sono previsti concettualmente ma non ancora affrontati nel
   dettaglio — oggi si lavora solo con IR a scene inline in un unico
@@ -169,7 +234,9 @@ Decisioni di design, con il *perché* (per non riscoprirle da capo):
   costruito. Design deciso: un modulo player-agnostic separato che riceve
   `(azioni disponibili nella scena, testo libero del giocatore, tono della
   scena)` e ritorna `(id di un'azione esistente, oppure nessun match con
-  una narrazione di fallback in-character)`. Vincolo architetturale
+  una narrazione di fallback in-character)`. **Il suo perimetro sono le azioni
+  di scena, mai le scelte di dialogo**: quando un `dialogue_tree` e' aperto il
+  player mostra un elenco e il resolver non viene nemmeno interpellato. Vincolo architetturale
   fondamentale: il resolver non deve MAI generare un effetto di sua
   iniziativa, solo scegliere quale azione già definita eseguire — altrimenti
   lo stato del gioco smette di essere deterministico/testabile. In pratica
@@ -386,7 +453,11 @@ Vite sono soli strumenti di build).
   già fissata sopra: riceve azioni disponibili + testo libero + tono, ritorna
   un id di azione esistente oppure un fallback in-character):
   1. **nessun resolver** — selezione a menu numerato. Deterministico, zero
-     dipendenze, è la modalità da usare per i test di regressione.
+     dipendenze, è la modalità da usare per i test di regressione. Da non
+     scambiare per l'interfaccia del gioco: un menu che elenca le azioni utili
+     rende ogni avventura facile, perché è il menu a risolvere gli enigmi al
+     posto del giocatore. È impalcatura di collaudo, e va letto come tale anche
+     quando si giudica la difficoltà di una storia compilata.
      **Implementato** (`--resolver menu`, default; nel player web le chip
      *sono* il menu).
   2. **Claude** — via API/sessione, per input testuale libero. Non ancora
