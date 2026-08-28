@@ -103,8 +103,18 @@ e azioni contestuali come bottoni a tutta larghezza (i tasti `1`–`9` funzionan
 da tastiera). Le scelte e le azioni non disponibili restano nascoste come in un
 player vero.
 
-**Tutti** i prompt di generazione asset si vedono sempre, etichettati con il
-nome che hanno nell'IR e attaccati al punto della storia a cui appartengono:
+**Tutti** i prompt di generazione asset si vedono sempre, attaccati al punto
+della storia a cui appartengono. Ogni campo però ha **due nomi**, e nel
+documento ci sono sempre tutti e due: chi gioca legge «voce», «inquadratura»,
+«ambiente», «aspetto»; col debug acceso tornano i nomi veri —
+`narration_voice.style_prompt`, `image_prompt`, `background`,
+`characters.laura` — che sono quelli da citare a chi compila la storia. A
+scegliere è il CSS, non il codice, quindi accendere il debug vale anche per il
+transcript già scorso, come per ogni altra diagnostica. Stessa regola per i
+valori che sono id (il luogo di un'inquadratura, chi c'è in campo, la prima
+scena in copertina: nome a chi legge, id a chi ispeziona) e per la riga sotto
+il titolo, dove la versione dell'IR e il conto del linter sono informazioni sul
+*file* e non sulla storia. La tabella qui sotto usa i nomi dell'IR:
 
 | dove compare | campi |
 |---|---|
@@ -120,8 +130,13 @@ altoparlante per i suoni, una bocca per le voci, due note per la musica, e sui
 gruppi una testa per i personaggi, uno spillo per i luoghi, dei cursori per lo
 stile globale. Il colore da solo chiede di ricordarsi la legenda, e chi legge
 la storia la legenda non ce l'ha. Sono disegni e non emoji perché prendono il
-colore del testo e non cambiano faccia a ogni sistema. La stessa tassonomia
-vale nella CLI, con i colori del terminale.
+colore del testo e non cambiano faccia a ogni sistema, e sono misurati in `em`
+perché a 12px fissi, accanto a un'etichetta piccola, su un telefono erano una
+macchia. La stessa tassonomia vale nella CLI, con i colori del terminale.
+
+Un campo nuovo che non sia in `src/web/nomi.ts` esce col suo nome tecnico anche
+a chi gioca: meglio accorgersene aggiungendo una riga a quella tabella che
+scoprirlo in mezzo a una storia.
 
 Non vengono né generati né riprodotti — il player è testuale — ma sono il
 segnaposto di quello che un giorno sarà immagine, suono e voce. È leggendoli

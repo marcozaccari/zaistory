@@ -26,8 +26,15 @@ const SEGNI: Record<string, string[]> = {
   image: ['M3 5h18v14H3z', 'M3 16l5-5 4 4 3-3 6 6', 'M8.5 9.5a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z'],
   // Un altoparlante che emette: il suono d'ambiente e gli effetti.
   sound: ['M4 9v6h4l5 4V5L8 9H4z', 'M16.5 8.5a5 5 0 010 7', 'M19 6a8.5 8.5 0 010 12'],
-  // Una bocca: la voce, cioe' qualcuno che parla.
-  voice: ['M3 12c3-4.5 15-4.5 18 0', 'M3 12c3 4.5 15 4.5 18 0', 'M8 12h8'],
+  // Un paio di labbra: la voce, cioe' qualcuno che parla. L'arco del labbro
+  // superiore non e' un vezzo — senza, le due curve simmetriche facevano un
+  // occhio, e alla taglia a cui questo segno si guarda davvero era proprio
+  // quello che sembrava.
+  voice: [
+    'M4 12c2-3.6 3.7-5 5-5 1.1 0 1.7 1.3 3 1.3s1.9-1.3 3-1.3c1.3 0 3 1.4 5 5',
+    'M4 12c1.6 3.8 4.6 5.6 8 5.6s6.4-1.8 8-5.6',
+    'M4 12h16',
+  ],
   // Due note unite dalla stampella: la musica.
   music: ['M9 18V6l11-2v12', 'M9 10l11-2', 'M7 20a2 2 0 100-4 2 2 0 000 4z', 'M18 18a2 2 0 100-4 2 2 0 000 4z'],
   // Una testa e le spalle: un personaggio.
@@ -61,7 +68,10 @@ export function icona(nome: string): SVGSVGElement | undefined {
   svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('fill', 'none');
   svg.setAttribute('stroke', 'currentColor');
-  svg.setAttribute('stroke-width', '1.8');
+  // Il tratto e' spesso per la taglia a cui questi segni si vedono davvero:
+  // un'icona alta quindici pixel con un tratto sottile su uno schermo di
+  // telefono diventa una macchia grigia.
+  svg.setAttribute('stroke-width', '2');
   svg.setAttribute('stroke-linecap', 'round');
   svg.setAttribute('stroke-linejoin', 'round');
   svg.setAttribute('aria-hidden', 'true');

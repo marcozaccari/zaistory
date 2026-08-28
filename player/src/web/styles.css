@@ -628,16 +628,51 @@ button {
    colore, quindi non c'e' una seconda tavolozza da tenere allineata. */
 
 .icona {
-  width: 12px;
-  height: 12px;
-  margin-right: 4px;
-  vertical-align: -1.5px;
+  /* In `em` e non in pixel: l'etichetta di un prompt e' scritta piccola, e un
+     segno misurato in pixel finiva per essere meta' della sua altezza — su un
+     telefono, illeggibile. Legandolo al testo che accompagna resta della
+     stessa taglia ovunque compaia, anche il giorno che quel testo cambia
+     corpo. */
+  width: 1.55em;
+  height: 1.55em;
+  margin-right: 5px;
+  vertical-align: -0.42em;
 }
 
 .gname .icona {
-  width: 13px;
-  height: 13px;
-  vertical-align: -2px;
+  width: 1.6em;
+  height: 1.6em;
+  vertical-align: -0.45em;
+}
+
+/* --- I due nomi delle cose -------------------------------------------------
+   Ogni campo dell'IR compare due volte nel documento: col nome che ha nel file
+   e con quello che ha per chi legge. A scegliere e' il debug, da qui — non il
+   codice — cosi' accenderlo vale anche per il transcript gia' scorso, come per
+   ogni altra diagnostica. Chi gioca legge «voce» e «inquadratura»; chi collauda
+   ha sotto gli occhi il nome da citare a chi compila la storia. */
+
+body:not(.debug) .ir {
+  display: none;
+}
+
+body.debug .umano {
+  display: none;
+}
+
+/* Il nome umano e' prosa e va scritto come prosa: il monospazio delle
+   etichette e' il carattere dei dati, e serve al nome tecnico che sta al suo
+   posto col debug acceso. */
+.umano {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+
+.prompt .label .umano {
+  font-size: 12px;
+}
+
+.gname .umano {
+  font-size: 12.5px;
 }
 
 /* I prompt di un beat di narrazione: appesi al testo che accompagnano, non in

@@ -40,6 +40,7 @@ import {
 } from '../core/index.js';
 import { clear, el, premi, staScrivendo } from './dom.js';
 import { icona, iconaGruppo } from './icone.js';
+import { doppio, nomeCampo, nomeTipoScena, type Doppio } from './nomi.js';
 import type { Ascolto } from './ascolto.js';
 
 /** Il tipo di risorsa che un prompt descrive: da' il colore all'etichetta, e
@@ -53,6 +54,18 @@ function etichettaLuogo(id: string, nome?: string): string {
   return nome ? `${id} — ${nome}` : id;
 }
 
+/** Un luogo come valore di riga: il nome a chi legge, `id — nome` a chi
+ * ispeziona. */
+function luogoDoppio(id: string | undefined, nome?: string): Doppio | undefined {
+  return id ? doppio(nome ?? id, etichettaLuogo(id, nome)) : undefined;
+}
+
+/** Chi c'e' nell'inquadratura: i nomi a chi legge, gli id a chi ispeziona. */
+function inFrameDoppio(story: Story, ids?: string[]): Doppio | undefined {
+  if (!ids?.length) return undefined;
+  return doppio(ids.map((id) => findCharacter(story, id)?.name ?? id).join(', '), ids.join(', '));
+}
+
 /**
  * [nome del campo nell'IR, valore, tipo di media, ereditato?]
  *
@@ -61,21 +74,33 @@ function etichettaLuogo(id: string, nome?: string): string {
  * descrizione gia' letta a una comparsa precedente: si mostra su una riga sola,
  * troncata, e si apre toccandola.
  */
-type PromptRow = [string, string | undefined, Media, boolean?];
+type PromptRow = [string, string | Doppio | undefined, Media, boolean?];
 
-/** L'etichetta del campo, col segno del suo tipo di media davanti. */
+/**
+ * L'etichetta del campo: il segno del suo tipo di media, poi il nome — quello
+ * per chi legge e quello che il campo ha nell'IR, tutti e due nel documento.
+ * Quale dei due si veda lo decide il debug, dal CSS.
+ */
 function etichetta(label: string, media: Media): HTMLElement {
   const span = el('span', 'label');
   const segno = icona(media);
   if (segno) span.append(segno);
-  span.append(document.createTextNode(label));
+  span.append(el('span', 'umano', nomeCampo(label)), el('span', 'ir', label));
   return span;
 }
 
-function promptRow([label, value, media, ereditato]: [string, string, Media, boolean?]): HTMLElement {
+/** Un valore che porta un id dentro: il nome a chi legge, l'id a chi ispeziona. */
+function valore(v: string | Doppio): Node {
+  if (typeof v === 'string') return document.createTextNode(v);
+  const span = el('span');
+  span.append(el('span', 'umano', v.umano), el('span', 'ir', v.ir));
+  return span;
+}
+
+function promptRow([label, value, media, ereditato]: [string, string | Doppio, Media, boolean?]): HTMLElement {
   if (!ereditato) {
     const row = el('span', `prompt m-${media}`);
-    row.append(etichetta(label, media), document.createTextNode(value));
+    row.append(etichetta(label, media), valore(value));
     return row;
   }
 
@@ -91,7 +116,7 @@ function promptRow([label, value, media, ereditato]: [string, string, Media, boo
   // troncamento, cioe' sparirebbe esattamente quando serve a dire "c'e'
   // dell'altro, toccami".
   const caret = el('span', 'caret', '▸');
-  row.append(etichetta(label, media), caret, document.createTextNode(value));
+  row.append(etichetta(label, media), caret, valore(value));
   row.onclick = () => {
     const aperto = row.classList.toggle('aperto');
     row.setAttribute('aria-expanded', String(aperto));
@@ -110,14 +135,18 @@ function promptRow([label, value, media, ereditato]: [string, string, Media, boo
  * mancano. `who` e' il nome umano, quando l'entita' ne ha uno.
  */
 function promptGroup(name: string, rows: PromptRow[], who?: string): HTMLElement | undefined {
-  const present = rows.filter((r): r is [string, string, Media, boolean?] => !!r[1]);
+  const present = rows.filter((r): r is [string, string | Doppio, Media, boolean?] => !!r[1]);
   if (present.length === 0) return undefined;
   const box = el('div', 'group');
   const head = el('span', 'gname');
   const segno = iconaGruppo(name);
   if (segno) head.append(segno);
-  head.append(document.createTextNode(name));
-  if (who) head.append(el('span', 'who', who));
+  // A chi legge, un gruppo che ha un nome proprio si chiama con quello: il
+  // personaggio e' «Mark», non `characters.mark` seguito da Mark.
+  head.append(el('span', 'umano', who ?? nomeCampo(name)));
+  const ir = el('span', 'ir', name);
+  if (who) ir.append(el('span', 'who', who));
+  head.append(ir);
   box.append(head);
   for (const row of present) box.append(promptRow(row));
   return box;
@@ -363,7 +392,7 @@ export class WebUI implements PlayerUI {
    * nome vorrebbe dire sbagliare il giorno che lo schema cambia.
    */
   private assets(rows: PromptRow[]): void {
-    const present = rows.filter((r): r is [string, string, Media, boolean?] => !!r[1]);
+    const present = rows.filter((r): r is [string, string | Doppio, Media, boolean?] => !!r[1]);
     if (present.length === 0) return;
     const box = el('div', 'assets');
     for (const row of present) box.append(promptRow(row));
@@ -394,8 +423,13 @@ export class WebUI implements PlayerUI {
     if (st.description) cover.append(el('p', 'desc', st.description));
 
     const dl = el('dl', 'kv');
-    const meta = (k: string, v?: string) => {
-      if (v) dl.append(el('dt', undefined, k), el('dd', undefined, v));
+    const meta = (k: string, v?: string | Doppio) => {
+      if (!v) return;
+      const dt = el('dt');
+      dt.append(el('span', 'umano', nomeCampo(k)), el('span', 'ir', k));
+      const dd = el('dd');
+      dd.append(valore(v));
+      dl.append(dt, dd);
     };
     meta('ir_version', st.ir_version);
     // La provenienza sta con gli altri dati d'identita' del file, non sotto il
@@ -408,7 +442,10 @@ export class WebUI implements PlayerUI {
     meta('id', st.id);
     meta('language', st.language);
     meta('scenes', `${st.scenes.length}`);
-    meta('start_scene', st.start_scene);
+    // La prima scena si chiama col suo titolo: l'id dice dove trovarla nel
+    // JSON, e quello e' un servizio per chi ispeziona.
+    const prima = st.scenes.find((s) => s.id === st.start_scene);
+    meta('start_scene', doppio(prima?.title || st.start_scene, st.start_scene));
     cover.append(dl);
 
     const g = st.global_style;
@@ -505,8 +542,13 @@ export class WebUI implements PlayerUI {
     const head = el('h2');
     const name = el('span', 'name');
     if (scene.title) name.append(document.createTextNode(scene.title + ' '));
-    name.append(el('span', 'sid', scene.id));
-    head.append(name, el('span', 'stype', sceneType(scene)));
+    // L'id della scena non ha un equivalente umano: non e' un campo da
+    // tradurre, e' una chiave per ritrovarla nel JSON. Sparisce e basta, tanto
+    // il titolo che serve a chi gioca gli sta accanto.
+    name.append(el('span', 'sid ir', scene.id));
+    const tipo = el('span', 'stype');
+    tipo.append(el('span', 'umano', nomeTipoScena(sceneType(scene))), el('span', 'ir', sceneType(scene)));
+    head.append(name, tipo);
     card.append(head);
 
     const param = (label: string, value: string | undefined, media: Media) => {
@@ -523,9 +565,9 @@ export class WebUI implements PlayerUI {
 
     const luogo = scene.background?.place ? findPlace(this.story, scene.background.place) : undefined;
     const bg = promptGroup('background', [
-      ['place', scene.background?.place && etichettaLuogo(scene.background.place, luogo?.name), 'none'],
+      ['place', luogoDoppio(scene.background?.place, luogo?.name), 'none'],
       [`places.${scene.background?.place}.visual_prompt`, luogo?.visual_prompt, 'image'],
-      ['characters_in_frame', scene.background?.characters_in_frame?.join(', '), 'none'],
+      ['characters_in_frame', inFrameDoppio(this.story, scene.background?.characters_in_frame), 'none'],
       ['image_prompt', scene.background?.image_prompt, 'image'],
       ['ambient_sound_prompt', scene.background?.ambient_sound_prompt, 'sound'],
     ]);
@@ -606,9 +648,9 @@ export class WebUI implements PlayerUI {
     // Stesso ordine della scheda di scena: prima i riferimenti che questa
     // inquadratura eredita (dove, chi), poi cio' che vale solo per lei.
     this.assets([
-      ['place', b.place && etichettaLuogo(b.place, findPlace(this.story, b.place)?.name), 'none'],
+      ['place', luogoDoppio(b.place, luogo?.name), 'none'],
       [`places.${b.place}.visual_prompt`, luogo?.visual_prompt, 'image', ereditato],
-      ['characters_in_frame', b.characters_in_frame?.join(', '), 'none'],
+      ['characters_in_frame', inFrameDoppio(this.story, b.characters_in_frame), 'none'],
       ['image_prompt', b.image_prompt, 'image'],
       ['sound_effect_prompt', b.sound_effect_prompt, 'sound'],
       ['voice.style_prompt', b.voice?.style_prompt, 'voice'],
@@ -677,9 +719,12 @@ export class WebUI implements PlayerUI {
     this.pending = undefined;
     if (!buf) return;
     this.assets(buf.rows);
-    for (const [, valore, media] of buf.rows) {
-      if (media === 'sound') this.ascolto.suono(valore);
-      if (media === 'voice') this.ascolto.vocePrompt({ style_prompt: valore });
+    for (const [, v, media] of buf.rows) {
+      // I valori doppi sono riferimenti — un luogo, chi c'e' in campo — non
+      // prompt: non si recitano, e non c'e' niente da leggere dentro di loro.
+      if (typeof v !== 'string') continue;
+      if (media === 'sound') this.ascolto.suono(v);
+      if (media === 'voice') this.ascolto.vocePrompt({ style_prompt: v });
     }
     for (const t of buf.texts) {
       this.entry('narration', t);

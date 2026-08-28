@@ -35,7 +35,7 @@ import { CONFIG_DEFAULT, caricaEmbedder, type ConfigEmbedder } from './embedder.
 import { ASCOLTO_DEFAULT, Ascolto, type ImpostazioniAscolto } from './ascolto.js';
 import { Voce } from './voce.js';
 import { PLAYER_VERSION } from '../version.js';
-import { $, clear, staScrivendo } from './dom.js';
+import { $, clear, el, staScrivendo } from './dom.js';
 import { TAB_DEBUG, chiediSeRicominciare, renderPanel, type PanelContext, type Tab } from './panel.js';
 import { WebUI } from './webui.js';
 
@@ -298,19 +298,32 @@ function refreshPanel(): void {
 function refreshHeader(): void {
   if (!session) return;
   const { story, findings, ui } = session;
-  const parti = [`IR ${story.ir_version}`];
 
   const i = ui.scene ? story.scenes.findIndex((s) => s.id === ui.scene?.id) : -1;
-  parti.push(i >= 0 ? `scena ${i + 1}/${story.scenes.length}` : `${story.scenes.length} scene`);
-  if (ui.beatCorrente && ui.beatTotali) parti.push(`beat ${ui.beatCorrente}/${ui.beatTotali}`);
+  const dove = i >= 0 ? `scena ${i + 1}/${story.scenes.length}` : `${story.scenes.length} scene`;
 
+  // Due righe per lo stesso posto, come per i nomi dei campi. A chi gioca
+  // interessa a che punto e' — e, se sta rigiocando una traccia, che la sta
+  // rigiocando. La versione dell'IR e il conto del linter sono informazioni
+  // sul *file*, non sulla storia: stanno col debug.
+  const umano = [dove];
+  if (ui.beatCorrente && ui.beatTotali) umano.push(`passaggio ${ui.beatCorrente}/${ui.beatTotali}`);
+
+  const ir = [`IR ${story.ir_version}`, dove];
+  if (ui.beatCorrente && ui.beatTotali) ir.push(`beat ${ui.beatCorrente}/${ui.beatTotali}`);
   const { errors, warnings } = countFindings(findings);
-  if (errors || warnings) parti.push(`linter: ${errors} errori, ${warnings} avvisi`);
+  if (errors || warnings) ir.push(`linter: ${errors} errori, ${warnings} avvisi`);
+
   // Il marchio sparisce quando la traccia si esaurisce e la partita torna in
   // mano al giocatore: da quel momento non e' piu' una partita rigiocata.
-  if (ui.sottoTraccia) parti.push('traccia');
+  if (ui.sottoTraccia) {
+    umano.push('traccia');
+    ir.push('traccia');
+  }
 
-  $('#story-meta').textContent = parti.join(' · ');
+  const meta = $('#story-meta');
+  clear(meta);
+  meta.append(el('span', 'umano', umano.join(' · ')), el('span', 'ir', ir.join(' · ')));
 }
 
 /** Stato e scena sono cambiati: si aggiornano insieme la barra e il pannello. */
