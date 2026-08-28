@@ -13,15 +13,19 @@ import './styles.css';
 import {
   Engine,
   IRError,
+  LexicalResolver,
   ScriptDriver,
   countFindings,
   lintStory,
+  makeResolver,
   parseScript,
   parseStory,
   validateStory,
   type Finding,
+  type Resolver,
   type Story,
 } from '../core/index.js';
+import { MODELLO_DEFAULT, caricaEmbedder } from './embedder.js';
 import { PLAYER_VERSION } from '../version.js';
 import { $, clear } from './dom.js';
 import { renderPanel, type PanelContext, type Tab } from './panel.js';
@@ -49,6 +53,40 @@ $('#panel-foot').textContent = `zaiplay v${PLAYER_VERSION}`;
 let session: Session | undefined;
 let tab: Tab = 'stato';
 
+/**
+ * Il backend attivo. Parte dal lessicale: deterministico, nessuna rete,
+ * nessun byte scaricato — e con gli alias scritti in compilazione copre le
+ * frasi centrali. L'embedder si accende dal pannello, quando serve saperlo.
+ */
+let resolver: Resolver = new LexicalResolver();
+let nomeResolver = 'lessicale';
+let statoResolver = '';
+
+async function scegliResolver(nome: string): Promise<void> {
+  if (nome === nomeResolver) return;
+  try {
+    if (nome === 'embedding') {
+      statoResolver = 'attivo il backend a vettori…';
+      refreshPanel();
+      const { embed, etichetta } = await caricaEmbedder(MODELLO_DEFAULT, (m) => {
+        statoResolver = m;
+        refreshPanel();
+      });
+      resolver = makeResolver('embedding', { embed, modello: etichetta });
+    } else {
+      resolver = new LexicalResolver();
+    }
+    nomeResolver = nome;
+    statoResolver = '';
+  } catch (err) {
+    // Il fallimento va detto e basta: si resta sul backend che funzionava,
+    // che e' sempre quello che non ha bisogno di rete.
+    statoResolver = `non riesco ad attivarlo: ${(err as Error).message}`;
+  }
+  session?.ui.usaResolver(resolver);
+  refresh();
+}
+
 interface Session {
   story: Story;
   findings: Finding[];
@@ -72,6 +110,9 @@ function panelContext(s: Session): PanelContext {
       closePanel();
       showLoader();
     },
+    resolver: nomeResolver,
+    statoResolver,
+    onResolver: (nome) => void scegliResolver(nome),
   };
 }
 
@@ -149,7 +190,7 @@ function start(story: Story, findings: Finding[], script?: ScriptDriver): void {
   clear(transcript);
   clear(dock);
 
-  const ui = new WebUI({ story, transcript, dock, onUpdate: refresh, script });
+  const ui = new WebUI({ story, resolver, transcript, dock, onUpdate: refresh, script });
   const engine = new Engine(story, ui);
   session = { story, findings, engine, ui, scripted: !!script };
 
@@ -250,13 +291,56 @@ if (embedded) {
     });
 }
 
-// Un piccolo aiuto per chi gioca da tastiera: i numeri scelgono le voci.
+/**
+ * Le voci del dock, quelle che si possono davvero scegliere adesso.
+ *
+ * `offsetParent` nullo vuol dire nascosta: le chip delle azioni fuori dal
+ * debug e quelle filtrate da una condizione stanno nel DOM ma non sono in
+ * gioco, e una navigazione da tastiera che ci passa sopra sembra rotta.
+ */
+function voci(): HTMLButtonElement[] {
+  return [...dock.querySelectorAll<HTMLButtonElement>('button.choice:not([disabled])')].filter(
+    (b) => b.offsetParent !== null,
+  );
+}
+
+/** Vero se si sta scrivendo: li' le frecce muovono il cursore, e devono. */
+function staScrivendo(e: Event): boolean {
+  const t = e.target as HTMLElement | null;
+  return !!t && /^(INPUT|TEXTAREA)$/.test(t.tagName);
+}
+
+/**
+ * Frecce e invio sul dock.
+ *
+ * E' il modo naturale di scorrere un elenco di battute — ed e' l'elenco delle
+ * battute il posto dove serve davvero, perche' nel dialogo le chip *sono*
+ * l'interfaccia (si parla a scelte, per la decisione 1.7.0) mentre nelle
+ * azioni si scrive.
+ *
+ * Si sposta il fuoco vero del documento invece di tenere una selezione per
+ * conto proprio: cosi' l'invio lo gestisce il bottone da solo, lo screen
+ * reader annuncia la voce, e il contorno di `:focus-visible` che c'e' gia'
+ * fa da evidenziazione senza aggiungere una seconda idea di "voce corrente"
+ * che poi diverge da quella del browser.
+ */
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  if (staScrivendo(e)) return;
+  const v = voci();
+  if (v.length === 0) return;
+  e.preventDefault();
+  const i = v.indexOf(document.activeElement as HTMLButtonElement);
+  const giu = e.key === 'ArrowDown';
+  const next = i < 0 ? (giu ? 0 : v.length - 1) : (i + (giu ? 1 : -1) + v.length) % v.length;
+  v[next].focus();
+});
+
+// I numeri restano: sono le stesse cifre stampate accanto a ogni voce.
 document.addEventListener('keydown', (e) => {
   if (!/^[1-9]$/.test(e.key)) return;
-  const target = e.target as HTMLElement | null;
-  if (target && /^(INPUT|TEXTAREA)$/.test(target.tagName)) return;
-  const buttons = dock.querySelectorAll<HTMLButtonElement>('button.choice:not([disabled])');
-  const b = buttons[Number(e.key) - 1];
+  if (staScrivendo(e)) return;
+  const b = voci()[Number(e.key) - 1];
   if (b) {
     e.preventDefault();
     b.click();

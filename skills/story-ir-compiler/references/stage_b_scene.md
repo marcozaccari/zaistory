@@ -173,7 +173,59 @@ scrivono piu' spesso di tutte le altre messe insieme.
   non l'oggetto in chiaro, ma la cosa che lo contiene: "sul mobiletto c'e'
   della roba da bagno" basta perche' qualcuno provi a frugarci.
 
+**`look_variants`: la stanza cambia, la descrizione anche.** Una stanza dopo
+che ci si e' fatto qualcosa non e' la stessa stanza, e rileggere la descrizione
+di partenza dopo aver spostato il mobiletto fa credere al giocatore di non aver
+combinato niente — che e' il modo piu' rapido di fargli perdere fiducia in
+quello che scrive. Ogni variante ha una `condition` e un `text`; vince la prima
+soddisfatta, e se nessuna lo e' si torna al `look` di base, che quindi va
+scritto sempre.
+
+Scrivine una per ogni cambiamento che si **vede entrando**: uno sportello
+aperto, un cassetto tirato fuori, qualcuno salito su uno scaffale. Non per ogni
+flag: se il cambiamento non si vedrebbe guardandosi intorno, non e' materia di
+`look`.
+
 Per le `cutscene` il campo si omette: non c'e' niente da guardare, si prosegue.
+
+### 3-bis. `no_match_narration`: cosa si legge quando il gioco non capisce
+
+Un player a parole deve rispondere anche quando la frase non corrisponde a
+niente — ed e' la risposta che il giocatore leggera' piu' spesso di qualunque
+narrazione che scrivi. E' l'equivalente moderno del «Non puoi farlo» dei
+punta-e-clicca, con la differenza che qui lo scrivi tu, in tono, e sai di che
+tipo di tentativo si tratta.
+
+Sei intenzioni, e sono le stesse in ogni storia:
+
+| intenzione | che cosa ci finisce dentro |
+|---|---|
+| `percezione` | guardare, esaminare, ascoltare, annusare, leggere |
+| `manipolazione` | prendere, usare, aprire, spostare, frugare, combinare |
+| `movimento` | andare, uscire, entrare, salire, tornare |
+| `sociale` | parlare, chiamare, chiedere, urlare a qualcuno |
+| `forza` | rompere, colpire, forzare, spaccare |
+| `generico` | tutto il resto, nonsense compreso |
+
+Regole per scriverle:
+
+- **`generico` sempre, e piu' d'uno.** E' la categoria dove finisce tutto
+  quello che non si classifica, quindi e' quella che si legge di piu'. Due o
+  tre frasi diverse per la stessa intenzione bastano perche' il fondo non si
+  senta: il player le mostra a rotazione.
+- **Non nominare cose che nella scena non esistono.** Quello che nomini, il
+  giocatore lo cerchera'. Un fallback che parla di una lampada che non c'e' e'
+  un falso indizio, ed e' peggio del silenzio.
+- **Non dire cosa bisogna fare.** Il fallback dice che quella strada non porta
+  da nessuna parte, non indica quella giusta.
+- **Nel tono della scena**, come tutto il resto. In una storia asciutta un
+  fallback e' «Non succede niente.», non «Non sembra esserci nulla di
+  interessante da fare in questa direzione.».
+
+I fallback globali (`player_voice.no_match_narration`, Stadio A) fanno da rete
+quando la scena non ha niente per quell'intenzione. Non contarci: sono generici
+per costruzione, e una scena che si affida solo a quelli risponde a tutto allo
+stesso modo.
 
 ### 4. Narrazione d'ingresso (scene interactive)
 
@@ -289,16 +341,46 @@ scena**. NON stai costruendo un motore verbo×oggetto stile SCUMM classico
   bisogna fare per poterlo. Scrivila per le azioni che un giocatore prova
   presto e volentieri; su una condizione che nessuno incontrera' mai al
   contrario, si puo' omettere.
+
+  Il player passa al resolver **anche le azioni bloccate**, proprio per questo:
+  se il giocatore ne chiede una riceve la tua `blocked_narration`, e non
+  succede nient'altro — nessun flag, nessuna transizione, nessun oggetto.
 - Usa `repeatable: false` per azioni "consuma-oggetto" (es. raccogliere un
   oggetto una sola volta), `repeatable: true` (default) per azioni di
   osservazione/atmosfera che si possono ripetere.
-- **Popola sempre `aliases`**: 2-4 modi colloquiali in cui un giocatore
-  potrebbe esprimere quell'azione scrivendo. Non e' rifinitura: nel player
-  definitivo e' l'unico modo in cui una frase arriva a questa azione, e
-  un'azione senza alias e' un'azione che quasi nessuno riuscira' a chiedere.
-  Usa anche `target` (l'id dell'oggetto o del personaggio a cui si riferisce):
-  insieme al `name` e agli `aliases` dell'oggetto, e' quello che fa arrivare
-  «taglio il cavo col coltellino» all'azione giusta.
+- **`aliases`: quindici-venticinque, non tre.** E' la regola che si sbaglia
+  piu' spesso, e sbagliarla rende ingiocabile una scena per un player a parole.
+  Gli alias non sono una rifinitura: **sono la conoscenza semantica
+  dell'azione**, scritta qui perche' il player non debba dedurla a runtime. Il
+  resolver confronta la frase del giocatore con questa lista, quindi la lista
+  *e'* la copertura dell'azione. Tre alias coprono tre frasi; quindici
+  cominciano a coprire un modo di parlare.
+
+  Cosa metterci, in ordine di resa:
+
+  1. **verbi sinonimi**: `taglia`, `recidi`, `affetta`, `spezza`;
+  2. **giri di frase comuni**: `do un taglio a`, `passo la lama su`;
+  3. **forme ellittiche**, senza il verbo: `col coltello`, `sul cavo`;
+  4. **la stessa cosa chiesta nominando l'oggetto** invece del gesto;
+  5. **le forme sbagliate ma prevedibili**: come lo direbbe qualcuno che non ha
+     capito bene com'e' fatta la stanza.
+
+  Usa anche `target` (l'id dell'oggetto o del personaggio a cui l'azione si
+  riferisce): insieme al `name` e agli `aliases` dell'oggetto e' quello che fa
+  arrivare «taglio il cavo col coltellino» all'azione giusta, senza doverlo
+  scrivere fra gli alias.
+- **`test_phrases`: 3-5 parafrasi tenute FUORI dagli alias.** Non servono a
+  giocare — nessun player le legge — servono a misurare: il linter le passa al
+  resolver e conta quante arrivano all'id giusto (`zaiplay --copertura`). E'
+  cosi' che si sa se un backend piu' costoso vale il suo prezzo su questa
+  storia, invece di deciderlo a naso.
+
+  **Scrivile lontane dagli alias**, e' tutto il punto: se le copi di li' misuri
+  il lookup e non il richiamo, e il linter te lo segnala come avviso. Scrivile
+  come le direbbe qualcuno che non ha mai visto l'etichetta — frasi lunghe, con
+  il verbo in mezzo, con l'oggetto chiamato in un altro modo. Se ti sembra che
+  il resolver non le prendera', hai scritto la frase giusta: e' esattamente
+  quella che serve sapere.
 
 ### 7. Flag e oggetti
 

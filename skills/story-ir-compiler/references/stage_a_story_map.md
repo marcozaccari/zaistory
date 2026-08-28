@@ -47,8 +47,30 @@ Un singolo oggetto JSON con questa forma (i campi extra non sono ammessi):
   "state_flags_schema": ["..."],
   "items": [
     { "id": "...", "name": "...", "aliases": ["...", "..."], "description": "..." }
+   ```
+
+   La `description` di un oggetto non e' facoltativa: e' la risposta a «guarda
+   il coltello», che e' fra le prime cose che si scrivono. Un oggetto che si
+   porta in giro e non si puo' guardare e' un oggetto muto, e il linter lo
+   segnala come errore. Se l'oggetto **cambia** nel corso della storia — un
+   walkie scarico che viene messo in carica, un'arma che viene caricata —
+   aggiungi `description_variants`: senza, la vecchia descrizione diventa una
+   bugia che il giocatore rilegge ogni volta.
+
+   ```json
   ],
   "initial_inventory": ["..."],
+  "protagonist": "id-del-personaggio-giocante",
+  "player_voice": {
+    "inventory_intro": ["...", "..."],
+    "inventory_empty": ["...", "..."],
+    "presence_intro": ["...", "..."],
+    "presence_alone": ["...", "..."],
+    "no_match_narration": [
+      { "intent": "generico", "text": "..." },
+      { "intent": "percezione", "text": "..." }
+    ]
+  },
   "scene_segments": [
     {
       "id": "id-scena",
@@ -217,11 +239,42 @@ passare il blocco giusto allo Stadio B.
    dove si cammina all'indietro, le stanze in cui si ripassa sono ricorrenti
    per costruzione, anche se la sceneggiatura le descrive una volta sola.
 
-13. **La story map non porta la provenienza.** `generated_by` (compilatore,
+13. **`player_voice`: la prosa dei verbi del player.** Il player definitivo si
+   comanda a parole, e le due domande che il giocatore fa piu' spesso di tutte
+   — «cosa ho nello zaino» e una frase che non corrisponde a niente — non
+   passano da nessuna azione. Senza testo d'autore un player a parole risponde
+   con un elenco di slug e con un non-ho-capito da programma.
+
+   - `inventory_intro`: due o tre cornici che introducono l'elenco degli
+     oggetti («Nelle tasche e nello zaino:», «Fa la conta di quello che ha:»).
+     Il player ci attacca in coda i `name`. Piu' d'una, altrimenti alla terza
+     volta si sente il meccanismo.
+   - `inventory_empty`: cosa si legge quando non si ha niente. E' una frase,
+     non «inventario: vuoto».
+   - `presence_intro` / `presence_alone`: la stessa cosa per «chi c'e' qui».
+     Il player ci attacca in coda i nomi di `Scene.characters`, tolto il
+     protagonista. `presence_alone` merita cura: in una storia dove la
+     solitudine conta, e' una battuta, non un "nessuno".
+
+   Insieme a questi va **`protagonist`**: l'id del personaggio che il giocatore
+   *e'*. Sta nella roster come tutti gli altri — ha un aspetto e una voce — ma
+   senza dichiararlo il player risponde «in questa stanza ci sono: Laura, Mark
+   e Tommy» a Laura.
+   - `no_match_narration`: i fallback **di riserva**, uno o due per ciascuna
+     delle sei intenzioni (`generico`, `percezione`, `manipolazione`,
+     `movimento`, `sociale`, `forza`). Vanno scritti generici sul serio —
+     devono valere in qualunque stanza della storia — e proprio per questo non
+     bastano da soli: quelli buoni sono i `no_match_narration` di scena, che
+     scrivi nello Stadio B. Questi sono la rete, non il pavimento.
+
+   `generico` va scritto sempre: e' dove finisce tutto cio' che non si
+   classifica, nonsense compreso.
+
+14. **La story map non porta la provenienza.** `generated_by` (compilatore,
    versione, modello) viene apposto in fase di assemblaggio, al passo 7 di
    `SKILL.md`: qui non serve e non va inventato.
 
-14. **Non includere MAI testo fuori dal JSON**: niente premessa, niente
+15. **Non includere MAI testo fuori dal JSON**: niente premessa, niente
    spiegazioni, niente code fence markdown. Rispondi con il solo oggetto JSON,
    che deve essere direttamente parsabile.
 

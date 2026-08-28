@@ -71,7 +71,10 @@ export interface Item {
   id: string;
   name: string;
   aliases?: string[];
+  /** La risposta a «guarda il coltello». E' un verbo del player, non
+   * un'azione: non consuma un turno e non pesa sul budget della scena. */
   description?: string;
+  description_variants?: ConditionalText[];
   visual_prompt?: string;
 }
 
@@ -129,7 +132,16 @@ export interface Action {
   id: string;
   label: string;
   target?: string;
+  /** I modi in cui il giocatore puo' chiedere questa azione scrivendo. Sono la
+   * conoscenza semantica dell'azione, scritta in compilazione perche' il player
+   * non debba dedurla a runtime: la lista *e'* la copertura del resolver
+   * lessicale. */
   aliases?: string[];
+  /** Parafrasi tenute deliberatamente fuori da `aliases`: non servono a
+   * giocare, servono a misurare. Il linter le passa al resolver e conta quante
+   * arrivano all'id giusto — e' cosi' che si sa se un backend piu' costoso vale
+   * il suo prezzo su questa storia, invece che a naso. */
+  test_phrases?: string[];
   condition?: Condition;
   /** Cosa si vede se il giocatore chiede l'azione ma la condition non e'
    * soddisfatta. Testo d'autore, nessun effetto: un'azione filtrata in un menu
@@ -137,6 +149,53 @@ export interface Action {
   blocked_narration?: string;
   effect?: Effect;
   repeatable?: boolean;
+}
+
+/**
+ * Le sei famiglie in cui ricade praticamente tutto quello che si scrive a
+ * un'avventura. Sono indipendenti dalla storia — le stesse in ogni IR — ed e'
+ * la ragione per cui un fallback puo' essere pertinente senza essere generato:
+ * si classifica il *tipo* di tentativo, e si pesca il testo che l'autore ha
+ * gia' scritto per quel tipo.
+ */
+export const INTENTS = ['percezione', 'manipolazione', 'movimento', 'sociale', 'forza', 'generico'] as const;
+export type Intent = (typeof INTENTS)[number];
+
+/** Una risposta d'autore a un tentativo che non corrisponde a nessuna azione,
+ * agganciata al tipo di tentativo invece che al suo contenuto. */
+export interface NoMatch {
+  intent: Intent;
+  text: string;
+}
+
+/**
+ * Un testo d'autore che vale solo in un certo stato: prima variante
+ * soddisfatta, prima servita, altrimenti vale il testo di base.
+ *
+ * Serve alle descrizioni rileggibili — la stanza, un oggetto in mano — che
+ * sarebbero una bugia se non cambiassero mai: un walkie messo in carica e' un
+ * altro oggetto da guardare rispetto a quello scarico.
+ */
+export interface ConditionalText {
+  condition: Condition;
+  text: string;
+}
+
+/**
+ * La prosa dei verbi del player — guardarsi intorno, guardare nello zaino,
+ * chiedere chi c'e'.
+ *
+ * Non sono azioni della scena: non stanno in `actions[]`, non consumano un
+ * turno, non cambiano niente. Ma sono le tre cose che il giocatore fa piu'
+ * spesso di tutte, e senza testo d'autore un player a input libero risponde
+ * con un elenco di slug.
+ */
+export interface PlayerVoice {
+  inventory_intro?: string[];
+  inventory_empty?: string[];
+  presence_intro?: string[];
+  presence_alone?: string[];
+  no_match_narration?: NoMatch[];
 }
 
 export interface SceneCharacter {
@@ -173,6 +232,14 @@ export interface Scene {
   /** La stanza com'e' adesso: la risposta a "guardati intorno" / "dove mi
    * trovo". Rileggibile, non fa avanzare niente, non e' un'azione. */
   look?: string;
+  /** Varianti di `look` legate allo stato: una stanza dopo che ci si e' fatto
+   * qualcosa non e' la stessa stanza. */
+  look_variants?: ConditionalText[];
+  /** Le risposte d'autore a una frase che non corrisponde a niente, una per
+   * intenzione. Scritte in compilazione e non generate a runtime: un testo
+   * generato inventa scenario che nel gioco non esiste, e nessun linter puo'
+   * controllarlo. */
+  no_match_narration?: NoMatch[];
   background?: Background;
   scene_tone?: string;
   scene_type?: SceneType;
@@ -191,8 +258,13 @@ export interface Story {
   description?: string;
   language?: string;
   global_style?: GlobalStyle;
+  /** La prosa dei verbi del player, valida per tutta la storia. */
+  player_voice?: PlayerVoice;
   characters?: Character[];
   places?: Place[];
+  /** Chi il giocatore *e'*. Sta nella roster come gli altri, ma a «chi c'e'
+   * qui» non va elencato: e' chi sta chiedendo. */
+  protagonist?: string;
   start_scene: string;
   state_flags_schema?: string[];
   items?: Item[];
@@ -284,6 +356,41 @@ export function shotsOf(sc: Scene): Shot[] {
 export function toneOf(story: Story, sc?: Scene): string {
   if (sc?.scene_tone) return sc.scene_tone;
   return story.global_style?.default_tone ?? '';
+}
+
+/**
+ * Il testo di `look` che vale adesso: la prima variante la cui condizione e'
+ * soddisfatta, altrimenti il `look` di base.
+ *
+ * `meets` arriva da fuori invece di importare `GameState`: i tipi non devono
+ * sapere niente dello stato, e cosi' questa resta una funzione pura sull'IR.
+ */
+export function lookNow(sc: Scene, meets: (c?: Condition) => boolean): string | undefined {
+  return oraVale(sc.look_variants, sc.look, meets);
+}
+
+/** La descrizione di un oggetto com'e' adesso. */
+export function descrizioneOra(it: Item, meets: (c?: Condition) => boolean): string | undefined {
+  return oraVale(it.description_variants, it.description, meets);
+}
+
+/** Prima variante soddisfatta, altrimenti il testo di base. */
+function oraVale(varianti: ConditionalText[] | undefined, base: string | undefined, meets: (c?: Condition) => boolean): string | undefined {
+  for (const v of varianti ?? []) {
+    if (meets(v.condition)) return v.text;
+  }
+  return base;
+}
+
+/**
+ * I fallback disponibili per una scena: quelli suoi, poi quelli globali.
+ *
+ * L'ordine e' la precedenza — chi cerca per intenzione trova prima il testo
+ * scritto per *questa* stanza, e ripiega su quello che vale ovunque solo se
+ * qui non c'era niente.
+ */
+export function noMatchPool(story: Story, sc?: Scene): NoMatch[] {
+  return [...(sc?.no_match_narration ?? []), ...(story.player_voice?.no_match_narration ?? [])];
 }
 
 export function findAction(sc: Scene, id: string): Action | undefined {

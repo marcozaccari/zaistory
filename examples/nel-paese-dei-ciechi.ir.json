@@ -1,5 +1,5 @@
 {
-  "ir_version": "1.7.0",
+  "ir_version": "1.8.0",
   "generated_by": {
     "compiler": "story-ir-compiler",
     "compiler_version": "1.0.0"
@@ -168,6 +168,7 @@
       "visual_prompt": "casa di pietra senza finestre della valle: interno di brace e ombra con giacigli bassi e utensili appesi a portata di mano, esterno chiaro con una sola porta stretta"
     }
   ],
+  "protagonist": "nunez",
   "start_scene": "prologo_la_valle",
   "state_flags_schema": [
     "addio_dato",
@@ -273,13 +274,28 @@
           "id": "continua",
           "label": "Continua",
           "aliases": [
+            "continua",
             "vai avanti",
             "prosegui",
-            "avanti"
+            "avanti",
+            "procedi",
+            "va avanti",
+            "ancora",
+            "e poi",
+            "continuiamo",
+            "tira dritto",
+            "prosegui pure",
+            "vai"
           ],
           "effect": {
             "goto_scene": "quindici_generazioni"
-          }
+          },
+          "test_phrases": [
+            "tiro dritto",
+            "vado avanti cosi'",
+            "si prosegue",
+            "faccio continuare la storia"
+          ]
         }
       ]
     },
@@ -322,13 +338,28 @@
           "id": "continua",
           "label": "Continua",
           "aliases": [
+            "continua",
             "vai avanti",
             "prosegui",
-            "avanti"
+            "avanti",
+            "procedi",
+            "va avanti",
+            "ancora",
+            "e poi",
+            "continuiamo",
+            "tira dritto",
+            "prosegui pure",
+            "vai"
           ],
           "effect": {
             "goto_scene": "la_caduta"
-          }
+          },
+          "test_phrases": [
+            "tiro dritto",
+            "vado avanti cosi'",
+            "si prosegue",
+            "faccio continuare la storia"
+          ]
         }
       ]
     },
@@ -380,13 +411,28 @@
           "id": "continua",
           "label": "Continua",
           "aliases": [
+            "continua",
             "vai avanti",
             "prosegui",
-            "avanti"
+            "avanti",
+            "procedi",
+            "va avanti",
+            "ancora",
+            "e poi",
+            "continuiamo",
+            "tira dritto",
+            "prosegui pure",
+            "vai"
           ],
           "effect": {
             "goto_scene": "arrivo_alla_valle"
-          }
+          },
+          "test_phrases": [
+            "tiro dritto",
+            "vado avanti cosi'",
+            "si prosegue",
+            "faccio continuare la storia"
+          ]
         }
       ]
     },
@@ -426,15 +472,34 @@
           "target": "ambiente",
           "aliases": [
             "mangia la felce",
+            "assaggia la felce",
             "prova la pianta",
-            "raccogli la felce"
+            "raccogli la felce",
+            "stacca una fronda",
+            "mordi il picciolo",
+            "rosicchia il picciolo",
+            "assaggia la pianta",
+            "prova a mangiare la felce",
+            "strappa una foglia",
+            "cogli la felce",
+            "mangia una foglia",
+            "prova l'erba",
+            "assaggia l'erba",
+            "metti in bocca la felce",
+            "stacca la felce"
           ],
           "repeatable": false,
           "effect": {
             "narration": "Tra le rocce una felce dalle mani verdissime sembra annaspare fuori dai crepacci. Ne stacca una fronda e rosicchia il picciolo: lo trova giovevole. Ne mette da parte un pezzo.",
             "add_inventory": "fronda_di_felce",
             "set_flag": "felce_assaggiata"
-          }
+          },
+          "test_phrases": [
+            "stacco una foglia di quella pianta e la mastico",
+            "provo a vedere che sapore ha quella felce",
+            "mi metto in bocca il gambo",
+            "colgo una fronda e la mordo"
+          ]
         },
         {
           "id": "bevi_alla_sorgiva",
@@ -442,13 +507,31 @@
           "target": "ambiente",
           "aliases": [
             "bevi",
+            "bevi alla sorgiva",
+            "riempi la borraccia",
+            "riempi la fiasca",
             "riposa",
-            "riempi la borraccia"
+            "riposati",
+            "mettiti all'ombra",
+            "riposa all'ombra",
+            "bevi acqua",
+            "vai alla sorgente",
+            "dissetati",
+            "fermati a riposare",
+            "siediti sotto il macigno",
+            "riposa sotto la roccia",
+            "bevi e riposa"
           ],
           "effect": {
             "narration": "Siede all'ombra di un macigno, riempie la borraccia a una sorgiva, beve a lungo. Per la prima volta da quando è caduto, il corpo smette di fargli male dappertutto insieme.",
             "play_sound_prompt": "acqua di sorgente che scorre su pietra"
-          }
+          },
+          "test_phrases": [
+            "mi fermo a bere e a riprendere fiato",
+            "riempio la fiasca alla sorgente",
+            "vado a sedermi all'ombra del masso",
+            "ho sete, cerco l'acqua"
+          ]
         },
         {
           "id": "osserva_la_valle",
@@ -456,22 +539,51 @@
           "target": "ambiente",
           "aliases": [
             "guarda la valle",
+            "osserva la valle",
             "studia le case",
-            "osserva il villaggio"
+            "osserva il villaggio",
+            "guarda le case",
+            "esamina le case",
+            "guarda i canali",
+            "osserva i prati",
+            "studia il villaggio",
+            "guarda in basso",
+            "osserva le facciate",
+            "guarda dall'alto",
+            "esamina la valle",
+            "studia la valle",
+            "conta le finestre"
           ],
           "effect": {
             "narration": "Una prateria rigogliosa, irrigata con grande sapienza, mietuta sistematicamente pezzo a pezzo. Un canale maggiore corre lungo l'asse centrale, chiuso da muriccioli a petto d'uomo; i viottoli sono lastricati di pietre bianche e nere, ciascuno bordato da un piccolo cordolo. Le case sono schierate in fila continua, dipinte a chiazze irregolari di grigio, beige, ardesia, bruno scuro, forate qua e là da una porta — ma non una finestra rompe il loro prospetto uniforme. «Il brav'uomo che ha fatto questa roba doveva essere cieco come una talpa», pensa ad alta voce. Non sa ancora quanto ha ragione.",
             "set_flag": "valle_osservata"
-          }
+          },
+          "test_phrases": [
+            "mi metto a studiare com'e' fatto quel villaggio",
+            "guardo meglio quelle costruzioni la' sotto",
+            "osservo come sono disposti i campi e l'acqua",
+            "cerco di capire che posto e' questo"
+          ]
         },
         {
           "id": "scendi_verso_il_muro",
           "label": "Scendi il pendio verso il muro di cinta",
           "target": "ambiente",
           "aliases": [
+            "scendi",
             "scendi nella valle",
             "vai verso il muro",
-            "avvicinati alle case"
+            "avvicinati alle case",
+            "scendi il pendio",
+            "vai giu",
+            "scendi verso il villaggio",
+            "raggiungi il muro",
+            "avvicinati al muro",
+            "entra nella valle",
+            "vai verso il villaggio",
+            "scendi il sentiero",
+            "cammina verso il muro",
+            "prendi la discesa"
           ],
           "condition": {
             "flag_present": "valle_osservata"
@@ -479,7 +591,52 @@
           "effect": {
             "narration": "Scende il pendio verso il muro. Più si avvicina, più la valle gli sembra bizzarra.",
             "goto_scene": "primo_contatto"
-          }
+          },
+          "test_phrases": [
+            "comincio a scendere verso quel muro di pietra",
+            "mi avvio giu' per il pendio",
+            "vado a vedere il villaggio da vicino",
+            "mi incammino in basso"
+          ],
+          "blocked_narration": "Scendere adesso vorrebbe dire arrivare senza sapere dove. Da quassu', invece, si vede tutto."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "valle_osservata"
+          },
+          "text": "L'imbocco della valle. Adesso le ha contate: nessuna finestra, in nessuna casa. I canali corrono dritti, i prati sono tagliati a squadra, e l'intonaco e' steso a chiazze come da qualcuno che non l'ha mai guardato."
+        }
+      ],
+      "no_match_narration": [
+        {
+          "intent": "generico",
+          "text": "La valle resta immobile nella sua luce."
+        },
+        {
+          "intent": "generico",
+          "text": "Non succede niente. Solo l'acqua nei canali."
+        },
+        {
+          "intent": "percezione",
+          "text": "Prati a squadra, canali dritti, case senza una finestra. La stranezza e' tutta li', e non si lascia guardare meglio."
+        },
+        {
+          "intent": "manipolazione",
+          "text": "Le mani non trovano niente che serva."
+        },
+        {
+          "intent": "movimento",
+          "text": "La valle e' una sola: si scende, o si resta quassu'."
+        },
+        {
+          "intent": "sociale",
+          "text": "Non c'e' nessuno a cui dirlo. Le case sono chiuse e mute."
+        },
+        {
+          "intent": "forza",
+          "text": "Contro cosa? La valle non oppone niente."
         }
       ]
     },
@@ -587,14 +744,31 @@
             "grida",
             "urla",
             "chiamali",
-            "fatti sentire"
+            "fatti sentire",
+            "sali sul masso e grida",
+            "gridagli",
+            "chiama i tre",
+            "urla verso di loro",
+            "fatti notare",
+            "lancia un grido",
+            "richiama la loro attenzione",
+            "sali sul masso",
+            "mettiti in vista",
+            "alza la voce",
+            "dai una voce"
           ],
           "repeatable": false,
           "effect": {
             "narration": "Il grido echeggia per la valle. I tre si fermano e girano la testa verso il suono — non verso di lui. Nuñez gesticola profusamente: nessuna reazione ai gesti. Poi si dirigono verso le montagne lontane, gridando come in risposta a qualcun altro. «Quei balordi devono essere ciechi», dice tra sé.",
             "set_flag": "sospetto_cecita",
             "play_sound_prompt": "grido umano che echeggia tra pareti di roccia"
-          }
+          },
+          "test_phrases": [
+            "salgo su quel sasso e urlo piu' forte che posso",
+            "cerco di farmi notare gridando",
+            "lancio un richiamo verso i tre uomini",
+            "mi metto dove mi possano vedere e chiamo"
+          ]
         },
         {
           "id": "osserva_le_palpebre",
@@ -602,12 +776,28 @@
           "target": "ambiente",
           "aliases": [
             "guarda i loro occhi",
+            "osserva i loro volti",
             "studia i loro volti",
-            "osservali"
+            "osservali",
+            "guarda le palpebre",
+            "guarda i loro visi",
+            "esamina i loro occhi",
+            "studia le palpebre",
+            "guardali in faccia",
+            "osserva gli occhi",
+            "guarda meglio i tre",
+            "esamina i volti",
+            "fissa i loro occhi"
           ],
           "effect": {
             "narration": "Stanno stretti l'uno all'altro come impauriti, le orecchie tese verso di lui. Le palpebre sono chiuse e incavate, come se sotto, i globi oculari fossero disseccati e svaniti."
-          }
+          },
+          "test_phrases": [
+            "guardo meglio la faccia di quegli uomini",
+            "cerco di capire cos'hanno negli occhi",
+            "studio da vicino le loro palpebre chiuse",
+            "li osservo bene in viso"
+          ]
         },
         {
           "id": "lasciati_avvicinare",
@@ -617,7 +807,17 @@
             "parla con loro",
             "avvicinati",
             "rispondi",
-            "presentati"
+            "presentati",
+            "lasciali avvicinare",
+            "aspettali",
+            "parla con pedro",
+            "rispondi ai tre",
+            "di chi sei",
+            "fatti avanti",
+            "resta fermo e parla",
+            "aspetta che arrivino",
+            "salutali",
+            "rivolgiti a loro"
           ],
           "condition": {
             "flag_present": "sospetto_cecita"
@@ -625,7 +825,52 @@
           "effect": {
             "narration": "I tre si avvicinano insieme, mani protese. Nuñez arretra d'istinto — poi si lascia toccare: viso, capelli, mento non rasato, giacca ruvida. Lo esaminano come si esamina una creatura nuova.",
             "goto_dialogue": "d_incontro"
-          }
+          },
+          "test_phrases": [
+            "resto fermo e li lascio venire",
+            "aspetto che mi raggiungano e gli parlo",
+            "dico a quegli uomini chi sono e da dove vengo",
+            "mi presento ai tre"
+          ],
+          "blocked_narration": "Parlare adesso sarebbe parlare a tre uomini qualunque. Prima c'e' qualcosa in loro che non torna."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "sospetto_cecita"
+          },
+          "text": "Il sentiero lungo il muro. I tre si sono fermati e hanno girato la testa — non verso di lui: verso il suono. Gli occhi restano dove sono, e non e' distrazione."
+        }
+      ],
+      "no_match_narration": [
+        {
+          "intent": "generico",
+          "text": "Niente. I tre continuano il loro passo."
+        },
+        {
+          "intent": "generico",
+          "text": "Non succede niente. I secchi oscillano, l'acqua no."
+        },
+        {
+          "intent": "percezione",
+          "text": "Tre uomini, tre gioghi, tre paia di palpebre. Non c'e' altro da vedere finche' non si avvicinano."
+        },
+        {
+          "intent": "manipolazione",
+          "text": "Non c'e' niente da toccare, quaggiu', che non sia pietra."
+        },
+        {
+          "intent": "movimento",
+          "text": "Il sentiero corre lungo il muro e non porta altrove."
+        },
+        {
+          "intent": "sociale",
+          "text": "Le parole gli escono, ma nessuno risponde a quelle."
+        },
+        {
+          "intent": "forza",
+          "text": "Tre uomini con i secchi, e lui che non ha ancora capito niente. No."
         }
       ]
     },
@@ -704,24 +949,57 @@
           "aliases": [
             "parla con gli anziani",
             "spiega",
-            "raccontati"
+            "raccontati",
+            "parla agli anziani",
+            "spiegati",
+            "di da dove vieni",
+            "racconta la tua storia",
+            "rispondi agli anziani",
+            "parla al vecchio",
+            "spiega chi sei",
+            "racconta di bogota",
+            "parla al consiglio",
+            "rivolgiti agli anziani",
+            "prova a spiegare"
           ],
           "effect": {
             "goto_dialogue": "d_spiegazione"
-          }
+          },
+          "test_phrases": [
+            "provo a raccontargli da dove arrivo",
+            "cerco di spiegare a quei vecchi chi sono",
+            "gli dico che vengo da fuori, dalle montagne",
+            "parlo al cerchio di sagome sedute"
+          ]
         },
         {
           "id": "tasta_il_buio",
           "label": "Tasta il buio intorno a te",
           "target": "ambiente",
           "aliases": [
-            "guarda nel buio",
+            "tasta il buio",
+            "tocca intorno",
+            "allunga le mani",
+            "cerca a tentoni",
+            "brancola",
+            "tasta intorno a te",
+            "cerca il muro",
+            "prova a orientarti",
+            "tocca il buio",
+            "muovi le mani nel buio",
+            "cerca qualcosa da toccare",
             "cerca una luce",
             "orientati"
           ],
           "effect": {
             "narration": "Non c'è una finestra, non c'è una lampada. Solo il bagliore lontano di un forno di pietra, e il suono di molti respiri intorno a lui. Per la prima volta è lui, qui dentro, il cieco."
-          }
+          },
+          "test_phrases": [
+            "allungo le mani per capire dove sono",
+            "provo a orientarmi toccando",
+            "brancolo cercando una parete",
+            "cerco a tastoni qualcosa di solido"
+          ]
         },
         {
           "id": "accetta_il_cibo",
@@ -730,7 +1008,17 @@
           "aliases": [
             "mangia",
             "bevi il latte",
-            "accetta la ciotola"
+            "accetta la ciotola",
+            "accetta il cibo",
+            "prendi la ciotola",
+            "mangia il pane",
+            "bevi",
+            "accetta il latte",
+            "mangia il pane salato",
+            "prendi il cibo",
+            "accetta quello che ti danno",
+            "bevi quello che ti offrono",
+            "mangia e bevi"
           ],
           "condition": {
             "flag_present": "anziani_incontrati"
@@ -738,7 +1026,14 @@
           "repeatable": false,
           "effect": {
             "narration": "Gli portano latte di lama in una ciotola e rozzo pane salato, e lo conducono in un luogo appartato, fuori portata d'orecchio, perché mangi e dorma da solo."
-          }
+          },
+          "test_phrases": [
+            "prendo la ciotola che mi mettono in mano",
+            "accetto quello che mi offrono e mando giu'",
+            "bevo il latte che mi hanno dato",
+            "mangio il pane"
+          ],
+          "blocked_narration": "Nessuno gli ha ancora messo niente in mano."
         },
         {
           "id": "resta_sveglio",
@@ -748,7 +1043,17 @@
             "non dormire",
             "pensa",
             "rimugina",
-            "aspetta"
+            "aspetta",
+            "resta sveglio",
+            "stai sveglio",
+            "non chiudere occhio",
+            "rifletti",
+            "resta a pensare",
+            "veglia",
+            "aspetta sveglio",
+            "rimani sveglio",
+            "pensa a quello che hai visto",
+            "resta desto"
           ],
           "condition": {
             "flag_present": "anziani_incontrati"
@@ -756,7 +1061,52 @@
           "effect": {
             "narration": "Non chiude occhio. Resta seduto, a rigirare nella mente l'imprevedibile: ride, ora divertito, ora furioso. «Mente mal formata... sensi ancora imperfetti... Non sanno di aver insultato il loro re, mandato dal cielo. Vedo che dovrò ridurli a ragione.» Poi guarda il tramonto incendiare i ghiacciai intorno alla valle — bellezza sconfinata che nessuno, lì, vedrà mai — e un'onda improvvisa di gratitudine lo attraversa.",
             "goto_scene": "mondo_dei_sensi"
-          }
+          },
+          "test_phrases": [
+            "non riesco a dormire e resto a pensarci",
+            "sto sveglio a rimuginare su quello che ho capito",
+            "passo la notte con gli occhi aperti",
+            "rimango desto nel buio"
+          ],
+          "blocked_narration": "Non e' ancora notte, e non ha ancora niente su cui rimuginare."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "anziani_incontrati"
+          },
+          "text": "La sala. Le sagome si sono rimesse a sedere, il fuoco nel forno e' piu' basso di prima, e qualcuno gli ha messo in mano una ciotola senza cercarla. Lui e' l'unico che non sa dove sono le cose."
+        }
+      ],
+      "no_match_narration": [
+        {
+          "intent": "generico",
+          "text": "Nel buio non succede niente."
+        },
+        {
+          "intent": "generico",
+          "text": "Niente. Il respiro degli altri, il fuoco lontano."
+        },
+        {
+          "intent": "percezione",
+          "text": "Non c'e' niente da vedere. E' l'unica stanza del mondo in cui il cieco e' lui."
+        },
+        {
+          "intent": "manipolazione",
+          "text": "Le mani vanno avanti a tentoni e non incontrano che aria."
+        },
+        {
+          "intent": "movimento",
+          "text": "Muoversi qui dentro vuol dire urtare qualcosa. Lo sanno tutti tranne lui."
+        },
+        {
+          "intent": "sociale",
+          "text": "Parla, e le sagome ascoltano senza rispondere."
+        },
+        {
+          "intent": "forza",
+          "text": "In una stanza dove e' l'unico a non vedere, alzare le mani e' l'idea peggiore."
         }
       ]
     },
@@ -807,13 +1157,28 @@
           "id": "continua",
           "label": "Continua",
           "aliases": [
+            "continua",
             "vai avanti",
             "prosegui",
-            "avanti"
+            "avanti",
+            "procedi",
+            "va avanti",
+            "ancora",
+            "e poi",
+            "continuiamo",
+            "tira dritto",
+            "prosegui pure",
+            "vai"
           ],
           "effect": {
             "goto_scene": "il_re_di_nessuno"
-          }
+          },
+          "test_phrases": [
+            "tiro dritto",
+            "vado avanti cosi'",
+            "si prosegue",
+            "faccio continuare la storia"
+          ]
         }
       ],
       "characters": [
@@ -853,12 +1218,29 @@
           "aliases": [
             "nasconditi",
             "sgattaiola via",
-            "scappa dal sentiero"
+            "scappa dal sentiero",
+            "scostati",
+            "evita la chiamata",
+            "non rispondere",
+            "allontanati furtivo",
+            "esci dal sentiero",
+            "fatti da parte",
+            "scivola via",
+            "evitali",
+            "scansati",
+            "non farti trovare",
+            "svicola"
           ],
           "effect": {
             "narration": "«Non calpestare l'erba, Bogotà. Non è permesso.» Nuñez si blocca, stupefatto: non ha sentito il rumore dei propri passi. Il cieco lo ha comunque trovato. «Io lo vedo», dice ostinato. «Vedere è una parola che non esiste. Cessa questa follia, e segui il suono dei miei piedi.»",
             "set_flag": "vista_derisa"
-          }
+          },
+          "test_phrases": [
+            "mi tolgo dal sentiero senza far rumore",
+            "provo a sparire prima che mi chiamino",
+            "esco di lato per non farmi trovare",
+            "svicolo via nel buio"
+          ]
         },
         {
           "id": "annuncia_l_uomo_lontano",
@@ -867,12 +1249,27 @@
           "aliases": [
             "dimostra la vista",
             "annuncia chi arriva",
-            "predici"
+            "predici",
+            "di che vedi un uomo",
+            "annuncia l'uomo",
+            "di chi sta arrivando",
+            "dimostra che vedi",
+            "annuncia quello che vedi",
+            "avvisali",
+            "di cosa c'e' sul sentiero",
+            "racconta quello che vedi",
+            "annuncia l'arrivo"
           ],
           "effect": {
             "narration": "Lo riconosce a vista, lo annuncia ad alta voce — e quello svolta su un altro sentiero. Ridono di lui. La vista, qui, non è nemmeno un vantaggio: è una vanteria che sbaglia.",
             "set_flag": "vista_derisa"
-          }
+          },
+          "test_phrases": [
+            "gli dico che sta arrivando qualcuno dal sentiero lontano",
+            "provo a dimostrargli che vedo, annunciando chi viene",
+            "annuncio in anticipo l'uomo sul sentiero",
+            "gli faccio sapere cosa vedo prima di loro"
+          ]
         },
         {
           "id": "chiedi_di_salire_al_muro",
@@ -880,11 +1277,28 @@
           "target": "ambiente",
           "aliases": [
             "proponi di fare la guardia",
-            "offri di guardare per loro"
+            "offri di guardare per loro",
+            "chiedi di salire al muro",
+            "proponi di salire sul muro",
+            "offriti come sentinella",
+            "chiedi di fare la sentinella",
+            "proponi di sorvegliare",
+            "offri i tuoi occhi",
+            "chiedi di stare sul muro",
+            "proponiti come guardia",
+            "offriti di raccontare quello che vedi",
+            "chiedi di salire al muro esterno per raccontare tutto ciò che accade",
+            "domanda di salire al muro esterno per raccontare tutto ciò che accade"
           ],
           "effect": {
             "narration": "Vuole descrivere tutto ciò che accade tra le case. Ma ciò che agli abitanti interessa avviene dentro le case senza finestre — e lì Nuñez non vede nulla."
-          }
+          },
+          "test_phrases": [
+            "mi offro di stare sul muro a raccontargli cosa succede fuori",
+            "propongo di fare io la sentinella",
+            "chiedo di salire lassu' per guardare al posto loro",
+            "gli offro i miei occhi"
+          ]
         },
         {
           "id": "impugna_la_vanga",
@@ -893,7 +1307,16 @@
           "aliases": [
             "prendi la vanga",
             "arma la mano",
-            "minacciali"
+            "minacciali",
+            "impugna la vanga",
+            "afferra la vanga",
+            "prendi un attrezzo",
+            "prendi la pala",
+            "impugna la pala",
+            "prendi il badile",
+            "afferra un attrezzo",
+            "prendi l'attrezzo dal muro",
+            "impugna un ferro"
           ],
           "condition": {
             "flag_present": "vista_derisa"
@@ -903,7 +1326,14 @@
             "narration": "La solleva, decidendo di colpire qualcuno per dimostrare che chi vede è più forte — e scopre, con sorpresa di se stesso, di non riuscire a colpire un cieco a sangue freddo. La vanga resta sospesa in aria. I ciechi, immobili, hanno già capito che l'ha impugnata: tendono l'orecchio verso di lui. «Posa quella vanga.»",
             "add_inventory": "vanga",
             "set_flag": "vanga_impugnata"
-          }
+          },
+          "test_phrases": [
+            "allungo la mano verso gli attrezzi appoggiati al muro",
+            "afferro una pala e la stringo",
+            "prendo il badile che sta li'",
+            "metto le mani su qualcosa di pesante"
+          ],
+          "blocked_narration": "Gli attrezzi sono li' contro il muro. Non ha ancora un motivo per toccarli."
         },
         {
           "id": "rifiuta_di_posare_la_vanga",
@@ -912,7 +1342,17 @@
           "aliases": [
             "tieni la vanga",
             "rifiuta",
-            "ribellati"
+            "ribellati",
+            "non posare la vanga",
+            "non mollare la vanga",
+            "tieni stretta la vanga",
+            "rifiuta di posarla",
+            "non obbedire",
+            "resisti",
+            "tieni l'attrezzo",
+            "non lasciarla",
+            "di di no",
+            "opponiti"
           ],
           "condition": {
             "has_item": "vanga"
@@ -920,7 +1360,58 @@
           "effect": {
             "narration": "Non la posa. E in quel momento, senza che nessuno abbia alzato la voce, la valle intera comincia a muoversi verso di lui.",
             "goto_scene": "il_colpo_di_stato"
-          }
+          },
+          "test_phrases": [
+            "stringo la vanga e non la mollo",
+            "gli dico di no e tengo l'attrezzo",
+            "mi rifiuto di posarla",
+            "non lascio andare il ferro"
+          ],
+          "blocked_narration": "Non ha niente in mano da rifiutare di posare."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "vanga_impugnata"
+          },
+          "text": "I viottoli. Ha una vanga in mano, e per la prima volta da quando e' arrivato qualcuno si e' fermato ad ascoltarlo davvero: il ferro fa rumore."
+        },
+        {
+          "condition": {
+            "flag_present": "vista_derisa"
+          },
+          "text": "I viottoli di notte. Ha detto quello che vedeva, e gli hanno risposto come si risponde a un bambino che si e' inventato una parola."
+        }
+      ],
+      "no_match_narration": [
+        {
+          "intent": "generico",
+          "text": "Il villaggio va avanti per conto suo."
+        },
+        {
+          "intent": "generico",
+          "text": "Niente. Passi sicuri che non sono i suoi."
+        },
+        {
+          "intent": "percezione",
+          "text": "Vede tutto, e non gli serve a niente."
+        },
+        {
+          "intent": "manipolazione",
+          "text": "Le mani trovano il muro, e gli attrezzi appoggiati al muro."
+        },
+        {
+          "intent": "movimento",
+          "text": "Ogni viottolo e' uguale, e lui e' l'unico che ci inciampa."
+        },
+        {
+          "intent": "sociale",
+          "text": "Parla della vista, e le parole gli tornano indietro senza significato."
+        },
+        {
+          "intent": "forza",
+          "text": "Non ancora. Non cosi'."
         }
       ]
     },
@@ -950,27 +1441,59 @@
           "label": "Osserva la linea che si stringe",
           "target": "ambiente",
           "aliases": [
-            "guarda",
+            "guarda la linea che si stringe",
             "studia la formazione",
-            "osservali"
+            "osservali",
+            "osserva la linea",
+            "guarda la linea",
+            "studia gli uomini",
+            "osserva l'accerchiamento",
+            "guarda come avanzano",
+            "studia il movimento",
+            "osserva i contadini",
+            "guarda gli uomini con le vanghe",
+            "esamina la formazione",
+            "guarda dove si stringe"
           ],
           "effect": {
             "narration": "Avanzano lenti, a raggiera, fermandosi a fiutare l'aria. Nessuno corre, nessuno grida. È un accerchiamento silenzioso e implacabile, molto più inquietante di qualsiasi inseguimento."
-          }
+          },
+          "test_phrases": [
+            "guardo come si sta chiudendo quel cerchio",
+            "studio da che parte avanzano piu' lenti",
+            "osservo la linea che si stringe",
+            "cerco di capire come sono disposti"
+          ]
         },
         {
           "id": "grida_la_verita",
           "label": "Grida che loro sono ciechi e tu ci vedi",
           "target": "ambiente",
           "aliases": [
-            "urla la verità",
+            "urla la verita",
             "spiegati",
-            "dì che ci vedi"
+            "di che ci vedi",
+            "grida che sono ciechi",
+            "urla che sei diverso",
+            "spiega che vedi",
+            "grida la verita",
+            "di loro che sono ciechi",
+            "urla che loro non vedono",
+            "grida che hai gli occhi",
+            "prova a spiegare",
+            "urla la tua ragione",
+            "dillo a tutti"
           ],
           "effect": {
             "narration": "«Non capite! Voi siete ciechi, e io ci vedo! Lasciatemi in pace!» La risposta arriva con il tono grottesco di un rimprovero domestico: «Bogotà! Metti giù quella vanga, e vieni via dall'erba!»",
             "set_flag": "rivolta_fallita"
-          }
+          },
+          "test_phrases": [
+            "urlo che sono loro a non vedere, non io",
+            "provo a spiegargli a voce alta cos'e' la vista",
+            "grido che ho gli occhi e loro no",
+            "dico ad alta voce come stanno le cose"
+          ]
         },
         {
           "id": "minaccia_di_far_male",
@@ -979,7 +1502,16 @@
           "aliases": [
             "minaccia",
             "alza la vanga",
-            "spaventali"
+            "spaventali",
+            "minacciali con la vanga",
+            "alza l'attrezzo",
+            "agita la vanga",
+            "fai per colpire",
+            "minaccia di colpire",
+            "brandisci la vanga",
+            "alza la pala",
+            "spaventali con l'attrezzo",
+            "fai la voce grossa con la vanga"
           ],
           "condition": {
             "has_item": "vanga"
@@ -987,7 +1519,14 @@
           "effect": {
             "narration": "«Vi farò male! Perdìo, vi farò male!» La linea non rallenta di un passo. Si stringe soltanto, al suono della sua voce.",
             "set_flag": "rivolta_fallita"
-          }
+          },
+          "test_phrases": [
+            "alzo la pala per farli indietreggiare",
+            "faccio il gesto di colpire",
+            "provo a spaventarli con l'attrezzo in mano",
+            "agito il ferro davanti a me"
+          ],
+          "blocked_narration": "Non ha niente in mano con cui minacciare nessuno."
         },
         {
           "id": "cerca_un_varco",
@@ -997,7 +1536,17 @@
             "scappa",
             "fuggi",
             "corri via",
-            "sfonda la linea"
+            "sfonda la linea",
+            "cerca un varco",
+            "cerca un passaggio",
+            "corri verso il varco",
+            "prova a passare",
+            "buttati fra due uomini",
+            "cerca un buco nella linea",
+            "scatta",
+            "corri",
+            "prova a scappare",
+            "forza il passaggio"
           ],
           "condition": {
             "flag_present": "rivolta_fallita"
@@ -1006,7 +1555,52 @@
             "narration": "Corre. Trova un varco. Gli uomini ai lati si serrano al suono dei suoi passi. Balzo. Un colpo di vanga, sordo, su un braccio. Un grido di dolore — e Nuñez passa. Attraversa il ponte incespicando, si arrampica tra le rocce, spaventa un giovane lama, si getta a terra ansimante. Fuori. Così ebbe termine il suo colpo di stato.",
             "play_sound_prompt": "colpo sordo di legno su un braccio, respiro affannoso",
             "goto_scene": "la_resa"
-          }
+          },
+          "test_phrases": [
+            "cerco un punto dove la linea sia piu' larga e ci corro dentro",
+            "provo a passare in mezzo a due di loro",
+            "scatto verso l'unico spazio libero",
+            "me la do a gambe"
+          ],
+          "blocked_narration": "La linea e' ancora lontana. C'e' tempo per provare a farsi capire."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "rivolta_fallita"
+          },
+          "text": "I prati. La linea non si e' fermata: ha solo rallentato per ascoltare meglio. Adesso sanno dov'e'."
+        }
+      ],
+      "no_match_narration": [
+        {
+          "intent": "generico",
+          "text": "La linea avanza."
+        },
+        {
+          "intent": "generico",
+          "text": "Niente. Un passo, e poi l'ascolto."
+        },
+        {
+          "intent": "percezione",
+          "text": "Li vede tutti, uno per uno. Loro sentono solo lui."
+        },
+        {
+          "intent": "manipolazione",
+          "text": "Non c'e' niente in questo prato che possa servire."
+        },
+        {
+          "intent": "movimento",
+          "text": "Da qualunque parte vada, la linea e' piu' larga di lui."
+        },
+        {
+          "intent": "sociale",
+          "text": "Ha gia' gridato tutto quello che c'era da gridare."
+        },
+        {
+          "intent": "forza",
+          "text": "Sono venti, e lui uno."
         }
       ]
     },
@@ -1086,13 +1680,29 @@
           "aliases": [
             "prendi un lama",
             "caccia",
-            "cerca cibo"
+            "cerca cibo",
+            "cattura un lama",
+            "prova a prendere un lama",
+            "insegui i lama",
+            "avvicinati ai lama",
+            "prova a catturarne uno",
+            "dai la caccia ai lama",
+            "prendi un animale",
+            "cerca da mangiare",
+            "prova a cacciare",
+            "insegui gli animali"
           ],
           "repeatable": false,
           "effect": {
             "narration": "I lama lo guardano con diffidenti occhi bruni e gli sputano addosso al suo avvicinarsi. Resta a mani vuote, tremando di freddo.",
             "play_sound_prompt": "sputo e belato irritato di lama, passi che scivolano su aghi di pino"
-          }
+          },
+          "test_phrases": [
+            "provo ad avvicinarmi agli animali per prenderne uno",
+            "cerco di catturare una di quelle bestie",
+            "vado a caccia di qualcosa da mangiare",
+            "tento la sorte con i lama"
+          ]
         },
         {
           "id": "resta_tra_i_pini",
@@ -1101,11 +1711,27 @@
           "aliases": [
             "aspetta",
             "nasconditi",
-            "resisti"
+            "resisti",
+            "resta tra i pini",
+            "rimani qui",
+            "non muoverti",
+            "aspetta fra gli alberi",
+            "resta nascosto",
+            "tieni duro",
+            "aspetta ancora",
+            "resta fermo",
+            "non scendere",
+            "resisti tra i pini"
           ],
           "effect": {
             "narration": "Un'altra notte. Brividi, freddo, fame. Nessuno viene a cercarlo: non ne hanno bisogno. Sanno benissimo dove finisce la valle."
-          }
+          },
+          "test_phrases": [
+            "mi metto fra gli alberi e aspetto",
+            "resto dove sono a resistere",
+            "non mi muovo e lascio passare il tempo",
+            "sto nascosto ancora un po'"
+          ]
         },
         {
           "id": "torna_al_muro",
@@ -1115,13 +1741,59 @@
             "arrenditi",
             "torna indietro",
             "chiedi aiuto",
-            "scusati"
+            "scusati",
+            "torna al muro",
+            "vai al muro",
+            "chiedi perdono",
+            "arrenditi al villaggio",
+            "torna dai ciechi",
+            "scendi al muro",
+            "chiedi di rientrare",
+            "cedi",
+            "trascinati al muro",
+            "ammetti la sconfitta"
           ],
           "effect": {
             "narration": "Si trascina lungo il canale, la voce roca. «Sono stato un pazzo. Ma ero creato da poco.» Posa la vanga a terra. Due ciechi escono e lo ascoltano. Lui piange — sinceramente, perché è debole e sta male. Loro lo interpretano come un segno favorevole.",
             "remove_inventory": "vanga",
             "goto_dialogue": "d_domanda"
-          }
+          },
+          "test_phrases": [
+            "mi trascino fino al muro e chiedo di rientrare",
+            "torno giu' e chiedo scusa",
+            "cedo e vado a bussare",
+            "mi arrendo e torno da loro"
+          ]
+        }
+      ],
+      "no_match_narration": [
+        {
+          "intent": "generico",
+          "text": "Il pendio resta come prima. Freddo, e niente da mangiare."
+        },
+        {
+          "intent": "generico",
+          "text": "Non succede niente."
+        },
+        {
+          "intent": "percezione",
+          "text": "Pini, pietra, lama lontani. Non c'e' altro."
+        },
+        {
+          "intent": "manipolazione",
+          "text": "Le mani sono vuote e restano vuote."
+        },
+        {
+          "intent": "movimento",
+          "text": "Sopra c'e' la montagna, sotto c'e' il muro. In mezzo, questo."
+        },
+        {
+          "intent": "sociale",
+          "text": "Non c'e' nessuno a cui parlare. E' esattamente il problema."
+        },
+        {
+          "intent": "forza",
+          "text": "Contro la fame non serve."
         }
       ]
     },
@@ -1208,12 +1880,28 @@
           "aliases": [
             "prendile la mano",
             "toccala",
-            "avvicinati a lei"
+            "avvicinati a lei",
+            "posa la mano sulla sua",
+            "sfiorale la mano",
+            "prendi la sua mano",
+            "tocca la sua mano",
+            "avvicina la mano",
+            "mettile la mano sopra",
+            "sfiorala",
+            "prendile le dita",
+            "tocca medina",
+            "avvicinati a medina"
           ],
           "repeatable": false,
           "effect": {
             "narration": "Due sagome sedute fianco a fianco sotto le stelle. Nessuna parola. La mano di Nuñez si posa su quella di Medina-saroté, esitante. Lei ricambia, delicatamente."
-          }
+          },
+          "test_phrases": [
+            "allungo la mano finche' non tocca la sua",
+            "le sfioro le dita mentre fila",
+            "poso piano la mano sopra la sua",
+            "mi avvicino e la tocco"
+          ]
         },
         {
           "id": "parla_con_medina",
@@ -1222,11 +1910,26 @@
           "aliases": [
             "parlale",
             "dille qualcosa",
-            "raccontale"
+            "raccontale",
+            "parla con medina",
+            "parla a medina",
+            "dille della luna",
+            "raccontale del mondo",
+            "rivolgile la parola",
+            "di qualcosa a medina",
+            "parla con lei",
+            "chiacchiera con lei",
+            "raccontale quello che vedi"
           ],
           "effect": {
             "goto_dialogue": "d_apertura"
-          }
+          },
+          "test_phrases": [
+            "provo a dirle qualcosa mentre fila",
+            "le racconto com'e' la luce sulla sua faccia",
+            "attacco discorso con la ragazza",
+            "le parlo di quello che vedo io"
+          ]
         },
         {
           "id": "lavora_in_silenzio",
@@ -1235,11 +1938,26 @@
           "aliases": [
             "lavora",
             "obbedisci",
-            "fai il tuo turno"
+            "fai il tuo turno",
+            "lavora in silenzio",
+            "torna al lavoro",
+            "fai quello che ti dicono",
+            "china la testa",
+            "lavora e taci",
+            "riprendi il lavoro",
+            "fai la tua parte",
+            "obbedisci e lavora",
+            "mettiti al lavoro"
           ],
           "effect": {
             "narration": "Zappa al buio, con gli altri, al ritmo delle loro voci. Ha imparato a farlo quasi bene. Nessuno, qui, ha bisogno che lui veda."
-          }
+          },
+          "test_phrases": [
+            "torno a fare quello che mi hanno detto senza fiatare",
+            "riprendo il lavoro e sto zitto",
+            "chino la testa e faccio il mio turno",
+            "obbedisco e basta"
+          ]
         },
         {
           "id": "chiedi_medina_in_sposa",
@@ -1248,7 +1966,22 @@
           "aliases": [
             "chiedila in sposa",
             "parla con il padre",
-            "chiedi il matrimonio"
+            "chiedi il matrimonio",
+            "chiedi la mano di medina",
+            "vai da yacob",
+            "chiedi a yacob",
+            "chiedi medina in sposa",
+            "parla con yacob",
+            "chiedi di sposarla",
+            "domanda la sua mano",
+            "vai a chiederla al padre",
+            "chiedi a yacob la mano di medina saroté",
+            "chiedi yacob",
+            "chiedi il padre",
+            "domanda a yacob la mano di medina saroté",
+            "domanda yacob",
+            "domanda il padre",
+            "il padre"
           ],
           "condition": {
             "flag_present": "amore_dichiarato"
@@ -1256,7 +1989,52 @@
           "effect": {
             "narration": "Yacob ascolta in silenzio. Poi va a sedersi nella cieca camera di consiglio, come si fa per le cose serie.",
             "goto_scene": "casa_di_yacob"
-          }
+          },
+          "test_phrases": [
+            "vado dal padre a chiederle la mano",
+            "parlo con Yacob del matrimonio",
+            "chiedo al vecchio di potermi sposare sua figlia",
+            "domando la sua mano"
+          ],
+          "blocked_narration": "Non c'e' ancora niente da chiedere a nessuno."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "amore_dichiarato"
+          },
+          "text": "Il campo al chiaro di luna. Adesso lei sa, e non le e' sembrata una follia: le e' sembrata una cosa da tenere per se'."
+        }
+      ],
+      "no_match_narration": [
+        {
+          "intent": "generico",
+          "text": "La notte va avanti. Il fuso gira."
+        },
+        {
+          "intent": "generico",
+          "text": "Niente. Il rumore del filo."
+        },
+        {
+          "intent": "percezione",
+          "text": "La luna la fa d'argento, e lei non lo sapra' mai."
+        },
+        {
+          "intent": "manipolazione",
+          "text": "Non c'e' niente da fare con le mani, qui."
+        },
+        {
+          "intent": "movimento",
+          "text": "Il villaggio dorme. Non c'e' dove andare."
+        },
+        {
+          "intent": "sociale",
+          "text": "Le parole che ha in testa non hanno posto in questa lingua."
+        },
+        {
+          "intent": "forza",
+          "text": "No. Non qui, non con lei."
         }
       ]
     },
@@ -1312,13 +2090,28 @@
           "id": "continua",
           "label": "Continua",
           "aliases": [
+            "continua",
             "vai avanti",
             "prosegui",
-            "avanti"
+            "avanti",
+            "procedi",
+            "va avanti",
+            "ancora",
+            "e poi",
+            "continuiamo",
+            "tira dritto",
+            "prosegui pure",
+            "vai"
           ],
           "effect": {
             "goto_scene": "la_cura_proposta"
-          }
+          },
+          "test_phrases": [
+            "tiro dritto",
+            "vado avanti cosi'",
+            "si prosegue",
+            "faccio continuare la storia"
+          ]
         }
       ]
     },
@@ -1366,13 +2159,28 @@
           "id": "continua",
           "label": "Continua",
           "aliases": [
+            "continua",
             "vai avanti",
             "prosegui",
-            "avanti"
+            "avanti",
+            "procedi",
+            "va avanti",
+            "ancora",
+            "e poi",
+            "continuiamo",
+            "tira dritto",
+            "prosegui pure",
+            "vai"
           ],
           "effect": {
             "goto_scene": "la_buona_notizia"
-          }
+          },
+          "test_phrases": [
+            "tiro dritto",
+            "vado avanti cosi'",
+            "si prosegue",
+            "faccio continuare la storia"
+          ]
         }
       ]
     },
@@ -1491,11 +2299,26 @@
           "aliases": [
             "parla con yacob",
             "ascolta",
-            "rispondi a yacob"
+            "rispondi a yacob",
+            "ascolta yacob",
+            "senti cosa dice yacob",
+            "parla al padre",
+            "ascolta la notizia",
+            "rispondi al vecchio",
+            "senti yacob",
+            "ascolta quello che dice",
+            "parla con il padre di medina",
+            "rivolgiti a yacob"
           ],
           "effect": {
             "goto_dialogue": "d_yacob"
-          }
+          },
+          "test_phrases": [
+            "sto a sentire cosa mi viene a dire il vecchio",
+            "ascolto la notizia che mi porta Yacob",
+            "lascio parlare il padre di Medina",
+            "sento cosa mi annuncia"
+          ]
         },
         {
           "id": "guarda_le_tue_mani",
@@ -1504,11 +2327,32 @@
           "aliases": [
             "guarda le mani",
             "osserva la luce",
-            "guardati intorno"
+            "guarda le tue mani",
+            "guardati le mani",
+            "osserva le mani",
+            "guarda le dita",
+            "studia le tue mani",
+            "osserva le tue dita alla luce",
+            "guarda le mani nella luce",
+            "osservati le mani",
+            "guarda le mani alla luce come per l ultima volta",
+            "osserva le mani alla luce come per l ultima volta",
+            "esamina le mani alla luce come per l ultima volta",
+            "ispeziona le mani alla luce come per l ultima volta",
+            "studia le mani alla luce come per l ultima volta",
+            "controlla le mani alla luce come per l ultima volta",
+            "scruta le mani alla luce come per l ultima volta",
+            "le mani alla luce come per l ultima volta"
           ],
           "effect": {
             "narration": "Le vene, la sporcizia sotto le unghie, il modo in cui la luce si posa sulle nocche. Nessuno, qui, sa che esiste una cosa simile. Domani non lo saprà più nemmeno lui."
-          }
+          },
+          "test_phrases": [
+            "mi guardo le mani come se non le avessi mai viste",
+            "osservo la luce sulle mie dita",
+            "resto a fissarmi i palmi",
+            "guardo bene le mie mani finche' posso"
+          ]
         },
         {
           "id": "cerca_medina",
@@ -1517,14 +2361,68 @@
           "aliases": [
             "parla con medina",
             "vai da lei",
-            "cercala"
+            "cercala",
+            "cerca medina",
+            "trova medina",
+            "vai da medina",
+            "parlale della cura",
+            "dille della cura",
+            "raggiungi medina",
+            "va a cercarla",
+            "parla con lei della cura",
+            "cerca la ragazza"
           ],
           "condition": {
             "flag_present": "cura_proposta"
           },
           "effect": {
             "goto_dialogue": "d_medina_apertura"
-          }
+          },
+          "test_phrases": [
+            "vado a cercarla per dirle cosa vogliono farmi",
+            "trovo Medina e le parlo dell'operazione",
+            "corro da lei a raccontarle tutto",
+            "la cerco per dirglielo"
+          ],
+          "blocked_narration": "Non c'e' ancora niente da raccontarle."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "cura_proposta"
+          },
+          "text": "La luce piena del giorno. Adesso ha un nome, quello che gli vogliono fare: cura. E lui si guarda le mani piu' spesso di prima."
+        }
+      ],
+      "no_match_narration": [
+        {
+          "intent": "generico",
+          "text": "La luce resta dov'e'."
+        },
+        {
+          "intent": "generico",
+          "text": "Niente. Il giorno va avanti."
+        },
+        {
+          "intent": "percezione",
+          "text": "Guarda tutto come se dovesse impararlo a memoria. E' esattamente quello che sta facendo."
+        },
+        {
+          "intent": "manipolazione",
+          "text": "Non c'e' niente da prendere."
+        },
+        {
+          "intent": "movimento",
+          "text": "Il villaggio e' piccolo, e da oggi lo e' di piu'."
+        },
+        {
+          "intent": "sociale",
+          "text": "Hanno gia' detto tutto quello che avevano da dire."
+        },
+        {
+          "intent": "forza",
+          "text": "Contro chi? Sono convinti di curarlo."
         }
       ]
     },
@@ -1576,13 +2474,28 @@
           "id": "continua",
           "label": "Continua",
           "aliases": [
+            "continua",
             "vai avanti",
             "prosegui",
-            "avanti"
+            "avanti",
+            "procedi",
+            "va avanti",
+            "ancora",
+            "e poi",
+            "continuiamo",
+            "tira dritto",
+            "prosegui pure",
+            "vai"
           ],
           "effect": {
             "goto_scene": "la_visione"
-          }
+          },
+          "test_phrases": [
+            "tiro dritto",
+            "vado avanti cosi'",
+            "si prosegue",
+            "faccio continuare la storia"
+          ]
         }
       ]
     },
@@ -1635,13 +2548,28 @@
           "id": "continua",
           "label": "Continua",
           "aliases": [
+            "continua",
             "vai avanti",
             "prosegui",
-            "avanti"
+            "avanti",
+            "procedi",
+            "va avanti",
+            "ancora",
+            "e poi",
+            "continuiamo",
+            "tira dritto",
+            "prosegui pure",
+            "vai"
           ],
           "effect": {
             "goto_scene": "la_scelta_finale"
-          }
+          },
+          "test_phrases": [
+            "tiro dritto",
+            "vado avanti cosi'",
+            "si prosegue",
+            "faccio continuare la storia"
+          ]
         }
       ]
     },
@@ -1676,12 +2604,28 @@
           "aliases": [
             "cerca una via",
             "studia la parete",
-            "guarda le montagne"
+            "guarda le montagne",
+            "studia il canalone",
+            "osserva il canalone",
+            "guarda la parete",
+            "cerca una via di fuga",
+            "studia la roccia",
+            "guarda il camino di roccia",
+            "cerca appigli",
+            "esamina la parete",
+            "valuta la salita",
+            "guarda se si puo' salire"
           ],
           "effect": {
             "narration": "Andando da quella parte, su per quel canalone, fino a quel camino, si poteva sbucare tra i pini nani che formavano come una mensola circolare, e salivano fin sopra la gola. E poi? Quella scarpata era superabile. E poi si sarebbe trovato sul tratto di neve ambrata di luce, a mezza via verso la cresta di quelle supreme desolazioni.",
             "set_flag": "via_di_fuga_studiata"
-          }
+          },
+          "test_phrases": [
+            "cerco di capire se quella parete si puo' salire",
+            "studio la roccia in cerca di appigli",
+            "valuto il canalone che porta in alto",
+            "guardo se c'e' una via su per le montagne"
+          ]
         },
         {
           "id": "guarda_il_villaggio",
@@ -1690,11 +2634,26 @@
           "aliases": [
             "guarda la valle",
             "pensa a medina",
-            "voltati"
+            "voltati",
+            "guarda il villaggio",
+            "osserva il villaggio",
+            "guarda giu",
+            "voltati a guardare",
+            "osserva la valle",
+            "guarda le case",
+            "guarda indietro",
+            "resta a guardare il villaggio",
+            "guarda dove hai vissuto"
           ],
           "effect": {
             "narration": "Pensò a Medina-saroté — ed era diventata piccola e remota."
-          }
+          },
+          "test_phrases": [
+            "mi volto a guardare la valle un'ultima volta",
+            "resto a fissare le case la' sotto",
+            "guardo indietro verso il villaggio",
+            "penso a lei mentre guardo giu'"
+          ]
         },
         {
           "id": "scendi_verso_i_narcisi",
@@ -1703,11 +2662,27 @@
           "aliases": [
             "vai all'operazione",
             "arrenditi",
-            "scendi"
+            "scendi",
+            "scendi verso i narcisi",
+            "vai giu",
+            "torna giu",
+            "scendi dove ti aspettano",
+            "vai dai narcisi",
+            "accetta l'operazione",
+            "torna al villaggio",
+            "scendi il pendio",
+            "va a farti operare",
+            "vai dove ti aspettano"
           ],
           "effect": {
             "narration": "Fa qualche passo verso il basso, dove il prato si apre bianco di narcisi e dove, tra poco, mani abilissime lo aspettano al buio. Poi si ferma. Non è ancora l'ora, si dice — e sa di mentire."
-          }
+          },
+          "test_phrases": [
+            "scendo dove mi stanno aspettando",
+            "vado giu' ad accettare quello che vogliono farmi",
+            "prendo la discesa verso i fiori bianchi",
+            "torno indietro e mi consegno"
+          ]
         },
         {
           "id": "comincia_la_scalata",
@@ -1717,7 +2692,16 @@
             "scala la parete",
             "fuggi",
             "arrampicati",
-            "vai via"
+            "vai via",
+            "comincia la scalata",
+            "sali",
+            "arrampicati sulla parete",
+            "comincia a salire",
+            "prendi il canalone",
+            "sali verso il camino",
+            "scappa in montagna",
+            "vai verso le montagne",
+            "comincia a scalare"
           ],
           "condition": {
             "flag_present": "via_di_fuga_studiata"
@@ -1725,7 +2709,52 @@
           "effect": {
             "narration": "Si volta di nuovo verso la parete di roccia. Con cautela, comincia ad arrampicarsi.",
             "goto_scene": "finale_alta_montagna"
-          }
+          },
+          "test_phrases": [
+            "metto le mani sulla roccia e comincio a salire",
+            "prendo il canalone e vado su",
+            "mi arrampico verso il camino di roccia",
+            "me ne vado su per la montagna"
+          ],
+          "blocked_narration": "La parete e' li', ma buttarcisi senza averla guardata e' un altro modo di finire nei narcisi."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "via_di_fuga_studiata"
+          },
+          "text": "Il pendio. Il canalone ha un appiglio, poi un secondo, poi un camino stretto: si puo' fare. Sotto, i narcisi bianchi sono sempre li'."
+        }
+      ],
+      "no_match_narration": [
+        {
+          "intent": "generico",
+          "text": "La montagna resta dov'e'."
+        },
+        {
+          "intent": "generico",
+          "text": "Niente. Il vento sul pendio."
+        },
+        {
+          "intent": "percezione",
+          "text": "Roccia sopra, narcisi sotto, e lui in mezzo che li vede tutti e due."
+        },
+        {
+          "intent": "manipolazione",
+          "text": "Non c'e' niente da prendere. C'e' da decidere."
+        },
+        {
+          "intent": "movimento",
+          "text": "Ci sono due strade, e sono quelle."
+        },
+        {
+          "intent": "sociale",
+          "text": "Da qui non lo sente nessuno."
+        },
+        {
+          "intent": "forza",
+          "text": "Non c'e' piu' niente contro cui usarla."
         }
       ]
     },
@@ -1773,5 +2802,55 @@
       ],
       "actions": []
     }
-  ]
+  ],
+  "player_voice": {
+    "inventory_intro": [
+      "Addosso ha:",
+      "Quello che gli e' rimasto:",
+      "Fa il conto di quello che porta:"
+    ],
+    "inventory_empty": [
+      "Non ha niente. Nemmeno quello.",
+      "Le mani vuote, e niente nelle tasche."
+    ],
+    "presence_intro": [
+      "Qui con lui ci sono:",
+      "Oltre a lui, in questo posto:",
+      "Intorno a lui:"
+    ],
+    "presence_alone": [
+      "Nessun altro. Solo lui.",
+      "E' solo."
+    ],
+    "no_match_narration": [
+      {
+        "intent": "generico",
+        "text": "Non succede niente."
+      },
+      {
+        "intent": "generico",
+        "text": "Niente. Le cose restano dove sono."
+      },
+      {
+        "intent": "percezione",
+        "text": "Non c'e' altro da vedere — e lui e' l'unico che potrebbe."
+      },
+      {
+        "intent": "manipolazione",
+        "text": "Le mani non trovano niente."
+      },
+      {
+        "intent": "movimento",
+        "text": "Non da questa parte."
+      },
+      {
+        "intent": "sociale",
+        "text": "Nessuno risponde."
+      },
+      {
+        "intent": "forza",
+        "text": "Non serve, e non gli conviene."
+      }
+    ]
+  }
 }

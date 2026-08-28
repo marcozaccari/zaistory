@@ -33,6 +33,10 @@ export interface PanelContext {
   onRestart: () => void;
   onReplay: (script: string) => void;
   onLoadOther: () => void;
+  /** Il backend attivo e il modo di cambiarlo a partita in corso. */
+  resolver: string;
+  statoResolver: string;
+  onResolver: (nome: string) => void;
 }
 
 export function renderPanel(body: HTMLElement, tab: Tab, ctx: PanelContext): void {
@@ -60,7 +64,46 @@ function chips(values: string[], vuoto: string): HTMLElement {
   return box;
 }
 
-function renderStato(body: HTMLElement, { ui, story }: PanelContext): void {
+/**
+ * Il selettore del backend, dentro il pannello e non fra le impostazioni.
+ *
+ * Sta qui perche' e' uno strumento di misura, non una preferenza: la cosa da
+ * fare e' accendere l'embedder *nella scena in cui il lessicale ha appena
+ * detto di no*, riscrivere la stessa frase e vedere se cambia qualcosa. Il
+ * marchio in coda a ogni risposta nel transcript dice poi quale dei due ha
+ * deciso, turno per turno.
+ */
+function renderResolver(body: HTMLElement, ctx: PanelContext): void {
+  body.append(el('h3', undefined, 'resolver'));
+  const riga = el('div', 'chips');
+  for (const [nome, etichetta] of [
+    ['lessicale', 'lessicale'],
+    ['embedding', 'embedding'],
+  ] as const) {
+    const b = el('button', `chip scelta${ctx.resolver === nome ? ' on' : ''}`, etichetta);
+    b.onclick = async () => {
+      if (ctx.resolver === nome) return;
+      await premi(b);
+      ctx.onResolver(nome);
+    };
+    riga.append(b);
+  }
+  body.append(riga);
+  body.append(
+    el(
+      'p',
+      'empty',
+      ctx.statoResolver ||
+        (ctx.resolver === 'embedding'
+          ? 'i vettori intervengono solo dove il lessicale tace, e sempre nella scelta del fallback'
+          : 'deterministico, nessun modello, nessuna rete'),
+    ),
+  );
+}
+
+function renderStato(body: HTMLElement, ctx: PanelContext): void {
+  const { ui, story } = ctx;
+  renderResolver(body, ctx);
   const st = ui.state;
   if (!st) {
     body.append(el('p', 'empty', 'La partita non e\' ancora cominciata.'));
@@ -100,6 +143,17 @@ function renderScena(body: HTMLElement, ctx: PanelContext): void {
   // definitivo e' una domanda che si fa a parole. Qui si legge perche' senza
   // non si potrebbe collaudare (ne' accorgersi che manca).
   kv(dl, 'look', sc.look || '— mancante');
+  // Le varianti e i fallback non si vedono giocando finche' non capita lo
+  // stato o la frase che li fa uscire: qui si controlla che ci siano.
+  for (const v of sc.look_variants ?? []) {
+    kv(dl, `look_variants [${describeCondition(v.condition)}]`, v.text);
+  }
+  for (const n of sc.no_match_narration ?? []) {
+    kv(dl, `no_match_narration [${n.intent}]`, n.text);
+  }
+  if (!sc.no_match_narration?.length) {
+    kv(dl, 'no_match_narration', '— nessuno: valgono solo i fallback globali');
+  }
   kv(dl, 'scene_tone', sc.scene_tone || `${toneOf(ctx.story, sc)} (default globale)`);
   if (sc.background) {
     kv(dl, 'background.image_prompt', sc.background.image_prompt);

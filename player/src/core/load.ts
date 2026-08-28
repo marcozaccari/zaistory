@@ -42,6 +42,9 @@ type SpecName =
   | 'Character'
   | 'Place'
   | 'Item'
+  | 'NoMatch'
+  | 'ConditionalText'
+  | 'PlayerVoice'
   | 'Condition'
   | 'Effect'
   | 'DialogueChoice'
@@ -69,8 +72,10 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       description: 'string',
       language: 'string',
       global_style: { obj: 'GlobalStyle' },
+      player_voice: { obj: 'PlayerVoice' },
       characters: { arr: 'Character' },
       places: { arr: 'Place' },
+      protagonist: 'string',
       start_scene: 'string',
       state_flags_schema: 'string[]',
       items: { arr: 'Item' },
@@ -116,7 +121,29 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       name: 'string',
       aliases: 'string[]',
       description: 'string',
+      description_variants: { arr: 'ConditionalText' },
       visual_prompt: 'string',
+    },
+  },
+  NoMatch: {
+    required: ['intent', 'text'],
+    fields: {
+      intent: { enum: ['percezione', 'manipolazione', 'movimento', 'sociale', 'forza', 'generico'] },
+      text: 'string',
+    },
+  },
+  ConditionalText: {
+    required: ['condition', 'text'],
+    fields: { condition: { obj: 'Condition' }, text: 'string' },
+  },
+  PlayerVoice: {
+    required: [],
+    fields: {
+      inventory_intro: 'string[]',
+      inventory_empty: 'string[]',
+      presence_intro: 'string[]',
+      presence_alone: 'string[]',
+      no_match_narration: { arr: 'NoMatch' },
     },
   },
   Condition: {
@@ -175,6 +202,7 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       label: 'string',
       target: 'string',
       aliases: 'string[]',
+      test_phrases: 'string[]',
       condition: { obj: 'Condition' },
       blocked_narration: 'string',
       effect: { obj: 'Effect' },
@@ -214,6 +242,8 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       title: 'string',
       background: { obj: 'Background' },
       look: 'string',
+      look_variants: { arr: 'ConditionalText' },
+      no_match_narration: { arr: 'NoMatch' },
       scene_tone: 'string',
       scene_type: { enum: ['interactive', 'cutscene'] },
       characters: { arr: 'SceneCharacter' },

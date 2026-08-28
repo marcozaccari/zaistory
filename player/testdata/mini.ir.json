@@ -1,5 +1,5 @@
 {
-  "ir_version": "1.7.0",
+  "ir_version": "1.8.0",
   "generated_by": {
     "compiler": "story-ir-compiler",
     "compiler_version": "1.0.0",
@@ -19,6 +19,54 @@
       "taverna",
       "notte",
       "pioggia"
+    ]
+  },
+  "player_voice": {
+    "inventory_intro": [
+      "In tasca hai:",
+      "Ti frughi addosso e trovi:"
+    ],
+    "inventory_empty": [
+      "Le tasche sono vuote.",
+      "Non hai niente con te."
+    ],
+    "presence_intro": [
+      "Con te, nella sala:",
+      "Qui dentro c'e':"
+    ],
+    "presence_alone": [
+      "Sei solo.",
+      "Non c'e' nessun altro."
+    ],
+    "no_match_narration": [
+      {
+        "intent": "generico",
+        "text": "Non succede niente."
+      },
+      {
+        "intent": "generico",
+        "text": "Niente. Le cose restano dove sono."
+      },
+      {
+        "intent": "percezione",
+        "text": "Non c'e' altro da vedere."
+      },
+      {
+        "intent": "manipolazione",
+        "text": "Le mani non trovano niente."
+      },
+      {
+        "intent": "movimento",
+        "text": "Non da questa parte."
+      },
+      {
+        "intent": "sociale",
+        "text": "Nessuno risponde."
+      },
+      {
+        "intent": "forza",
+        "text": "Non serve, e faresti solo rumore."
+      }
     ]
   },
   "characters": [
@@ -89,7 +137,25 @@
           "label": "Continua",
           "effect": {
             "goto_scene": "taverna"
-          }
+          },
+          "aliases": [
+            "continua",
+            "vai avanti",
+            "prosegui",
+            "avanti",
+            "procedi",
+            "va avanti",
+            "ancora",
+            "e poi",
+            "continuiamo",
+            "vai"
+          ],
+          "test_phrases": [
+            "tiro dritto",
+            "vado avanti cosi'",
+            "si prosegue",
+            "faccio continuare la storia"
+          ]
         }
       ]
     },
@@ -154,12 +220,28 @@
           "label": "Parla con l'oste",
           "target": "oste",
           "aliases": [
+            "parla con l'oste",
             "chiedi all'oste",
-            "rivolgiti all'oste"
+            "rivolgiti all'oste",
+            "parla con il tavernaio",
+            "chiedi al tavernaio",
+            "di' qualcosa all'oste",
+            "parla con l'uomo dietro il bancone",
+            "senti l'oste",
+            "attacca discorso",
+            "rispondi all'oste",
+            "chiedi informazioni",
+            "vai al bancone e parla"
           ],
           "effect": {
             "goto_dialogue": "d_start"
-          }
+          },
+          "test_phrases": [
+            "mi rivolgo all'uomo dietro il bancone",
+            "attacco discorso con il tavernaio",
+            "chiedo qualcosa a chi sta servendo",
+            "provo a farmi dire qualcosa dall'oste"
+          ]
         },
         {
           "id": "prendi_chiave",
@@ -174,7 +256,27 @@
             "add_inventory": "chiave",
             "play_sound_prompt": "metallo che tintinna"
           },
-          "blocked_narration": "Il bancone e' vuoto: qualunque cosa ci fosse, l'oste non l'ha ancora tirata fuori."
+          "blocked_narration": "Il bancone e' vuoto: qualunque cosa ci fosse, l'oste non l'ha ancora tirata fuori.",
+          "aliases": [
+            "prendi la chiave",
+            "prendi la chiave dal gancio",
+            "raccogli la chiave",
+            "afferra la chiave",
+            "prendi la chiavetta",
+            "stacca la chiave dal gancio",
+            "prendi l'ottone",
+            "prendi quella chiave",
+            "piglia la chiave",
+            "prendi la chiave dietro il bancone",
+            "recupera la chiave",
+            "metti via la chiave"
+          ],
+          "test_phrases": [
+            "allungo la mano verso il gancio dietro il bancone",
+            "mi prendo quella cosa di ottone",
+            "stacco la chiave e me la infilo in tasca",
+            "faccio mia la chiave"
+          ]
         },
         {
           "id": "esci",
@@ -184,7 +286,62 @@
           },
           "effect": {
             "goto_scene": "finale"
-          }
+          },
+          "aliases": [
+            "esci",
+            "esci nella notte",
+            "vai fuori",
+            "vai via",
+            "esci dalla taverna",
+            "apri la porta ed esci",
+            "torna fuori",
+            "lascia la taverna",
+            "riprendi la strada",
+            "vattene",
+            "esci sotto la pioggia",
+            "vai via dalla taverna"
+          ],
+          "test_phrases": [
+            "me ne vado fuori sotto la pioggia",
+            "lascio la taverna e riprendo la strada",
+            "apro la porta e me ne torno nella notte",
+            "esco di qui"
+          ],
+          "blocked_narration": "Uscire adesso vorrebbe dire uscire senza quello per cui sei venuto."
+        }
+      ],
+      "no_match_narration": [
+        {
+          "intent": "generico",
+          "text": "Il fuoco crepita. Nient'altro."
+        },
+        {
+          "intent": "percezione",
+          "text": "Quattro tavoli, un camino, un bancone. La taverna e' tutta qui."
+        },
+        {
+          "intent": "manipolazione",
+          "text": "Le mani trovano legno unto e boccali sporchi."
+        },
+        {
+          "intent": "movimento",
+          "text": "C'e' la porta, e c'e' il bancone."
+        },
+        {
+          "intent": "sociale",
+          "text": "L'oste continua ad asciugare il bicchiere."
+        },
+        {
+          "intent": "forza",
+          "text": "In una taverna piena di gente stanca, no."
+        }
+      ],
+      "look_variants": [
+        {
+          "condition": {
+            "flag_present": "oste_parlato"
+          },
+          "text": "La sala bassa della taverna. Dietro il bancone, su un gancio, c'e' una chiave di ottone che prima non avevi notato."
         }
       ]
     },

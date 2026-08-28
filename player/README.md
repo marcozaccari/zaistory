@@ -42,6 +42,14 @@ Serve solo Node 22+. Nessuna dipendenza a runtime: TypeScript e Vite sono
 soltanto strumenti di build, e il codice spedito al browser non importa niente
 da `node_modules`.
 
+## Tastiera
+
+Nel dock: **frecce su/giù** scorrono le voci, **invio** sceglie quella col
+fuoco, i **numeri 1-9** sono la scorciatoia per le stesse cifre stampate
+accanto a ciascuna. Mentre si scrive nella riga di input le frecce muovono il
+cursore, come devono. Nei dialoghi — dove l'elenco delle battute *è*
+l'interfaccia — le frecce sono il modo naturale di scegliere.
+
 ## Il player web
 
 Tre modi di dargli l'IR, in ordine di precedenza:
@@ -108,12 +116,20 @@ Il pannello `☰` ha quattro schede:
 ## La CLI
 
 ```bash
-zaiplay story.ir.json                    # gioca
+zaiplay story.ir.json                    # gioca (si scrive cosa si fa)
 zaiplay --debug story.ir.json            # parte in modalità debug
 zaiplay --lint story.ir.json             # solo analisi statica, poi esce
+zaiplay --copertura story.ir.json        # misura quante test_phrases arrivano
+zaiplay --resolver embedding story.ir.json   # vettori locali (dip. opzionale)
 zaiplay --record partita.txt story.ir.json   # registra la partita giocata
 zaiplay --script partita.txt story.ir.json   # la rigioca senza input umano
 ```
+
+**Si gioca scrivendo**: «guardati intorno», «apri l'armadietto con la chiave»,
+«parla con Mark». L'elenco delle azioni non si vede — è impalcatura di
+collaudo, e un menu che elenca le azioni utili risolve gli enigmi al posto del
+giocatore: ricompare con `--debug` o `:debug`. Ogni risposta dice in coda chi
+l'ha decisa (`⟨lessicale⟩`, `⟨embedding⟩`, `⟨verbo del player⟩`).
 
 Si accetta anche la forma a trattino singolo (`-lint`), come il player Go che
 questo sostituisce. Codici di uscita: `0` tutto bene · `1` problemi di
@@ -195,18 +211,82 @@ Due vincoli architetturali si vedono direttamente nel codice:
 L'interfaccia è quella fissata dall'architettura: riceve le azioni disponibili
 nella scena, il testo libero del giocatore e il tono della scena, e ritorna
 l'id di un'azione **già esistente** oppure nessun match con una narrazione di
-fallback in-character. Un resolver non genera mai un effetto di sua iniziativa.
+fallback in-character. Due vincoli, e sono quelli su cui poggia tutto il resto:
+un resolver non genera mai un effetto di sua iniziativa, e **non genera mai
+nemmeno il testo del fallback** — lo sceglie fra quelli che l'autore ha scritto
+in `no_match_narration`.
 
-Backend previsti, si sceglie con `--resolver`:
+Backend, si sceglie con `--resolver`:
 
-1. `menu` — selezione a menu numerato. Deterministico, zero dipendenze: è la
-   modalità da usare per i test di regressione. **L'unico implementato.**
-2. `claude` — input testuale libero via API. Non ancora implementato.
-3. `locale` — LLM/SLM piccolo eseguito offline. Non ancora implementato.
+1. `lessicale` *(default)* — matcher deterministico sugli `aliases` scritti in
+   compilazione. Zero dipendenze, zero rete, zero byte scaricati. Gli alias
+   *sono* la sua copertura: un'azione con tre alias è un'azione che quasi
+   nessuno riuscirà a chiedere.
+2. `embedding` — vettori locali. Il modello non è una dipendenza del player: la
+   CLI lo prende da una dipendenza opzionale (`npm i --no-save
+   @huggingface/transformers`), il player web da CDN al momento in cui lo si
+   accende dal pannello. Chi non lo usa non scarica niente, e il file HTML
+   unico resta unico.
+3. `claude` — via API. Non ancora implementato.
 
-Il player web usa oggi solo il menu (le chip *sono* il menu). Quando esisterà
-un backend a testo libero, gli basterà una casella di input sopra le chip: il
-resto non cambia.
+Il backend a menu non c'è più: i test di regressione non passano dal resolver
+(li guida `--script`) e per ispezionare una scena c'è `--debug`, che stampa
+l'elenco delle azioni e accetta il numero della riga.
+
+### Perché l'embedder interviene solo in due punti
+
+I due backend sbagliano in modi diversi, e la divisione del lavoro segue il
+costo dell'errore:
+
+- il **lessicale** sbaglia **rifiutando**: costa al giocatore una frase
+  riscritta;
+- l'**embedder** sbaglia **facendo**: gli embedding di frase sono ciechi sulla
+  negazione e sulla direzione degli argomenti, e un falso positivo *esegue* —
+  applica un `Effect`, alza un flag, brucia un enigma.
+
+Quindi l'embedder interviene **solo dove il lessicale è muto** (e non per
+ambiguità: se due azioni se la giocano alla pari, il problema non è che manchi
+comprensione) e **sempre nella scelta del fallback**, dove sbagliare è gratis.
+In una riga: *embedding dove sbagliare non costa niente, lessicale dove
+sbagliare cambia lo stato*.
+
+### Verbi del player
+
+Quattro domande che non passano da nessuna azione, e che il giocatore fa più
+di qualunque altra cosa:
+
+| si scrive | risponde |
+|---|---|
+| `guardati intorno`, `dove sono` | `Scene.look`, o la `look_variants` che vale adesso |
+| `cosa ho nello zaino`, `inventario` | i `name` degli oggetti, con la cornice di `player_voice` |
+| `chi c'è qui`, `quali sono i personaggi` | i nomi di `Scene.characters`, meno il `protagonist` |
+| `guarda il walkie` | `items[].description`, o la `description_variants` che vale adesso |
+
+Si consultano **dopo** il resolver: un'azione dell'autore vince sempre su un
+verbo di sistema, così una scena che ha davvero un'azione «fruga nello zaino»
+non se la vede scippare. Non consumano un turno e non entrano nella traccia,
+quindi non toccano la rigiocabilità di un playthrough.
+
+Guardare un oggetto vale solo per quelli **in inventario** e vuole un verbo di
+percezione: senza, «prendi il coltello» finirebbe qui invece che nell'azione
+della scena.
+
+### Misurare, invece di discutere
+
+```bash
+zaiplay --copertura story.ir.json                       # lessicale
+zaiplay --copertura --resolver embedding story.ir.json  # vettori
+```
+
+Passa le `Action.test_phrases` dell'IR al backend e conta quante arrivano
+all'id giusto, distinguendo le **perse** (nessun match) dalle **sbagliate**
+(azione diversa). La distinzione è il punto: un backend che alza il richiamo
+aggiungendo errori del secondo tipo sta peggiorando la storia. Esce con `1` se
+ci sono frasi sbagliate.
+
+Le soglie stanno esportate in `src/core/resolver.ts` (`ACCETTA`, `MARGINE`,
+`CERTEZZA`) ed è lì che si mettono le mani quando una storia risulta troppo
+sorda o troppo credulona.
 
 ## Test
 

@@ -106,11 +106,20 @@ button {
   cursor: pointer;
 }
 
-/* Il player si gioca anche da tastiera (i tasti 1-9 scelgono): il fuoco deve
-   vedersi. */
+/* Il player si gioca anche da tastiera — frecce per scorrere le voci, invio
+   per sceglierle, i numeri come scorciatoia — quindi il fuoco deve vedersi
+   sempre, non solo quando il browser decide che e' "visibile". Una voce
+   raggiunta con le frecce e' la voce corrente: senza un contorno, la
+   navigazione sembra non fare niente. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.dock .choice:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-color: var(--accent);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -336,6 +345,38 @@ button {
 .entry.notice {
   color: var(--fg-dim);
   font-size: 14px;
+}
+
+/* L'eco di cio' che il giocatore ha scritto. Serve a rileggere la frase
+   accanto alla risposta che ha prodotto: e' meta' di quello che si guarda
+   quando si valuta un resolver, e senza bisogna ricordarsela. */
+.entry.echo {
+  margin-bottom: 6px;
+  color: var(--accent);
+  font-size: 14px;
+}
+
+/* La risposta a "guardati intorno": testo d'autore come la narrazione, ma
+   rileggibile e senza conseguenze, quindi senza il corsivo che nel transcript
+   segnala "e' successo qualcosa". */
+.entry.look {
+  color: var(--fg-dim);
+}
+
+/* Chi ha deciso il turno. Piccolo e in coda, ma sempre visibile: il backend a
+   vettori esiste per essere valutato, e un rapporto di copertura non dice cosa
+   si prova a giocarci. */
+.via {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--fg-dim);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+  white-space: nowrap;
 }
 
 .entry.problem {
@@ -736,6 +777,73 @@ body.debug .only-debug {
 .btn.primary.premuto {
   background: var(--fg);
   border-color: var(--fg);
+}
+
+/* La riga in cui si scrive cosa si fa: con un resolver a input libero e'
+   l'interfaccia del gioco, e sta in cima al dock perche' e' li' che va il
+   pollice. */
+.riga-input {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.riga-input .campo {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+  color: var(--fg);
+  /* 16px o piu': sotto questa soglia iOS ingrandisce la pagina appena il
+     campo prende il fuoco, e la partita si ritrova storta. */
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.riga-input .campo::placeholder {
+  color: var(--fg-dim);
+}
+
+.riga-input .campo:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.riga-input .invia {
+  flex: 0 0 auto;
+  padding: 0 18px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 16px;
+}
+
+/* Le chip delle azioni con un resolver a input libero: restano nel DOM ma si
+   vedono solo ispezionando. Un elenco che mostra le azioni utili risolve gli
+   enigmi al posto del giocatore, quindi acceso non si puo' giudicare quanto
+   una storia sia difficile davvero. */
+.choice.solo-debug {
+  display: none;
+}
+
+body.debug .choice.solo-debug {
+  display: block;
+}
+
+/* Il selettore del backend nel pannello. */
+.chip.scelta {
+  cursor: pointer;
+  border-color: var(--line);
+}
+
+.chip.scelta.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .choice.hidden-act {

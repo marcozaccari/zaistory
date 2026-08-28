@@ -26,14 +26,18 @@ import {
   type Story,
   type VoiceSpec,
   GameState,
+  InputLibero,
   QuitError,
   describeCondition,
   describeEffect,
   findCharacter,
   findPlace,
   isRepeatable,
+  findAction,
+  SCENE_CUTSCENE,
   sceneLabel,
   sceneType,
+  segnoTurno,
   speakerName,
   toneOf,
 } from '../core/index.js';
@@ -69,6 +73,9 @@ export class TermUI implements PlayerUI {
   trace: () => string[] = () => [];
 
   private script?: ScriptDriver;
+  /** Il turno a input libero: risolver, verbi del player, fallback d'autore.
+   * La logica sta nel core, qui c'e' solo il rendering. */
+  private libero: InputLibero;
   /** Esito dell'`Effect` in corso, in attesa di essere disposto. */
   private pending?: { rows: Array<[string, string, Media]>; texts: string[]; changes: string[] };
   private rl?: readline.Interface;
@@ -82,6 +89,7 @@ export class TermUI implements PlayerUI {
     this.width = o.width;
     this.t = new Theme(o.color);
     this.script = o.script;
+    this.libero = new InputLibero(o.story, o.resolver);
   }
 
   // ------------------------------------------------------------- stampa
@@ -340,14 +348,27 @@ export class TermUI implements PlayerUI {
       return cmd;
     }
 
+    // L'elenco delle azioni e' impalcatura di collaudo, non l'interfaccia: si
+    // gioca scrivendo, e l'elenco si vede solo in debug. Un menu che elenca le
+    // azioni utili risolve gli enigmi al posto del giocatore, e finche' resta
+    // acceso non si puo' giudicare quanto una storia sia davvero difficile.
+    //
+    // Nelle cutscene no: li' l'unica azione e' proseguire, non c'e' nessun
+    // enigma da proteggere, e far scrivere "continua" dopo ogni sequenza
+    // narrata sarebbe attrito e basta. Basta l'invio.
+    const cutscene = sceneType(p.scene) === SCENE_CUTSCENE;
+    const elenco = this.debug || cutscene;
+
     for (;;) {
       this.out(this.t.dim(rule('', this.width)));
-      p.available.forEach((a, i) => {
-        this.out(`  ${this.t.green(`${i + 1})`)} ${a.label}`);
-        this.dbg(
-          `id: ${a.id} · condizione: ${describeCondition(a.condition)} · effetto: ${describeEffect(a.effect)} · repeatable: ${isRepeatable(a)}`,
-        );
-      });
+      if (elenco) {
+        p.available.forEach((a, i) => {
+          this.out(`  ${this.t.green(`${i + 1})`)} ${a.label}`);
+          this.dbg(
+            `id: ${a.id} · condizione: ${describeCondition(a.condition)} · effetto: ${describeEffect(a.effect)} · repeatable: ${isRepeatable(a)}`,
+          );
+        });
+      }
       if (this.debug && p.hidden.length > 0) {
         this.out(this.t.mag('  azioni nascoste:'));
         for (const h of p.hidden) {
@@ -360,21 +381,55 @@ export class TermUI implements PlayerUI {
         this.out(this.t.dim('  (scena finale: da qui non esce nessuna transizione — :esci per chiudere)'));
       }
 
-      const input = await this.read('> ');
+      const input = await this.read(cutscene ? this.t.dim('[invio] ') : '· ');
       const meta = this.meta(input, p.state, p.scene);
       if (meta.handled) {
         if (meta.quit) return { quit: true };
         continue;
       }
 
-      const res = await this.resolver.resolve({
-        candidates: p.available.map((a) => ({ id: a.id, label: a.label, target: a.target, aliases: a.aliases })),
-        input,
-        tone: toneOf(this.story, p.scene),
-      });
-      if (res.actionId) return { actionId: res.actionId };
-      if (res.fallback) this.para(this.t.italic(res.fallback), '  ');
+      // Invio a vuoto in una cutscene: prosegui. E' il tap-to-continue dei
+      // beat, applicato all'unica azione che una cutscene ha.
+      if (cutscene && input.trim() === '' && p.available.length === 1) {
+        return { actionId: p.available[0].id };
+      }
+
+      // Scorciatoia dell'elenco appena stampato: vale dove l'elenco c'e'
+      // davvero. Non e' un backend — e' il numero della riga che si ha sotto
+      // gli occhi, e sta nell'interfaccia perche' e' l'interfaccia a sapere
+      // cosa ha appena scritto.
+      if (elenco && /^\d+$/.test(input.trim())) {
+        const a = p.available[Number(input.trim()) - 1];
+        if (a) {
+          this.out(this.t.green('> ' + a.label));
+          return { actionId: a.id };
+        }
+      }
+
+      const e = await this.libero.risolvi(p, input);
+      this.dbg(`resolver: ${e.via ?? '-'}${e.why ? ` · ${e.why}` : ''}`);
+
+      if (e.kind === 'azione' && e.actionId) {
+        const a = findAction(p.scene, e.actionId);
+        this.out(this.t.green('> ' + (a?.label ?? e.actionId)) + this.marchio(e));
+        return { actionId: e.actionId };
+      }
+
+      // Azione esistente ma non ora, verbo del player, o niente: in tutti e tre
+      // i casi si mostra testo d'autore (o una nota diagnostica) e si torna a
+      // chiedere. Nessun Effect e' stato applicato, e l'engine non ha nemmeno
+      // saputo che e' successo qualcosa.
+      if (e.testo) this.out(wrap(this.t.italic(e.testo), this.width, '  ') + this.marchio(e));
+      if (e.nota) this.notice(e.nota);
+      this.out();
     }
+  }
+
+  /** Chi ha deciso il turno, in coda alla riga. Si vede sempre: e' il solo modo
+   * di accorgersi giocando di quando il backend a vettori serva davvero. */
+  private marchio(e: Parameters<typeof segnoTurno>[0]): string {
+    const s = segnoTurno(e);
+    return s ? this.t.dim(`  ⟨${s}⟩`) : '';
   }
 
   async chooseChoice(p: ChoicePrompt): Promise<Command> {
@@ -584,6 +639,16 @@ export class TermUI implements PlayerUI {
     // conteggi restano invece riservati al debug.
     dbgLine('id', sc.id);
     this.param('scene_type', sceneType(sc));
+    // `look` non e' un'azione e non compare fra le voci: nel player a parole e'
+    // una domanda che si fa scrivendo. Qui si legge perche' senza non si
+    // potrebbe collaudare, ne' accorgersi che manca.
+    this.param('look', sc.look || '— mancante');
+    for (const v of sc.look_variants ?? []) {
+      this.param(`look_variants [${describeCondition(v.condition)}]`, v.text);
+    }
+    for (const n of sc.no_match_narration ?? []) {
+      this.param(`no_match_narration [${n.intent}]`, n.text);
+    }
     const globale = toneOf(this.story, sc);
     this.param('scene_tone', sc.scene_tone || (globale ? `${globale} (default globale)` : undefined));
     // L'ordine e' quello con cui si costruisce l'immagine mentale scendendo:

@@ -11,7 +11,7 @@
       "type": "string",
       "description": "Versione dello schema IR, per compatibilita' futura tra compilatore e player (semver).",
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
-      "examples": ["1.7.0"]
+      "examples": ["1.8.0"]
     },
     "generated_by": {
       "$ref": "#/$defs/Provenance"
@@ -31,6 +31,9 @@
     "global_style": {
       "$ref": "#/$defs/GlobalStyle"
     },
+    "player_voice": {
+      "$ref": "#/$defs/PlayerVoice"
+    },
     "characters": {
       "type": "array",
       "description": "Anagrafica globale dei personaggi, riusabile in tutte le scene. Ci va CHIUNQUE parli, anche una sola volta: e' l'elenco dei parlanti, e il modulo assets assegna il timbro una volta per parlante. Le scene possono fare override locali.",
@@ -40,6 +43,11 @@
       "type": "array",
       "description": "Anagrafica dei luoghi ricorrenti. Serve alla coerenza visiva: due scene ambientate nello stesso posto devono riferirsi allo stesso Place, altrimenti ogni ritorno genera un luogo diverso. Un'ambientazione che compare una volta sola puo' restare senza Place.",
       "items": { "$ref": "#/$defs/Place" }
+    },
+    "protagonist": {
+      "type": "string",
+      "description": "id del personaggio che il giocatore *e'*. Sta nella roster come tutti gli altri — ha un aspetto e una voce, e nelle cutscene si vede e parla — ma a chi chiede «chi c'e' qui» non va elencato: e' chi sta chiedendo. Senza questo campo il player risponde 'in questa stanza ci sono: Laura, Mark e Tommy' a Laura.",
+      "pattern": "^[a-z0-9_-]+$"
     },
     "start_scene": {
       "type": "string",
@@ -190,11 +198,79 @@
         },
         "description": {
           "type": "string",
-          "description": "Cosa vede il giocatore se guarda l'oggetto che ha in mano. Testo d'autore, rileggibile: non cambia niente e non fa avanzare niente."
+          "description": "Cosa vede il giocatore se guarda l'oggetto che ha in mano: la risposta a «guarda il coltello». Testo d'autore, rileggibile: non cambia niente e non fa avanzare niente, ed e' un verbo del player, non un'azione della scena — non consuma un turno e non pesa sul budget di azioni. Praticamente obbligatoria: un oggetto che si puo' portare in giro e non si puo' guardare e' un oggetto muto."
+        },
+        "description_variants": {
+          "type": "array",
+          "description": "Varianti di `description` legate allo stato: la prima la cui condition e' soddisfatta vince, altrimenti vale `description`. Un oggetto che si trasforma nel corso della storia — il walkie scarico che viene messo in carica, l'arma che viene caricata, la scatola che viene aperta — deve dirlo a chi lo guarda, o la descrizione diventa una bugia che il giocatore rilegge ogni volta.",
+          "items": { "$ref": "#/$defs/ConditionalText" }
         },
         "visual_prompt": {
           "type": "string",
           "description": "Prompt per generare l'immagine dell'oggetto (icona d'inventario). Stessa logica di Character.visual_prompt: un'ancora per entita', non una singola inquadratura."
+        }
+      }
+    },
+
+    "NoMatch": {
+      "type": "object",
+      "description": "Una risposta d'autore a un tentativo che non corrisponde a nessuna azione, agganciata al TIPO di tentativo invece che al suo contenuto. La classificazione e' volutamente grossolana e indipendente dalla storia: sono le sei famiglie in cui ricade praticamente tutto quello che si scrive a un'avventura, e restano le stesse in ogni IR. E' quello che permette a un fallback di essere pertinente senza essere generato.",
+      "required": ["intent", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "intent": {
+          "type": "string",
+          "enum": ["percezione", "manipolazione", "movimento", "sociale", "forza", "generico"],
+          "description": "'percezione': guardare, esaminare, ascoltare, annusare, leggere. 'manipolazione': prendere, usare, aprire, spostare, combinare, frugare. 'movimento': andare, uscire, entrare, salire, scendere, tornare. 'sociale': parlare, chiamare, chiedere, urlare a qualcuno. 'forza': rompere, colpire, forzare, spaccare. 'generico': tutto il resto, compreso cio' che non si capisce — e' l'unica categoria che serve sempre, quindi scrivila per prima."
+        },
+        "text": {
+          "type": "string",
+          "description": "La risposta, in voce di narratore e nel tono della scena. Dice che quella strada non porta da nessuna parte senza dire cosa fare, e senza nominare oggetti o dettagli che nella scena non esistono: quello che si nomina qui, il giocatore lo cerchera'.",
+          "examples": ["Guarda, ma il buio del corridoio non restituisce niente."]
+        }
+      }
+    },
+
+    "ConditionalText": {
+      "type": "object",
+      "description": "Un testo d'autore che vale solo in un certo stato. Prima variante soddisfatta, prima servita; se nessuna lo e', vale il testo di base. Serve alle descrizioni che il giocatore puo' rileggere quante volte vuole — la stanza, un oggetto in mano — e che sarebbero una bugia se non cambiassero mai: un walkie talkie messo in carica e' un altro oggetto da guardare rispetto a quello scarico.",
+      "required": ["condition", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "condition": { "$ref": "#/$defs/Condition" },
+        "text": { "type": "string" }
+      }
+    },
+
+    "PlayerVoice": {
+      "type": "object",
+      "description": "La prosa dei VERBI DEL PLAYER: guardarsi intorno, guardare nello zaino, e chiedere chi c'e'. Non sono azioni della scena — non stanno in actions[], non consumano un turno, non cambiano niente — ma sono le tre cose che il giocatore fa piu' spesso di tutte, e senza testo d'autore un player a input libero risponde con un elenco di slug. Quello che sta qui vale per tutta la storia; la scena puo' avere il suo `no_match_narration`, che vince.",
+      "additionalProperties": false,
+      "properties": {
+        "inventory_intro": {
+          "type": "array",
+          "description": "Frasi che introducono l'elenco dell'inventario, mostrate a rotazione: 'Nello zaino, a occhio:', 'Fruga e trova'. Il player ci attacca in coda i `name` degli oggetti posseduti. Piu' di una, altrimenti alla terza volta si sente il meccanismo.",
+          "items": { "type": "string" }
+        },
+        "inventory_empty": {
+          "type": "array",
+          "description": "Cosa si legge quando non si ha niente. E' una frase, non 'inventario: vuoto'.",
+          "items": { "type": "string" }
+        },
+        "presence_intro": {
+          "type": "array",
+          "description": "Frasi che introducono l'elenco di chi e' in scena, mostrate a rotazione: 'Con lei, qui dentro:', 'In questa stanza ci sono:'. Il player ci attacca in coda i nomi dei personaggi di Scene.characters. E' la terza domanda che un giocatore fa piu' spesso — dopo 'dove sono' e 'cosa ho' viene 'chi c'e' qui' — e senza una cornice d'autore la risposta sarebbe un elenco di slug.",
+          "items": { "type": "string" }
+        },
+        "presence_alone": {
+          "type": "array",
+          "description": "Cosa si legge quando nella scena non c'e' nessun altro. E' una frase, e in una storia dove la solitudine conta e' una frase che vale la pena scrivere bene.",
+          "items": { "type": "string" }
+        },
+        "no_match_narration": {
+          "type": "array",
+          "description": "I fallback di riserva, per quando la scena non ne ha uno di quell'intenzione. Vanno scritti generici sul serio — valgono in qualunque stanza della storia — e proprio per questo non bastano da soli: sono la rete, non il pavimento.",
+          "items": { "$ref": "#/$defs/NoMatch" }
         }
       }
     },
@@ -316,7 +392,12 @@
         },
         "aliases": {
           "type": "array",
-          "description": "Frasi/sinonimi opzionali per aiutare il resolver dell'input testuale libero a fare matching.",
+          "description": "I modi in cui il giocatore puo' chiedere questa azione scrivendo. NON sono una rifinitura: sono la conoscenza semantica dell'azione, scritta in compilazione perche' il player non debba dedurla a runtime. Un resolver lessicale confronta la frase con questa lista, quindi la lista *e'* la copertura: quindici-venticinque voci per azione, che coprano verbi sinonimi ('taglia', 'recidi', 'affetta'), giri di frase ('do un taglio a'), forme ellittiche ('col coltello'), e il modo in cui la stessa cosa si chiede nominando l'oggetto invece del gesto. Scriverne tre e' scriverne troppo poche.",
+          "items": { "type": "string" }
+        },
+        "test_phrases": {
+          "type": "array",
+          "description": "Parafrasi che DOVREBBERO risolvere a questa azione e che il resolver non ha mai visto: si tengono deliberatamente fuori da aliases[]. Non servono a giocare — nessun player le legge — servono a misurare. Il linter le passa al resolver e conta quante arrivano all'id giusto, ed e' cosi' che si sa se un backend piu' costoso vale il suo prezzo su questa storia invece che a naso. Scrivile lontane dagli alias: se le copi da li' misuri il lookup, non il recall.",
           "items": { "type": "string" }
         },
         "condition": { "$ref": "#/$defs/Condition" },
@@ -364,6 +445,16 @@
           "type": "string",
           "description": "La stanza com'e' adesso: la risposta d'autore a 'guardati intorno' / 'dove mi trovo'. Rileggibile quante volte si vuole, non fa avanzare niente e non consuma un turno - e' un verbo del player, come l'inventario, non un'azione della scena, e per questo non sta in actions[] e non pesa sul loro numero. Distinta da narration[], che si legge una volta sola entrando, e da background.image_prompt, che e' un prompt di generazione e non prosa per il giocatore. Obbligatoria in pratica per ogni scena interactive: senza, un player a input libero non sa cosa rispondere alla domanda che il giocatore fa piu' spesso.",
           "examples": ["Un bagno stretto, la porta bloccata con un mobiletto, una vasca sotto una finestrella troppo piccola."]
+        },
+        "look_variants": {
+          "type": "array",
+          "description": "Varianti di `look` legate allo stato: la prima la cui `condition` e' soddisfatta vince, e se nessuna lo e' si usa `look`. Serve perche' una stanza dopo che ci si e' fatto qualcosa non e' la stessa stanza: rileggere la descrizione di partenza dopo aver spostato il mobiletto e' l'errore che fa credere al giocatore di non aver combinato niente. E' testo d'autore come `look`, non fa avanzare niente e non consuma un turno.",
+          "items": { "$ref": "#/$defs/ConditionalText" }
+        },
+        "no_match_narration": {
+          "type": "array",
+          "description": "Le risposte d'autore a una frase che non corrisponde a nessuna azione della scena, una per intenzione. E' l'equivalente moderno del 'Non puoi farlo' dei punta-e-clicca, con la differenza che qui e' scritto da te, in tono, e sa di che tipo di tentativo si tratta. Va scritto in compilazione e non generato a runtime per due motivi: un testo generato inventa scenario che nel gioco non esiste — una lampada nominata per colore e' un falso indizio su cui il giocatore perde dieci minuti — e un testo generato non e' controllabile da nessun linter. Scrivine piu' d'uno per la stessa intenzione: si vedono a rotazione, ed e' cosi' che il fondo non si sente.",
+          "items": { "$ref": "#/$defs/NoMatch" }
         },
         "scene_tone": {
           "type": "string",

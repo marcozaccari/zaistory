@@ -9,10 +9,20 @@
  * di giocare davvero restano al player.
  */
 
-import type { Condition, Effect, Scene, Story } from './types.js';
+import type { Condition, Effect, Intent, Scene, Story } from './types.js';
 import { SCENE_CUTSCENE, SCENE_INTERACTIVE, displayName, findScene, sceneHasExit, sceneType, shotsOf } from './types.js';
+import { verboDelPlayer } from './verbi.js';
 
 export type Level = 'info' | 'avviso' | 'errore';
+
+/**
+ * Sotto quanti alias la copertura di un'azione si sente.
+ *
+ * Non e' un numero magico: e' l'ordine di grandezza a cui un elenco di
+ * sinonimi smette di coprire i modi in cui la stessa cosa si chiede. Tre alias
+ * coprono tre frasi; quindici cominciano a coprire un modo di parlare.
+ */
+export const SOGLIA_ALIAS = 8;
 
 export interface Finding {
   level: Level;
@@ -339,7 +349,7 @@ class Linter {
     // piu' frequente di tutte, e senza `look` non ha una risposta d'autore.
     for (const sc of this.story.scenes) {
       if (sceneType(sc) === SCENE_INTERACTIVE && !sc.look) {
-        this.add('avviso', `scena "${sc.id}"`, 'scena interattiva senza look: a input libero "guardati intorno" non ha risposta');
+        this.add('errore', `scena "${sc.id}"`, 'scena interattiva senza look: a parole "guardati intorno" non ha risposta');
       }
       for (const a of sc.actions ?? []) {
         if (a.blocked_narration && !a.condition) {
@@ -368,6 +378,143 @@ class Linter {
       if (!i.aliases?.length) {
         this.add('avviso', '', `oggetto "${i.id}" senza aliases: a input libero si potra' nominare solo con "${i.name}"`);
       }
+      // Un oggetto che si porta in giro e non si puo' guardare e' un oggetto
+      // muto: «guarda il coltello» e' fra le prime cose che si scrivono.
+      if (!i.description) {
+        this.add('errore', '', `oggetto "${i.id}" senza description: a chi lo guarda in inventario il player non ha niente da rispondere`);
+      }
+      for (const v of i.description_variants ?? []) {
+        if (!v.condition || Object.keys(v.condition).length === 0) {
+          this.add('avviso', '', `oggetto "${i.id}": description_variants con condition vuota, vince sempre e la description di base non si vedra' mai`);
+        }
+      }
+    }
+  }
+
+  // ------------------------------------------------------ quinta colonna
+
+  /**
+   * I controlli sul testo che il player mostra ma che non e' un `Effect`:
+   * fallback, `look` che cambia con lo stato, prosa dell'inventario, alias e
+   * frasi di prova.
+   *
+   * Tutto quello che si controlla qui esiste per la stessa ragione. Spente le
+   * chip, il giocatore non vede piu' l'elenco delle azioni: le chiede. Da quel
+   * momento ogni cosa che non e' scritta nell'IR e' una cosa a cui il gioco non
+   * sa rispondere — e l'alternativa, generarla a runtime, e' peggio del
+   * silenzio: un testo generato nomina scenario che non esiste e nessun linter
+   * puo' controllarlo. Questi avvisi sono il prezzo di quella scelta, ed e' un
+   * prezzo che si paga in compilazione, una volta.
+   */
+  checkQuintaColonna(): void {
+    const globali = new Set<Intent>((this.story.player_voice?.no_match_narration ?? []).map((n) => n.intent));
+    const scarsi: string[] = [];
+    let nonMisurate = 0;
+
+    if (!this.story.player_voice) {
+      this.add(
+        'errore',
+        '',
+        "manca player_voice: senza, \"cosa ho nello zaino\" non ha risposta e una frase non capita nemmeno",
+      );
+    } else {
+      if (!globali.has('generico')) {
+        this.add(
+          'errore',
+          '',
+          "player_voice.no_match_narration senza intenzione \"generico\": e' l'unica che serve sempre, perche' e' dove finisce tutto cio' che non si classifica",
+        );
+      }
+      if (!this.story.player_voice.inventory_intro?.length) {
+        this.add('info', '', "player_voice senza inventory_intro: \"cosa ho nello zaino\" non avra' risposta");
+      }
+      if (!this.story.player_voice.presence_intro?.length) {
+        this.add('info', '', "player_voice senza presence_intro: \"chi c'e' qui\" non avra' risposta");
+      }
+      const conta = new Map<Intent, number>();
+      for (const n of this.story.player_voice.no_match_narration ?? []) {
+        conta.set(n.intent, (conta.get(n.intent) ?? 0) + 1);
+      }
+      for (const [intent, n] of conta) {
+        if (n === 1) {
+          this.add('info', '', `player_voice: una sola frase per l'intenzione "${intent}", quindi si ripetera' identica ogni volta`);
+        }
+      }
+    }
+
+    for (const sc of this.story.scenes) {
+      if (sceneType(sc) !== SCENE_INTERACTIVE) continue;
+      const locali = new Set<Intent>((sc.no_match_narration ?? []).map((n) => n.intent));
+
+      if (locali.size === 0 && globali.size === 0) {
+        this.add(
+          'errore',
+          sc.id,
+          "nessun no_match_narration, ne' qui ne' globale: una frase che non corrisponde a niente non ricevera' nessuna risposta",
+        );
+      }
+
+      for (const v of sc.look_variants ?? []) {
+        if (!v.condition || Object.keys(v.condition).length === 0) {
+          this.add('avviso', sc.id, "look_variants con condition vuota: vince sempre, quindi look di base non si vedra' mai");
+        }
+        if (!v.text) this.add('errore', sc.id, 'look_variants senza text');
+      }
+      if ((sc.look_variants?.length ?? 0) > 0 && !sc.look) {
+        this.add('avviso', sc.id, "look_variants senza look di base: se nessuna condizione e' soddisfatta la scena non ha descrizione");
+      }
+
+      for (const a of sc.actions) {
+        const aw = `${sc.id} / ${a.id}`;
+        const n = a.aliases?.length ?? 0;
+        if (n === 0) {
+          this.add(
+            'errore',
+            aw,
+            "azione senza aliases: si potra' chiedere solo dicendo quasi esattamente la label, cioe' quasi mai",
+          );
+        } else if (n < SOGLIA_ALIAS) {
+          // Aggregata piu' sotto: su una storia intera sarebbero centinaia di
+          // righe identiche, e un linter che grida a ogni riga smette di
+          // essere letto.
+          scarsi.push(`${aw} (${n})`);
+        }
+        for (const x of a.aliases ?? []) {
+          if (verboDelPlayer(x) !== 'nessuno') {
+            this.add(
+              'errore',
+              aw,
+              `l'alias "${x}" e' un verbo del player: il resolver gira per primo, quindi se lo prende questa azione la scena non risponde piu' a "guardati intorno" o all'inventario`,
+            );
+          }
+        }
+        if (!a.test_phrases?.length) {
+          nonMisurate++;
+        } else {
+          // Una frase di prova che ricopia un alias non misura niente: fa
+          // sembrare bravo il matcher su una stringa che gli e' gia' stata
+          // data. E' l'errore che rende inutile tutta la misura, quindi e' un
+          // avviso e non un'informazione.
+          const alias = new Set((a.aliases ?? []).map((x) => x.toLowerCase().trim()));
+          for (const f of a.test_phrases) {
+            if (alias.has(f.toLowerCase().trim())) {
+              this.add('avviso', aw, `la frase di prova "${f}" e' identica a un alias: misura il lookup, non il richiamo`);
+            }
+          }
+        }
+      }
+    }
+
+    if (scarsi.length) {
+      const primi = scarsi.slice(0, 8).join(', ');
+      this.add(
+        'info',
+        '',
+        `${scarsi.length} azioni con meno di ${SOGLIA_ALIAS} aliases — gli alias sono la copertura del resolver lessicale, e sotto la decina si sente: ${primi}${scarsi.length > 8 ? ', …' : ''}`,
+      );
+    }
+    if (nonMisurate) {
+      this.add('info', '', `${nonMisurate} azioni senza test_phrases: non entrano nella misura di copertura (--copertura)`);
     }
   }
 
@@ -468,6 +615,15 @@ class Linter {
       roster.add(c.id);
     }
 
+    // Chi il giocatore e'. Senza, «chi c'e' qui» elenca anche lui — cioe'
+    // risponde "in questa stanza ci sono: Laura, Mark e Tommy" a Laura.
+    if (this.story.protagonist && !roster.has(this.story.protagonist)) {
+      this.add('errore', '', `protagonist "${this.story.protagonist}" non e' nella roster globale`);
+    }
+    if (!this.story.protagonist) {
+      this.add('info', '', "manca protagonist: se il personaggio giocante compare in characters di una scena, \"chi c'e' qui\" elenchera' anche lui");
+    }
+
     // Chi parla deve stare nella roster globale, sempre — anche una voce fuori
     // campo con una sola battuta. Non e' pignoleria: il modulo assets assegna
     // il timbro una volta per parlante, e un parlante che esiste solo come
@@ -536,6 +692,7 @@ export function lintStory(story: Story): Finding[] {
   l.checkFlagsAndItems();
   l.checkCharacters();
   l.checkShots();
+  l.checkQuintaColonna();
   l.checkProvenance();
   return l.findings;
 }

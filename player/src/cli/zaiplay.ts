@@ -15,29 +15,43 @@ import {
   Engine,
   IRError,
   ScriptDriver,
+  copertura,
   countFindings,
   formatFinding,
+  formattaCopertura,
   lintStory,
   makeResolver,
   parseScript,
   parseStory,
   renderTrace,
   type Finding,
+  type Resolver,
 } from '../core/index.js';
 import { Theme, termWidth } from './term.js';
 import { playerVersion } from './version.js';
 import { TermUI } from './ui.js';
+import { MODELLO_DEFAULT, caricaEmbedder } from './embedder.js';
 
 const USAGE = `zaiplay - player CLI di test per il motore narrativo ZAiStory
 
   zaiplay [opzioni] story.ir.json
 
+Si gioca scrivendo: \"guardati intorno\", \"prendi il coltello\", \"parla con
+Mark\". L'elenco delle azioni non si vede — e' impalcatura di collaudo, e un
+menu che elenca le azioni utili risolve gli enigmi al posto del giocatore: con
+--debug ricompare.
+
 Opzioni:
-  --debug            parte in modalita' debug (parametri di scena e azioni nascoste)
+  --debug            parte in modalita' debug (parametri di scena, elenco delle
+                     azioni e azioni nascoste con il motivo)
   --lint             esegue solo l'analisi statica di giocabilita' e esce
+  --copertura        misura quante test_phrases dell'IR arrivano all'azione
+                     giusta con il resolver scelto, e esce
   --script FILE      rigioca una sequenza di id senza input umano (test di regressione)
   --record FILE      salva la sequenza di id giocata, rigiocabile con --script
-  --resolver NOME    backend del resolver: menu (default), claude, locale
+  --resolver NOME    backend: lessicale (default), embedding, claude
+  --embed-model ID   modello per --resolver embedding
+                     (default: ${MODELLO_DEFAULT})
   --no-color         niente colori ANSI
   --version          stampa la versione del player e esce
   --width N          larghezza di riga (default: larghezza del terminale o 80)
@@ -51,9 +65,11 @@ Codici di uscita: 0 tutto bene · 1 problemi di giocabilita' · 2 errore d'uso
 interface Options {
   debug: boolean;
   lint: boolean;
+  copertura: boolean;
   script: string;
   record: string;
   resolver: string;
+  embedModel: string;
   color: boolean;
   width: number;
   path: string;
@@ -65,9 +81,13 @@ function parseArgs(argv: string[]): Options {
   const o: Options = {
     debug: false,
     lint: false,
+    copertura: false,
     script: '',
     record: '',
-    resolver: 'menu',
+    // Il default e' cambiato in 1.8.0: si gioca scrivendo, e il menu resta
+    // disponibile come modalita' esplicita per i confronti e per l'ispezione.
+    resolver: 'lessicale',
+    embedModel: '',
     color: true,
     width: 0,
     path: '',
@@ -96,6 +116,9 @@ function parseArgs(argv: string[]): Options {
       case 'lint':
         o.lint = true;
         break;
+      case 'copertura':
+        o.copertura = true;
+        break;
       case 'script':
         o.script = value();
         break;
@@ -104,6 +127,9 @@ function parseArgs(argv: string[]): Options {
         break;
       case 'resolver':
         o.resolver = value();
+        break;
+      case 'embed-model':
+        o.embedModel = value();
         break;
       case 'no-color':
         o.color = false;
@@ -139,6 +165,20 @@ function printLint(t: Theme, fs: Finding[]): void {
   console.log();
   console.log(`${errors} errori, ${warnings} avvisi, ${infos} info`);
   console.log(t.dim("nota: il linter e' statico. Solo giocare la storia dice se e' davvero giocabile."));
+}
+
+/**
+ * Costruisce il backend richiesto. Solo `embedding` ha bisogno di andare a
+ * prendere qualcosa: il core non sa costruirlo da solo di proposito, cosi' non
+ * dipende da nessun modello.
+ */
+async function costruisciResolver(o: Options): Promise<Resolver> {
+  const nome = o.resolver.toLowerCase();
+  if (nome === 'embedding' || nome === 'embed' || nome === 'vettori') {
+    const { embed, etichetta } = await caricaEmbedder(o.embedModel || MODELLO_DEFAULT);
+    return makeResolver('embedding', { embed, modello: etichetta });
+  }
+  return makeResolver(o.resolver);
 }
 
 async function main(): Promise<number> {
@@ -181,12 +221,21 @@ async function main(): Promise<number> {
     return errors > 0 ? 1 : 0;
   }
 
-  let resolver;
+  let resolver: Resolver;
   try {
-    resolver = makeResolver(o.resolver);
+    resolver = await costruisciResolver(o);
   } catch (err) {
     console.error((err as Error).message);
     return 2;
+  }
+
+  if (o.copertura) {
+    const rapporto = await copertura(story, resolver);
+    for (const riga of formattaCopertura(rapporto)) console.log(riga);
+    // Una frase che fa partire l'azione sbagliata applica un Effect che nessuno
+    // ha chiesto: e' un difetto, non una statistica. Le frasi perse invece
+    // costano al giocatore una riscrittura, e non fanno fallire niente.
+    return rapporto.sbagliate.length > 0 ? 1 : 0;
   }
 
   let script: ScriptDriver | undefined;

@@ -29,6 +29,14 @@ provare la storia dal telefono o dal desktop, e una **CLI**, per il linter e i
 playthrough di regressione headless. Modulo assets e player grafici sono
 progettati ma non ancora costruiti.
 
+Dalla versione 1.8.0 dell'IR **si gioca scrivendo**, non scegliendo da un
+elenco. Il pezzo che lo rende possibile non è un modello: è il compilatore, che
+scrive in anticipo sia gli agganci con cui una frase arriva all'azione giusta
+(`aliases`) sia le risposte d'autore per quando non ci arriva
+(`no_match_narration`, `look_variants`, `player_voice`). Il player non inventa
+una riga — e un testo scritto in compilazione, a differenza di uno generato al
+volo, un linter può controllarlo.
+
 ## Provare subito
 
 ```bash
@@ -41,8 +49,9 @@ npm run embed -- ../examples/nel-paese-dei-ciechi.ir.json paese.html
 
 # CLI
 npm run build:node
-node dist-node/src/cli/zaiplay.js ../examples/nel-paese-dei-ciechi.ir.json         # gioca
+node dist-node/src/cli/zaiplay.js ../examples/metalhead.ir.json                    # gioca (si scrive cosa si fa)
 node dist-node/src/cli/zaiplay.js --lint ../examples/nel-paese-dei-ciechi.ir.json  # solo controlli statici
+node dist-node/src/cli/zaiplay.js --copertura ../examples/metalhead.ir.json        # quanto capisce il resolver
 node dist-node/src/cli/zaiplay.js \
   --script ../examples/nel-paese-dei-ciechi.playthrough.txt \
   ../examples/nel-paese-dei-ciechi.ir.json                                        # rigioca la partita di riferimento

@@ -13,20 +13,25 @@ import {
   type ChoicePrompt,
   type Command,
   type DialogueNode,
+  type EsitoTurno,
   type NarrationBeat,
   type Outcome,
   type PlayerUI,
+  type Resolver,
   type Scene,
   type ScriptDriver,
   type Story,
   type VoiceSpec,
   GameState,
+  InputLibero,
   QuitError,
   describeCondition,
   describeEffect,
   findCharacter,
   findPlace,
+  SCENE_CUTSCENE,
   sceneType,
+  segnoTurno,
   speakerName,
   toneOf,
 } from '../core/index.js';
@@ -103,6 +108,7 @@ function promptGroup(name: string, rows: PromptRow[], who?: string): HTMLElement
 
 export interface WebUIOptions {
   story: Story;
+  resolver: Resolver;
   transcript: HTMLElement;
   dock: HTMLElement;
   /** Chiamata quando stato o scena cambiano, per aggiornare il pannello. */
@@ -113,6 +119,13 @@ export interface WebUIOptions {
 
 export class WebUI implements PlayerUI {
   readonly story: Story;
+  resolver: Resolver;
+  /** Il turno a input libero. La logica sta nel core: qui c'e' il rendering e
+   * basta. */
+  private libero: InputLibero;
+  /** L'ultima cosa scritta, per non farla riscrivere da capo quando non ha
+   * fatto match. */
+  private ultimoInput = '';
   state?: GameState;
   scene?: Scene;
   lastPrompt?: ActionPrompt;
@@ -167,10 +180,25 @@ export class WebUI implements PlayerUI {
 
   constructor(o: WebUIOptions) {
     this.story = o.story;
+    this.resolver = o.resolver;
+    this.libero = new InputLibero(o.story, o.resolver);
     this.transcript = o.transcript;
     this.dock = o.dock;
     this.onUpdate = o.onUpdate;
     this.script = o.script;
+  }
+
+  /**
+   * Cambia backend a partita in corso.
+   *
+   * E' il motivo per cui il resolver e' un'interfaccia: si accende l'embedder
+   * nella stessa scena in cui il lessicale ha appena detto di no, si riscrive
+   * la stessa frase e si vede se cambia qualcosa. Un confronto fatto cosi'
+   * dice cose che un rapporto di copertura non dice.
+   */
+  usaResolver(r: Resolver): void {
+    this.resolver = r;
+    this.libero = new InputLibero(this.story, r);
   }
 
   /** Interrompe l'attesa in corso (usata quando si ricomincia o si cambia IR). */
@@ -656,10 +684,25 @@ export class WebUI implements PlayerUI {
       return Promise.resolve(cmd);
     }
 
+    // L'interfaccia e' la riga di testo; le chip sono strumento di ispezione e
+    // si vedono solo in debug. Non e' un cambio di stile: un elenco che mostra
+    // le azioni utili risolve gli enigmi al posto del giocatore, e finche'
+    // resta acceso non si puo' giudicare quanto una storia compilata sia
+    // davvero difficile.
+    //
+    // Nelle cutscene no, e per la stessa ragione al contrario: li' l'unica
+    // azione e' proseguire, non c'e' nessun enigma da proteggere, e obbligare
+    // a *scrivere* "continua" dopo ogni sequenza narrata sarebbe attrito e
+    // basta. Una cutscene si guarda e si tocca, come dice l'architettura.
+    const cutscene = sceneType(p.scene) === SCENE_CUTSCENE;
+
     return this.waitChoice((resolve) => {
+      if (!cutscene) this.dock.append(this.rigaInput(p, resolve));
+
       p.available.forEach((a, i) => {
-        const b = el('button', 'choice');
-        b.append(el('span', 'idx', `${i + 1}`), document.createTextNode(a.label));
+        const b = el('button', cutscene ? 'choice continue' : 'choice solo-debug');
+        if (!cutscene) b.append(el('span', 'idx', `${i + 1}`));
+        b.append(document.createTextNode(cutscene ? `▸ ${a.label}` : a.label));
         b.append(
           el(
             'span',
@@ -690,6 +733,93 @@ export class WebUI implements PlayerUI {
         this.dock.append(el('p', 'terminal-note', 'scena finale: da qui non esce nessuna transizione'));
       }
     });
+  }
+
+  /**
+   * La riga in cui si scrive cosa si fa.
+   *
+   * Resta montata fra un tentativo e l'altro: una frase che non ha fatto match
+   * non e' un errore da cui ripartire da zero, e' quasi sempre una frase quasi
+   * giusta. Il testo si rilegge nel transcript, il campo si svuota, il fuoco
+   * resta dov'e'.
+   */
+  private rigaInput(p: ActionPrompt, resolve: (c: Command) => void): HTMLElement {
+    const form = el('form', 'riga-input');
+    const campo = el('input', 'campo');
+    campo.type = 'text';
+    campo.autocomplete = 'off';
+    campo.autocapitalize = 'none';
+    campo.spellcheck = false;
+    campo.placeholder = 'scrivi cosa fare';
+    campo.value = this.ultimoInput;
+    const invia = el('button', 'invia', '▸');
+    invia.type = 'submit';
+    invia.setAttribute('aria-label', 'esegui');
+    form.append(campo, invia);
+
+    form.onsubmit = async (ev) => {
+      ev.preventDefault();
+      const testo = campo.value.trim();
+      if (testo === '' || this.pressing || this.dead) return;
+
+      this.nuovoTurno();
+      this.entry('echo', `· ${testo}`);
+      this.pressing = true;
+      this.dock.classList.add('bloccato');
+      campo.blur();
+
+      let e: EsitoTurno;
+      try {
+        e = await this.libero.risolvi(p, testo);
+      } finally {
+        this.pressing = false;
+        this.dock.classList.remove('bloccato');
+      }
+      if (this.dead) return;
+
+      if (e.kind === 'azione' && e.actionId) {
+        const a = p.available.find((x) => x.id === e.actionId);
+        this.entryVia('picked', `▸ ${a?.label ?? e.actionId}`, e);
+        this.dbg(`resolver: ${e.via ?? '-'}${e.why ? ` · ${e.why}` : ''}`);
+        this.ultimoInput = '';
+        this.abort = undefined;
+        clear(this.dock);
+        resolve({ actionId: e.actionId });
+        return;
+      }
+
+      // Azione bloccata, verbo del player o nessun match: si mostra testo
+      // d'autore e si resta qui. Nessun Effect e' stato applicato — l'engine
+      // non ha nemmeno saputo che il giocatore ha scritto qualcosa.
+      if (e.testo) this.entryVia(e.kind === 'verbo' ? 'look' : 'narration', e.testo, e);
+      if (e.nota) this.entry('notice', e.nota);
+      if (!e.testo && !e.nota) this.entry('notice', 'Non succede niente.');
+      this.dbg(`resolver: ${e.via ?? '-'}${e.why ? ` · ${e.why}` : ''}`);
+
+      this.ultimoInput = '';
+      campo.value = '';
+      campo.focus({ preventScroll: true });
+      this.scrollEnd();
+    };
+
+    // Il fuoco automatico solo dove non fa danni: su un telefono aprirebbe la
+    // tastiera a ogni scena, mangiandosi meta' schermo proprio mentre c'e' da
+    // leggere.
+    if (window.matchMedia('(pointer: fine)').matches) {
+      requestAnimationFrame(() => campo.focus({ preventScroll: true }));
+    }
+    return form;
+  }
+
+  /** Una riga di transcript con il marchio di chi ha deciso il turno. Si vede
+   * sempre, non solo in debug: e' l'unico modo di accorgersi *giocando* di
+   * quando il backend a vettori serva davvero. */
+  private entryVia(cls: string, text: string, e: EsitoTurno): void {
+    const p = el('p', `entry ${cls}`);
+    p.append(document.createTextNode(text));
+    const segno = segnoTurno(e);
+    if (segno) p.append(el('span', 'via', segno));
+    this.push(p);
   }
 
   chooseChoice(p: ChoicePrompt): Promise<Command> {

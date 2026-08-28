@@ -18,7 +18,7 @@ description: >-
 
 # Story IR Compiler
 
-**Versione di questo compilatore: 1.3.0.** Va riportata in `generated_by` di
+**Versione di questo compilatore: 1.4.0.** Va riportata in `generated_by` di
 ogni IR prodotto (passo 7); alzala quando cambi le regole di compilazione, non
 a ogni ritocco di forma.
 
@@ -60,13 +60,50 @@ Tre conseguenze pratiche, e sono le tre cose che si sbagliano di più:
    essere trovato va nominato in `narration`, in `look`, o nell'esito di
    un'altra azione. La difficoltà viene da cosa il testo dice e non dice, mai
    da un menu che si accorcia.
-2. **Ogni scena interattiva ha un `look`**: la stanza com'è adesso, rileggibile,
-   che è la risposta a «dove mi trovo». Non è un'azione e non pesa sul numero
-   di azioni della scena.
+2. **Ci sono quattro domande che non passano da nessuna azione**, e che il
+   giocatore fa più di qualunque altra cosa: «dove sono» (`Scene.look`), «cosa
+   ho nello zaino» (`player_voice` + i `name` degli oggetti), «chi c'è qui»
+   (`player_voice` + `Scene.characters`) e «guarda il coltello»
+   (`items[].description`). Il player risponde da sé, con testo tuo. Non sono
+   azioni, non pesano sul numero di azioni della scena, e **non vanno mai
+   duplicate come azioni**.
+
+   Corollario sull'elenco dei presenti, che si *deriva* invece di scriversi:
+   chiunque metti in `Scene.characters` verrà nominato a chi lo chiede — quindi
+   non ci si mette qualcuno che il giocatore deve ancora scoprire.
 3. **Gli agganci vanno scritti**: `aliases` sulle azioni, `name` e `aliases`
    sugli oggetti, `aliases` sui personaggi («il ragazzo», «quello con la
    barba»). Sono il modo in cui una frase arriva alla cosa giusta. Le scelte di
    dialogo non ne hanno bisogno: quelle si vedono e si toccano.
+
+## La regola che governa tutto il resto: l'intelligenza sta qui, non nel player
+
+Vale la pena dirla prima delle regole di gioco, perche' cambia il *volume* di
+quello che scrivi in ogni scena.
+
+Il resolver del player non genera testo: sceglie un id fra le azioni che hai
+definito. Non e' un modello che capisce la frase del giocatore — e' un matcher
+che confronta quella frase con quello che **tu** hai scritto. Quindi:
+
+- **la comprensione si precalcola**: gli `aliases` sono la conoscenza semantica
+  dell'azione, congelata nell'IR. Quindici-venticinque per azione, non tre.
+  Sotto la decina, l'azione diventa quasi impossibile da chiedere;
+- **la prosa si prescrive**: `no_match_narration` per scena (le risposte a chi
+  chiede una cosa che non c'e', una per intenzione), `look_variants` (la stanza
+  com'e' *adesso*), `player_voice` (inventario e fallback globali).
+
+Il player **non inventa mai una riga**. Se per un'intenzione non hai scritto
+niente, non dice niente: mostra una nota diagnostica, che e' esattamente il
+buco che si voleva vedere. Generare quel testo a runtime sarebbe peggio, e per
+un motivo che va oltre la qualita': un testo generato nomina scenario che nel
+gioco non esiste — una lampada citata per colore diventa un falso indizio su
+cui il giocatore perde dieci minuti — e nessun linter puo' controllarlo. Il
+testo scritto qui, invece, si controlla.
+
+Infine `test_phrases`: 3-5 parafrasi per azione, **tenute fuori dagli alias**.
+Non le legge nessun player, le legge il linter (`zaiplay --copertura`) per
+misurare quante frasi arrivano all'azione giusta. E' il modo in cui si smette
+di discutere a naso di quale backend serva.
 
 ## Regole di gioco — valgono per ogni scena, non sono negoziabili
 
@@ -214,7 +251,7 @@ compilatore CLI, non riscrivere la scena da zero per un errore di schema.
 
 ```json
 {
-  "ir_version": "1.7.0",
+  "ir_version": "1.8.0",
   "generated_by": {
     "compiler": "story-ir-compiler",
     "compiler_version": "<la versione dichiarata in cima a questo file>",
@@ -248,6 +285,25 @@ consumatore deve trovare nell'IR perche' cambiarli non deve toccarlo. Qui si
 tratta di una firma in calce al documento, che nessuno legge per decidere cosa
 fare.
 
+### 7-bis. Controlla di aver scritto per un giocatore che parla
+
+Prima di validare, ripassa questi cinque punti: sono quelli che distinguono un
+IR giocabile a parole da uno giocabile solo a bottoni. Non sono consigli — il
+linter li segnala come **errori**, e un IR che non li rispetta non e' un IR
+vecchio da tollerare: e' un IR incompleto.
+
+- ogni azione ha **15-25 `aliases`** e, dove ha senso, un `target`. Nessun
+  alias ricalca un verbo del player («guardati intorno», «cosa ho», «zaino»):
+  il resolver gira per primo, quindi glielo scipperebbe;
+- ogni azione ha **3-5 `test_phrases`**, diverse dagli alias;
+- ogni scena interattiva ha un **`look`**, e `look_variants` dove lo stato
+  cambia qualcosa che si vede entrando;
+- ogni scena interattiva ha **`no_match_narration`**, `generico` compreso;
+- la storia ha **`player_voice`** (inventario, presenti, fallback globali) e
+  **`protagonist`**;
+- ogni oggetto ha una **`description`**, e `description_variants` se cambia
+  durante la storia.
+
 ### 8. Valida l'intera Story e controlla i riferimenti pendenti
 
 ```bash
@@ -267,7 +323,21 @@ narrativa):
   viola la prima regola di gioco anche se lo schema è valido.
 
 Se il progetto ha un player con linter (`zaiplay --lint`), passaci l'IR: trova
-scene irraggiungibili, `goto` rotti, flag richiesti e mai impostati.
+scene irraggiungibili, `goto` rotti, flag richiesti e mai impostati, piu' tutto
+quello che manca al parlato (azioni con pochi alias, scene senza `look` o senza
+`no_match_narration`, frasi di prova copiate dagli alias).
+
+E se hai scritto le `test_phrases`, misura anche quanto la storia si lascia
+giocare a parole:
+
+```bash
+zaiplay --copertura story.ir.json
+```
+
+Distingue le frasi **perse** (nessun match: il giocatore deve riscrivere) da
+quelle **sbagliate** (parte un'altra azione: un `Effect` che nessuno ha
+chiesto). Le seconde sono difetti veri, e quasi sempre significano due azioni
+della stessa scena con alias troppo simili: separale.
 
 ### 9. Consegna
 

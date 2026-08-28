@@ -45,7 +45,7 @@ PWA (principale) + eventuale bot Telegram (secondario, testuale)
 ## Il formato IR: decisioni chiave
 
 Schema: `engine-ir.schema.json` (JSON Schema draft 2020-12), versione
-corrente **1.7.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
+corrente **1.8.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
 
 Decisioni di design, con il *perché* (per non riscoprirle da capo):
 
@@ -226,23 +226,156 @@ Decisioni di design, con il *perché* (per non riscoprirle da capo):
   solo: gli enigmi stanno nelle azioni e nel testo, il parlato serve a
   caratterizzare, informare e scegliere, non a fare da rompicapo.
 
+- **La prosa che il giocatore legge si scrive in compilazione, non a runtime**
+  (1.8.0). E' la decisione piu' importante presa finora sul resolver, e non
+  riguarda il resolver: riguarda dove sta l'intelligenza.
+
+  Il punto di partenza e' che il resolver **non genera testo**: sceglie un id
+  fra cinque o quindici candidate note in anticipo. E' ranking su insieme
+  chiuso, non generazione, ed e' la classe di problemi dove un modello
+  generativo e' lo strumento piu' costoso e meno affidabile disponibile. Da qui
+  discendono due mosse simmetriche, e sono la stessa mossa:
+
+  - **La comprensione si precalcola.** Gli `aliases` che il compilatore scrive
+    per ogni azione *sono* la conoscenza semantica di quell'azione, congelata
+    dentro l'IR. Un matcher lessicale che li confronta con la frase del
+    giocatore sta facendo semantica: la fa per lookup invece che per geometria,
+    ma il lavoro del modello l'ha gia' fatto il compilatore. Perche' funzioni
+    gli alias devono essere *molti* — quindici-venticinque per azione, non tre:
+    la lista e' la copertura.
+  - **La prosa si prescrive.** Un player a parole deve rispondere anche quando
+    non capisce, e deve rispondere in tono. La risposta d'autore c'era gia' per
+    un caso — `blocked_narration` in 1.6.0 — e in 1.8.0 diventa la regola:
+    `Scene.no_match_narration` (fallback categorizzati per intenzione),
+    `Scene.look_variants` (la stanza com'e' *adesso*), `Story.player_voice`
+    (inventario e fallback globali).
+
+  **Perche' non generare a runtime**, che sarebbe la strada ovvia: due motivi,
+  e il secondo pesa piu' del primo.
+
+  1. Sotto il miliardo di parametri l'italiano con un tono e' fuori portata: si
+     scambia ripetizione curata con novita' mediocre, che e' uno scambio in
+     perdita. Sopra, servono rete e costo per battuta.
+  2. **Un testo generato inventa scenario che nel gioco non esiste.** Un `look`
+     che nomina una lampada assente non e' colore, e' un falso indizio su cui il
+     giocatore perde dieci minuti — in un'avventura a enigmi lo scenario
+     inventato e' attivamente distruttivo. E soprattutto: il testo scritto in
+     compilazione **e' controllabile da un linter**, quello generato a runtime
+     non lo e' da nessuno. Il compile-time e' l'unico posto dove un modello puo'
+     produrre prosa che qualcuno puo' ancora verificare.
+
+  La varieta' non si perde: viene dalla combinatoria su testo d'autore. Sei
+  intenzioni (`percezione`, `manipolazione`, `movimento`, `sociale`, `forza`,
+  `generico`) per scena, piu' d'una frase per intenzione, scelte a rotazione.
+  Il giocatore non distingue questo da un modello — distingue solo quando la
+  risposta e' fuori bersaglio o quando il ciclo e' corto.
+
+  **Le intenzioni sono indipendenti dalla storia** ed e' il motivo per cui la
+  tabella dei verbi che le riconosce sta nel player e non nell'IR: le stesse
+  sei famiglie valgono per ogni storia, e il vocabolario che le distingue e'
+  italiano, non narrativa.
+
+  Corollario, gemello di quello di 1.6.0: **il resolver non genera nemmeno il
+  testo del fallback**, lo sceglie fra quelli scritti. Se per un'intenzione non
+  c'e' niente e non c'e' nemmeno un `generico`, il player **non inventa una
+  frase**: tace e lo segnala come diagnostica. Un buco nell'IR deve vedersi
+  come un buco.
+
+- **Niente retrocompatibilita': quello che manca e' un errore, non un avviso**
+  (1.8.0). I campi di 1.8.0 sono opzionali nello schema — il JSON Schema non
+  sa distinguere una scena interattiva da una cutscene senza contorsioni — ma
+  **il linter li tratta come obbligatori**, ed e' li' che il progetto ha sempre
+  messo la differenza fra *ben formato* e *giocabile*. Sono errori, non avvisi:
+  storia senza `player_voice`, scena interattiva senza `look`, scena senza
+  nessun fallback raggiungibile, azione senza `aliases`.
+
+  La conseguenza e' voluta: un IR compilato prima di 1.8.0 non passa il linter.
+  Non e' un incidente da tamponare con dei ripieghi nel player — e' la ragione
+  per cui i due esempi del repository sono stati ricompilati invece che
+  tollerati. Un solo schema copre tutto, e il player non contiene una riga il
+  cui unico scopo sia far girare qualcosa che non lo rispetta.
+
+  C'e' un solo controllo che nasce da questa scelta e che non era prevedibile:
+  **un alias non puo' ricalcare un verbo del player**. Siccome il resolver gira
+  prima dei verbi, un'azione con l'alias «guardati intorno» si prende la
+  domanda e la scena smette di rispondere al `look`. E' un errore, e su tre IR
+  scritti a mano ne ha trovati quattro.
+
+- **`Action.test_phrases`: l'IR porta con se' il proprio banco di prova**
+  (1.8.0). Parafrasi che *dovrebbero* risolvere a quell'azione, tenute
+  deliberatamente **fuori** dagli `aliases`. Nessun player le legge: le legge
+  il linter, che le passa al resolver e conta quante arrivano all'id giusto.
+
+  Serve a togliere dal fiuto una domanda che altrimenti resta un'opinione:
+  «vale la pena scaricare un modello per questa storia?». Con le frasi di prova
+  la si lancia sui due backend e si guarda il delta, e soprattutto l'elenco
+  delle frasi che solo il piu' costoso prende. E' anche il motivo per cui vanno
+  scritte *lontane* dagli alias: copiarle di li' misura il lookup, non il
+  richiamo, e il linter lo segnala come avviso.
+
 - **Riferimenti a scene esterne** (una scena come file separato, per storie
   molto grandi) sono previsti concettualmente ma non ancora affrontati nel
   dettaglio — oggi si lavora solo con IR a scene inline in un unico
   documento. Da riprendere se/quando servirà davvero (storie molto lunghe).
-- **Resolver per input testuale libero**: discusso approfonditamente ma mai
-  costruito. Design deciso: un modulo player-agnostic separato che riceve
-  `(azioni disponibili nella scena, testo libero del giocatore, tono della
-  scena)` e ritorna `(id di un'azione esistente, oppure nessun match con
-  una narrazione di fallback in-character)`. **Il suo perimetro sono le azioni
-  di scena, mai le scelte di dialogo**: quando un `dialogue_tree` e' aperto il
-  player mostra un elenco e il resolver non viene nemmeno interpellato. Vincolo architetturale
-  fondamentale: il resolver non deve MAI generare un effetto di sua
-  iniziativa, solo scegliere quale azione già definita eseguire — altrimenti
-  lo stato del gioco smette di essere deterministico/testabile. In pratica
-  è l'equivalente moderno del classico "Non puoi farlo" dei punta-e-clicca,
-  ma generato al volo e coerente col tono della scena invece che un
-  messaggio di sistema generico.
+- **Resolver per input testuale libero**: costruito in 1.8.0
+  (`player/src/core/`). Un modulo player-agnostic che riceve `(azioni
+  disponibili nella scena, testo libero del giocatore, tono della scena)` e
+  ritorna `(id di un'azione esistente, oppure nessun match con una narrazione
+  di fallback in-character)`. **Il suo perimetro sono le azioni di scena, mai
+  le scelte di dialogo**: quando un `dialogue_tree` e' aperto il player mostra
+  un elenco e il resolver non viene nemmeno interpellato.
+
+  Due vincoli, e sono la ragione per cui lo stato di gioco resta
+  deterministico e testabile:
+
+  1. **Non genera mai un effetto** di sua iniziativa, sceglie solo quale azione
+     gia' definita eseguire.
+  2. **Non genera mai nemmeno il testo** del fallback: lo sceglie fra quelli
+     che l'autore ha scritto (vedi 1.8.0, la prosa prescritta).
+
+  E' l'equivalente moderno del "Non puoi farlo" dei punta-e-clicca: scelto al
+  volo e coerente col tono della scena, ma scritto da una persona.
+
+  **Le azioni bloccate entrano fra le candidate**, ed e' la differenza fra un
+  menu e una conversazione. In un menu un'azione filtrata da una `Condition`
+  sparisce e non c'e' niente da dire; a parole il giocatore la chiede lo
+  stesso, e riceve la `blocked_narration` d'autore. Il player non applica
+  niente — nessun flag, nessuna transizione, nessun oggetto — e l'engine non
+  sa nemmeno che e' successo qualcosa.
+
+  **I verbi del player** si consultano **dopo** il resolver, mai prima:
+  un'azione scritta dall'autore vince sempre su un verbo di sistema, cosi' una
+  scena che ha davvero un'azione «fruga nello zaino» non se la vede scippare.
+  Non consumano un turno e non entrano nella traccia. Sono quattro, e sono le
+  quattro domande che in un'avventura a parole si scrivono piu' di qualunque
+  altra cosa:
+
+  | verbo | risposta d'autore |
+  |---|---|
+  | «guardati intorno», «dove sono» | `Scene.look` (+ `look_variants`) |
+  | «cosa ho nello zaino», «inventario» | `player_voice.inventory_*` + i `name` degli oggetti |
+  | «chi c'e' qui», «quali sono i personaggi» | `player_voice.presence_*` + i nomi di `Scene.characters` |
+  | «guarda il walkie» | `items[].description` (+ `description_variants`) |
+
+  Gli ultimi due nascono dalla stessa osservazione dei primi due: sono domande
+  che il giocatore fa continuamente e che **non passano da nessuna azione**,
+  quindi senza un posto dove metterle o restano senza risposta, o l'autore le
+  duplica come azioni e si mangia il budget della scena.
+
+  Due dettagli che sembrano minori e non lo sono:
+
+  - **`Story.protagonist`** (1.8.0). Il personaggio giocante sta in
+    `characters` come tutti — ha un aspetto e una voce — ma a «chi c'e' qui»
+    non va elencato: e' chi sta chiedendo. Senza il campo, il player risponde
+    «in questa stanza ci sono: Laura, Mark e Tommy» a Laura.
+  - **Guardare un oggetto e' il piu' specifico dei quattro**, quindi si prova
+    per primo, e vale solo per gli oggetti **in inventario**: guardare una cosa
+    che non si ha e' materia della scena. Serve anche un verbo di percezione,
+    altrimenti «prendi il coltello» finirebbe qui invece che nell'azione.
+    E la descrizione deve poter cambiare con lo stato (`description_variants`):
+    un walkie messo in carica non e' piu' l'oggetto scarico di prima, e
+    rileggere la vecchia descrizione e' una bugia che il giocatore incassa ogni
+    volta che guarda.
 
 ## Regole di game design che il compilatore applica
 
@@ -437,10 +570,26 @@ Vite sono soli strumenti di build).
   momento in cui si vedono, che è impaginazione. Vale per entrambe le facce —
   web e CLI si fermano negli stessi punti, perché una differenza di ritmo fra
   le due renderebbe il collaudo su una non trasferibile all'altra.
+- **Le chip delle azioni sono passate sotto il debug** (1.8.0). Con un
+  resolver a input libero l'interfaccia è la riga di testo, e l'elenco delle
+  azioni torna a essere quello che è sempre stato: uno strumento di
+  ispezione. Non è una scelta di stile — finché l'elenco resta acceso non si
+  può giudicare quanto una storia compilata sia difficile davvero, perché è
+  l'elenco a risolvere gli enigmi. Le chip restano nel DOM e ricompaiono con
+  il tasto `debug` (in CLI, con `--debug` o `:debug`). Nel **dialogo** invece
+  non cambia niente: lì l'elenco delle battute si vede sempre, per la decisione
+  di 1.7.0 — si agisce a parole, si parla a scelte.
+
+- **Ogni risposta dichiara chi l'ha decisa** (⟨lessicale⟩, ⟨embedding⟩,
+  ⟨verbo del player⟩), sempre, non solo in debug. Il backend a vettori esiste
+  per essere valutato, e un rapporto di copertura non dice cosa si prova a
+  giocarci: vedere ⟨lessicale⟩ per venti turni e poi ⟨embedding⟩ su una frase
+  che il lessicale non avrebbe preso è l'informazione che il numero non dà.
+
 - **Modalità debug** (comando dedicato, es. `:debug`, oppure il tasto `debug`
   nel player web): mostra quello che i prompt di scena non dicono già — `id`,
-  conteggi, personaggi presenti, `on_enter_flags_set` — e **tutte** le azioni
-  della scena, comprese quelle
+  conteggi, personaggi presenti, `on_enter_flags_set` — l'elenco delle azioni
+  disponibili e **tutte** le azioni della scena, comprese quelle
   attualmente filtrate da una condizione, con accanto id, condizione
   richiesta ed effetto risultante. Serve a capire *perché* un'azione non
   compare, che è la domanda che ci si pone il 90% delle volte quando si
@@ -452,23 +601,90 @@ Vite sono soli strumenti di build).
 - **Resolver pluggable, tre backend dietro la stessa interfaccia** (quella
   già fissata sopra: riceve azioni disponibili + testo libero + tono, ritorna
   un id di azione esistente oppure un fallback in-character):
-  1. **nessun resolver** — selezione a menu numerato. Deterministico, zero
-     dipendenze, è la modalità da usare per i test di regressione. Da non
-     scambiare per l'interfaccia del gioco: un menu che elenca le azioni utili
-     rende ogni avventura facile, perché è il menu a risolvere gli enigmi al
-     posto del giocatore. È impalcatura di collaudo, e va letto come tale anche
-     quando si giudica la difficoltà di una storia compilata.
-     **Implementato** (`--resolver menu`, default; nel player web le chip
-     *sono* il menu).
-  2. **Claude** — via API/sessione, per input testuale libero. Non ancora
-     implementato: `--resolver claude` esce con un errore esplicito.
-  3. **LLM/SLM locale offline** — modello piccolo eseguito in locale, per
-     testare senza rete e senza costo per battuta. Non ancora implementato.
-  Il backend si sceglie all'avvio; il resto del player non cambia. Motivo
-  per cui i tre stanno insieme: il resolver è il pezzo più incerto del
-  progetto, e il player di test è il banco di prova naturale per confrontare
-  quanto bene un modello piccolo locale se la cava rispetto a Claude sullo
-  stesso set di scene.
+
+  1. **lessicale** — matcher deterministico sugli `aliases` scritti in
+     compilazione. Zero dipendenze, zero rete, zero byte scaricati, e sta
+     dentro il file HTML unico. **È il default** (`--resolver lessicale`).
+  2. **embedding** — vettori locali, ma solo dove sbagliare non costa (vedi
+     sotto). Il modello non è una dipendenza del core: la CLI lo prende da una
+     dipendenza opzionale, il player web da CDN al momento in cui lo si
+     accende, così il file unico resta unico per chi non lo usa.
+  3. **Claude** — via API/sessione. Non ancora implementato: `--resolver
+     claude` esce con un errore esplicito. Il suo posto naturale non è essere
+     il backend di gioco ma **l'oracolo di riferimento**: si fa girare lo
+     stesso set di frasi di prova sui tre e si misura quanto si perde.
+
+  Il backend si sceglie all'avvio (nel player web anche a partita in corso, dal
+  pannello). Il resto del player non cambia.
+
+- **Il backend a menu è stato tolto** (1.8.0), e vale la pena dire perché. Non
+  serviva più a niente di quello per cui era nato: i test di regressione non
+  passano dal resolver (li guida `--script`, che esegue una sequenza di id), e
+  ispezionare una scena adesso si fa con `--debug`, che stampa l'elenco delle
+  azioni e accetta il numero della riga che ha appena scritto. Quel numero è
+  interfaccia, non un backend: sta in `cli/ui.ts` perché è l'interfaccia a
+  sapere che cosa ha appena stampato. Sparita con lui anche la bandiera
+  `acceptsFreeText`, e con la bandiera tutte le diramazioni che tenevano in
+  piedi due modi di giocare in ogni faccia del player.
+
+- **La divisione del lavoro fra lessicale ed embedding è per costo
+  dell'errore, non a cascata** (1.8.0). I due backend falliscono in modi
+  diversi, e la differenza è tutta lì:
+
+  - il **lessicale** ha precisione alta e richiamo più basso: sbaglia
+    **rifiutando**. Costa al giocatore una frase riscritta — e, nel caso
+    peggiore, la sensazione di aver sbagliato strada quando invece aveva
+    risolto l'enigma. Attenzione: i fallback d'autore *aggravano* questo caso.
+    Un «non ho capito» generico è onesto e invita a riformulare; un fallback in
+    tono e pertinente dice «no, non è quella la strada», cioè mente con
+    convinzione;
+  - l'**embedder** ha richiamo più alto e precisione più bassa: sbaglia
+    **facendo**. Gli embedding di frase sono ciechi sulla negazione («non
+    toccare il cavo» e «tocca il cavo» hanno vettori quasi identici) e sulla
+    direzione degli argomenti («chiedi a Mark del coltello» / «dai il coltello
+    a Mark»). Un falso positivo *esegue*: applica un `Effect`, alza un flag,
+    consuma un oggetto, brucia un enigma.
+
+  Quindi non una cascata ingenua ma una divisione netta: **l'embedder
+  interviene solo dove il lessicale è muto** (nessuna candidata sopra soglia, e
+  non per ambiguità — se due azioni se la giocano alla pari il problema non è
+  che manchi comprensione) **e sempre nella scelta del fallback**, dove
+  sbagliare è gratis: nessun effetto, nessuna transizione, al peggio una
+  battuta un po' fuori bersaglio. In una riga: *embedding dove sbagliare non
+  costa niente, lessicale dove sbagliare cambia lo stato*.
+
+- **Le soglie sono esportate e vanno tarate con i dati, non a naso**
+  (`ACCETTA`, `MARGINE`, `CERTEZZA`, `PESO_UNIONE`, `SOGLIA_EMBEDDING` in
+  `core/resolver.ts`; `PESO_PAROLA_SOLA` in `core/lexical.ts`). Il margine
+  merita una riga: un'azione non si esegue solo perché è la migliore, deve
+  anche **staccare la seconda**. Due candidate a pari punteggio sono
+  un'ambiguità vera, e a un'ambiguità vera si risponde con un fallback —
+  tirare a indovinare qui significa applicare un `Effect` che nessuno ha
+  chiesto.
+
+  Le due curve misurate con `--copertura`, che sono anche il modo in cui queste
+  costanti sono state scelte:
+
+  - `ACCETTA` (quanto deve valere il migliore): 0.50 → 58% preso / 3%
+    sbagliato; 0.55 → 52% / 3%; 0.60 → 44% / 1%. Default **0.55**.
+  - `PESO_PAROLA_SOLA` (quanto vale un alias di una parola sola contro una
+    frase lunga): 0.80 → richiamo più alto di sei punti, ma «cerco di capire se
+    quella parete si può salire» fa partire l'azione che *chiude la storia*,
+    agganciata all'alias "sali". 0.65 → quella frase torna a non risolvere.
+    Default **0.65**: sei punti di richiamo in cambio di un finale che parte da
+    una domanda è lo scambio che questo progetto ha già deciso di fare.
+
+  Una cautela sui numeri, che vale più dei numeri: sono misurati su frasi di
+  prova scritte dalla stessa mano che ha scritto gli alias. Dicono che il
+  meccanismo funziona e dove si rompe; non dicono quanto capirà la prossima
+  storia. Per quello serve un IR compilato da qualcun altro.
+
+- **`--copertura`: il banco di prova del resolver.** Passa le
+  `Action.test_phrases` dell'IR al backend scelto e conta quante arrivano
+  all'id giusto, distinguendo le **perse** (nessun match) dalle **sbagliate**
+  (azione diversa). La distinzione è il punto: un backend che alza il richiamo
+  aggiungendo errori del secondo tipo sta peggiorando la storia, e il totale da
+  solo non lo direbbe. Esce con codice 1 se ci sono frasi sbagliate.
 - **Vincolo architetturale, identico a quello del resolver**: il player
   non contiene logica narrativa propria. Non inventa azioni, non genera
   testo di suo, non modifica lo stato se non applicando `Effect` già
@@ -548,12 +764,15 @@ Vite sono soli strumenti di build).
 2. ~~Costruire il **player di test**~~ — fatto (`player/`, TypeScript: player
    web mobile-first + CLI headless sullo stesso core, resolver a menu,
    modalità debug, linter, script di playthrough).
-3. Implementare il resolver per input testuale libero (design già fissato
-   sopra, mai implementato) — il player di test è il suo primo consumatore e il
-   banco di prova per confrontare Claude e un SLM locale. È ora il prossimo
-   passo naturale: l'interfaccia e il backend a menu ci sono già, manca solo
-   il corpo dei due backend.
-4. Quando le regole si saranno stabilizzate, valutare la costruzione del
+3. ~~Implementare il resolver per input testuale libero~~ — fatto in 1.8.0
+   (lessicale + embedding opzionale, verbi del player, fallback d'autore,
+   `--copertura`). Resta aperto il backend **Claude**, che serve come oracolo
+   di riferimento più che come modalità di gioco.
+4. Arricchire gli IR esistenti con i campi di 1.8.0. Oggi solo quattro scene di
+   "Metal Head" sono scritte per un player a parole, ed è deliberato: il
+   rapporto di copertura mostra il salto fra una scena scritta per le chip e
+   una scritta per le parole. Il resto è lavoro di compilazione, non di codice.
+5. Quando le regole si saranno stabilizzate, valutare la costruzione del
    generatore ad hoc (nessuna decisione di stack ancora presa).
-5. Decidere la pubblicazione/hosting degli asset (rimandato finora).
-6. Costruire un player con asset veri (PWA prima, bot Telegram poi).
+6. Decidere la pubblicazione/hosting degli asset (rimandato finora).
+7. Costruire un player con asset veri (PWA prima, bot Telegram poi).
