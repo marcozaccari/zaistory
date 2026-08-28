@@ -52,18 +52,30 @@
     <!-- Pannello laterale -->
     <aside id="panel" class="panel" hidden>
       <div class="panel-head">
+        <!-- Stessa icona e stessa posizione del bottone che apre: e' un
+             interruttore, non due comandi diversi. -->
+        <button class="icon" id="btn-close-panel" aria-label="Chiudi il menu">☰</button>
         <nav class="tabs" id="tabs">
-          <button data-tab="stato" class="on">stato</button>
-          <button data-tab="scena">scena</button>
-          <button data-tab="linter">linter<span class="badge" id="lint-badge" hidden></span></button>
-          <button data-tab="traccia">traccia</button>
-          <button data-tab="resolver">resolver</button>
+          <button data-tab="principale" class="on">principale</button>
+          <button data-tab="disco">disco</button>
+          <button data-tab="interprete">interprete</button>
           <button data-tab="ascolto">ascolto</button>
+          <!-- Le schede di ispezione compaiono solo a debug acceso: chi gioca
+               non ha niente da farci, e un elenco di azioni o di flag risolve
+               gli enigmi al posto suo. -->
+          <button data-tab="stato" data-debug>stato</button>
+          <button data-tab="linter" data-debug>linter<span class="badge" id="lint-badge" hidden></span></button>
+          <button data-tab="traccia" data-debug>traccia</button>
         </nav>
-        <button class="icon" id="btn-close-panel" aria-label="Chiudi">✕</button>
       </div>
       <div class="panel-body" id="panel-body"></div>
-      <div class="panel-foot" id="panel-foot"></div>
+      <div class="panel-foot" id="panel-foot">
+        <span id="panel-version"></span>
+        <div class="piede-azioni">
+          <button class="icon" id="btn-restart" title="Ricomincia la partita">ricomincia</button>
+          <button class="icon toggle" id="btn-debug-panel" aria-pressed="false" title="Modalita' debug">debug</button>
+        </div>
+      </div>
     </aside>
     <div id="scrim" class="scrim" hidden></div>
 

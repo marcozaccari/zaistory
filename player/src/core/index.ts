@@ -22,3 +22,4 @@ export * from './verbi.js';
 export * from './turno.js';
 export * from './copertura.js';
 export * from './script.js';
+export * from './salvataggio.js';

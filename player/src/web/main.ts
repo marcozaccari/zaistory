@@ -20,17 +20,23 @@ import {
   makeResolver,
   parseScript,
   parseStory,
+  scriviSalvataggio,
   validateStory,
   type Finding,
   type Resolver,
   type Story,
 } from '../core/index.js';
+import {
+  configPlayerSerializzabile,
+  leggiConfigPlayer,
+  type ConfigPlayer,
+} from './config.js';
 import { CONFIG_DEFAULT, caricaEmbedder, type ConfigEmbedder } from './embedder.js';
 import { ASCOLTO_DEFAULT, Ascolto, type ImpostazioniAscolto } from './ascolto.js';
 import { Voce } from './voce.js';
 import { PLAYER_VERSION } from '../version.js';
 import { $, clear, staScrivendo } from './dom.js';
-import { renderPanel, type PanelContext, type Tab } from './panel.js';
+import { TAB_DEBUG, chiediSeRicominciare, renderPanel, type PanelContext, type Tab } from './panel.js';
 import { WebUI } from './webui.js';
 
 declare global {
@@ -50,10 +56,10 @@ const panelBody = $('#panel-body');
 const scrim = $('#scrim');
 const lintBadge = $('#lint-badge');
 
-$('#panel-foot').textContent = `zaiplay v${PLAYER_VERSION}`;
+$('#panel-version').textContent = `zaiplay v${PLAYER_VERSION}`;
 
 let session: Session | undefined;
-let tab: Tab = 'stato';
+let tab: Tab = 'principale';
 
 /**
  * Il backend attivo. Parte dal lessicale: deterministico, nessuna rete,
@@ -154,10 +160,7 @@ function panelContext(s: Session): PanelContext {
     // Ricominciare e rigiocare fanno ripartire la partita *dietro* al
     // pannello: lasciarlo aperto significa coprire con un pannello di
     // ispezione la prima scena che si voleva vedere.
-    onRestart: () => {
-      closePanel();
-      start(s.story, s.findings);
-    },
+    onRestart: ricomincia,
     onReplay: (text) => {
       closePanel();
       start(s.story, s.findings, new ScriptDriver(parseScript(text)));
@@ -165,6 +168,30 @@ function panelContext(s: Session): PanelContext {
     onLoadOther: () => {
       closePanel();
       showLoader();
+    },
+    debug: document.body.classList.contains('debug'),
+    // Il codice si ricalcola a ogni disegno del pannello, che e' anche a ogni
+    // mossa: quello che si copia e' sempre la partita fino a un istante fa.
+    codiceSalvataggio: () =>
+      scriviSalvataggio({
+        salvato: new Date().toISOString(),
+        partita: {
+          story_id: s.story.id,
+          ir_version: s.story.ir_version,
+          title: s.story.title,
+          trace: s.engine.trace(),
+        },
+        config: configPlayerSerializzabile(configCorrente()),
+      }),
+    // Le impostazioni prima della partita: `start` fa nascere un `Ascolto`
+    // nuovo e lo configura con quelle correnti, quindi applicarle dopo
+    // significherebbe cominciare la partita con la voce sbagliata.
+    onCarica: (salv, cosa) => {
+      if (cosa.config) applicaConfig(leggiConfigPlayer(salv.config, configCorrente()));
+      if (cosa.partita && salv.partita) {
+        closePanel();
+        start(s.story, s.findings, new ScriptDriver([...salv.partita.trace]));
+      }
     },
     ascolto,
     onAscolto: (imp) => {
@@ -190,6 +217,59 @@ function panelContext(s: Session): PanelContext {
       refreshPanel();
     },
   };
+}
+
+// ------------------------------------------------------- impostazioni del player
+
+/**
+ * Le impostazioni vive, raccolte dai tre posti dove stanno.
+ *
+ * Non hanno una casa unica in memoria di proposito: ognuna vive accanto a chi
+ * la usa. Questa funzione e' l'unico punto in cui si guardano insieme, perche'
+ * e' l'unico momento in cui servono insieme — quando si salvano.
+ */
+function configCorrente(): ConfigPlayer {
+  return {
+    ascolto: impAscolto,
+    embedder: configEmbedder,
+    resolver: nomeResolver,
+    debug: document.body.classList.contains('debug'),
+  };
+}
+
+function applicaConfig(c: ConfigPlayer): void {
+  impAscolto = c.ascolto;
+  ascolto.configura(impAscolto);
+  configEmbedder = c.embedder;
+  impostaDebug(c.debug);
+  // Il backend si riaccende solo se cambia davvero: `scegliResolver` esce
+  // subito quando il nome e' lo stesso, e cosi' il pannello non si ridisegna
+  // sotto le dita di chi ha appena premuto «carica».
+  void scegliResolver(c.resolver);
+}
+
+/**
+ * Ricominciare da capo.
+ *
+ * Sta qui e non nel pannello perche' ora ha due punti di partenza — il piede
+ * del menu e la scheda «traccia» — e sono la stessa cosa: la domanda si fa una
+ * volta sola, in `chiediSeRicominciare`, e la partita riparte in un modo solo.
+ */
+function ricomincia(): void {
+  const s = session;
+  if (!s) return;
+  closePanel();
+  start(s.story, s.findings);
+}
+
+function impostaDebug(on: boolean): void {
+  document.body.classList.toggle('debug', on);
+  for (const b of [btnDebug, btnDebugPannello]) b.setAttribute('aria-pressed', String(on));
+  // Spegnendo il debug le schede di ispezione spariscono dalla striscia: se si
+  // era fermi su una di quelle, restare li' vorrebbe dire guardare un pannello
+  // che non ha piu' nessuna linguetta accesa.
+  if (!on && TAB_DEBUG.includes(tab)) selezionaTab('principale');
+  else refreshPanel();
 }
 
 function refreshPanel(): void {
@@ -247,23 +327,35 @@ $('#btn-panel').addEventListener('click', () => (panel.hidden ? openPanel() : cl
 $('#btn-close-panel').addEventListener('click', closePanel);
 scrim.addEventListener('click', closePanel);
 
-for (const b of document.querySelectorAll<HTMLButtonElement>('#tabs button')) {
-  b.addEventListener('click', () => {
-    tab = b.dataset.tab as Tab;
-    for (const other of document.querySelectorAll('#tabs button')) other.classList.toggle('on', other === b);
-    // Su un telefono in verticale le schede non ci stanno tutte e la striscia
-    // scorre: quella appena scelta va portata dentro la vista, altrimenti si
-    // tocca una voce e resta mezza fuori dal bordo.
-    b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    refreshPanel();
-  });
+function selezionaTab(nome: Tab): void {
+  tab = nome;
+  for (const b of document.querySelectorAll<HTMLButtonElement>('#tabs button')) {
+    b.classList.toggle('on', b.dataset.tab === nome);
+  }
+  refreshPanel();
 }
 
-const btnDebug = $<HTMLButtonElement>('#btn-debug');
-btnDebug.addEventListener('click', () => {
-  const on = document.body.classList.toggle('debug');
-  btnDebug.setAttribute('aria-pressed', String(on));
+for (const b of document.querySelectorAll<HTMLButtonElement>('#tabs button')) {
+  b.addEventListener('click', () => selezionaTab(b.dataset.tab as Tab));
+}
+
+// Due bottoni per lo stesso interruttore: quello in barra, sempre a portata di
+// pollice mentre si gioca, e quello in fondo al menu accanto alla versione —
+// che e' dove lo si va a cercare quando il player lo si sta usando e non
+// programmando.
+// Ricominciare vale per tutta la partita, non per la scheda che si sta
+// guardando: sta nel piede del menu, accanto al debug, e non dentro una
+// scheda. La domanda prima di farlo e' la stessa che fa la scheda «traccia».
+const btnRestart = $<HTMLButtonElement>('#btn-restart');
+btnRestart.addEventListener('click', async () => {
+  if (await chiediSeRicominciare()) ricomincia();
 });
+
+const btnDebug = $<HTMLButtonElement>('#btn-debug');
+const btnDebugPannello = $<HTMLButtonElement>('#btn-debug-panel');
+for (const b of [btnDebug, btnDebugPannello]) {
+  b.addEventListener('click', () => impostaDebug(!document.body.classList.contains('debug')));
+}
 
 // ---------------------------------------------------------------- partita
 

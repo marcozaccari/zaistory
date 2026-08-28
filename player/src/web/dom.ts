@@ -59,3 +59,69 @@ export function staScrivendo(e: Event): boolean {
 export function kv(dl: HTMLElement, key: string, value: string): void {
   dl.append(el('dt', undefined, key), el('dd', undefined, value));
 }
+
+/**
+ * Una domanda che va risolta prima di andare avanti.
+ *
+ * Non usa `confirm()` del browser per due motivi che contano davvero: quel
+ * riquadro blocca l'intera pagina — compresa la voce che sta leggendo, che
+ * resterebbe a meta' frase — e ha l'aspetto del sistema operativo, cioe' di
+ * qualcosa che non appartiene alla storia che si sta guardando. Questo invece
+ * e' un pezzo di player come gli altri: prende i colori del tema, si chiude con
+ * Esc o toccando fuori, e la risposta prudente e' gia' sotto il dito.
+ *
+ * Serve dove un tocco distratto costa la partita. Non e' una cortesia: da
+ * quando la partita si puo' salvare, «ricomincia» e' l'unico bottone del player
+ * che possa buttare via qualcosa di irrecuperabile.
+ */
+export function conferma(o: { titolo: string; testo: string; ok: string; annulla?: string }): Promise<boolean> {
+  return new Promise((risolvi) => {
+    const scrim = el('div', 'conferma-scrim');
+    const card = el('div', 'conferma');
+    card.setAttribute('role', 'dialog');
+    card.setAttribute('aria-modal', 'true');
+
+    const titolo = el('h3', undefined, o.titolo);
+    const id = `conferma-${Date.now()}`;
+    titolo.id = id;
+    card.setAttribute('aria-labelledby', id);
+    card.append(titolo, el('p', undefined, o.testo));
+
+    const btns = el('div', 'rowbtns');
+    const no = el('button', 'btn', o.annulla ?? 'annulla');
+    const si = el('button', 'btn primary', o.ok);
+    btns.append(no, si);
+    card.append(btns);
+    scrim.append(card);
+
+    const chiudi = (risposta: boolean) => {
+      document.removeEventListener('keydown', suTasto, true);
+      scrim.remove();
+      risolvi(risposta);
+    };
+    const suTasto = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        // `stopPropagation`: la stessa Esc chiuderebbe anche il pannello
+        // sotto, e chi annulla una domanda non ha chiesto di uscire dal menu.
+        e.stopPropagation();
+        chiudi(false);
+      }
+    };
+
+    no.onclick = () => chiudi(false);
+    si.onclick = async () => {
+      await premi(si);
+      chiudi(true);
+    };
+    scrim.onclick = (e) => {
+      if (e.target === scrim) chiudi(false);
+    };
+    document.addEventListener('keydown', suTasto, true);
+
+    document.body.append(scrim);
+    // Il fuoco va sulla risposta prudente: un invio partito per inerzia non
+    // deve poter cancellare la partita.
+    no.focus();
+  });
+}

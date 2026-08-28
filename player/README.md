@@ -114,10 +114,14 @@ nome che hanno nell'IR e attaccati al punto della storia a cui appartengono:
 | appesi a una battuta | `voice_override.style_prompt` |
 | dopo un effetto | `narration_voice.style_prompt`, `play_sound_prompt` |
 
-L'etichetta è colorata per **tipo di risorsa** — immagine, suono, voce,
-musica — così scorrendo il transcript si vede dove manca un'inquadratura o un
-suono senza doversi leggere il nome del campo. La stessa tassonomia vale nella
-CLI, con i colori del terminale.
+L'etichetta porta il **tipo di risorsa** due volte: nel colore e in un segno
+disegnato accanto al nome del campo — una cornice per le immagini, un
+altoparlante per i suoni, una bocca per le voci, due note per la musica, e sui
+gruppi una testa per i personaggi, uno spillo per i luoghi, dei cursori per lo
+stile globale. Il colore da solo chiede di ricordarsi la legenda, e chi legge
+la storia la legenda non ce l'ha. Sono disegni e non emoji perché prendono il
+colore del testo e non cambiano faccia a ogni sistema. La stessa tassonomia
+vale nella CLI, con i colori del terminale.
 
 Non vengono né generati né riprodotti — il player è testuale — ma sono il
 segnaposto di quello che un giorno sarà immagine, suono e voce. È leggendoli
@@ -126,20 +130,88 @@ dirlo, che un suono manca o che una scena ha sovrascritto la voce di un
 personaggio senza motivo: si rilegge la storia con gli occhi del modulo assets,
 prima che il modulo assets esista.
 
-Il tasto **debug** in alto a destra aggiunge la diagnostica intorno, e lo fa
-retroattivamente su tutto il transcript già scorso: id di scene e nodi,
-conteggi, `on_enter_flags_set`, condizione ed effetto di ogni voce, e **le
-azioni filtrate con il motivo per cui non compaiono** — che è la domanda che ci
-si pone il 90% delle volte quando si testa una storia.
+Il tasto **debug** aggiunge la diagnostica intorno, e lo fa retroattivamente su
+tutto il transcript già scorso: id di scene e nodi, conteggi,
+`on_enter_flags_set`, condizione ed effetto di ogni voce, e **le azioni
+filtrate con il motivo per cui non compaiono** — che è la domanda che ci si
+pone il 90% delle volte quando si testa una storia. Sta in due posti, ed è lo
+stesso interruttore: in alto a destra nella barra, sotto il pollice mentre si
+gioca, e in fondo al menu accanto al numero di versione, che è dove lo si cerca
+quando il player lo si sta usando e non programmando.
 
-Il pannello `☰` ha quattro schede:
+Il menu `☰` si apre e si chiude con la stessa icona nello stesso posto — in
+alto a sinistra — perché è un interruttore e non due comandi diversi. Dentro,
+le schede si dividono in due gruppi: le prime quattro sono per chi gioca, le
+ultime tre **compaiono solo a debug acceso**, per la stessa ragione per cui le
+chip delle azioni stanno sotto il debug — un elenco di flag o di azioni risolve
+gli enigmi al posto del giocatore.
 
-| scheda | cosa mostra |
-|---|---|
-| `stato` | scena corrente, flag attivi, inventario, scene visitate |
-| `scena` | tutti i parametri della scena e **tutte** le sue azioni, con ✓/× e motivo |
-| `linter` | le segnalazioni statiche, per gravità |
-| `traccia` | la sequenza giocata, da copiare — e una casella per rigiocarne una |
+| scheda | cosa mostra | |
+|---|---|---|
+| `principale` | dove sei e cosa hai in mano | |
+| `disco` | il codice con cui si riprende la partita altrove | |
+| `interprete` | quale backend traduce la frase scritta in un'azione | |
+| `ascolto` | la storia recitata invece che letta | |
+| `stato` | scena corrente, flag attivi, scene visitate, e tutti i parametri della scena con **tutte** le sue azioni, ✓/× e motivo | debug |
+| `linter` | le segnalazioni statiche, per gravità | debug |
+| `traccia` | la sequenza giocata, da copiare — e una casella per rigiocarne una | debug |
+
+In `principale` le cose si chiamano con le parole della storia — il titolo
+della scena, il nome dell'oggetto — mentre gli id restano in `stato`, che è
+dove si va quando si sta collaudando invece di giocando.
+
+In fondo al menu, accanto al numero di versione, stanno i due comandi che non
+appartengono a nessuna scheda: **ricomincia**, che vale per tutta la partita, e
+**debug**, che vale per tutto il player. Ricominciare chiede conferma, e nella
+domanda dice dov'è il codice da copiare prima: da quando la partita si può
+portare via, è l'unico bottone del player che distrugga qualcosa di
+irrecuperabile.
+
+Le schede vanno a capo invece di scorrere. Erano una striscia scorrevole e col
+dito funzionava, ma col mouse no — barra nascosta, niente trascinamento, la
+rotellina scorre in verticale — e da desktop, a debug acceso, le ultime schede
+erano irraggiungibili. Sette voci ci stanno su due righe, e su due righe si
+vedono tutte insieme.
+
+### Salvare e riprendere
+
+La scheda `disco` mostra **un codice solo** (`ZAI1.…`, una riga di base64) che
+contiene due cose distinte: la partita fin qui e le impostazioni del player. Si
+copia, si manda dove si vuole — una mail a se stessi, una nota, una chat — e si
+incolla dall'altra parte: è così che si passa dal desktop al telefono. Non c'è
+nessun server e non c'è nessuna memoria: chiudendo la pagina non resta niente,
+quello che non è stato copiato è perso.
+
+Dentro non c'è niente di nuovo. La partita è la sua traccia — il resolver può
+solo scegliere fra azioni già definite, quindi la sequenza degli id *è* la
+partita — e le impostazioni sono i parametri che già vivevano fuori da essa
+(voce e modalità ascolto, backend del resolver e indirizzi dell'embedder,
+debug). Da qui la scelta al momento di caricare: **la partita, le impostazioni
+o entrambe**. Chi si porta la partita sul telefono di solito vuole anche la sua
+voce; chi ricomincia da capo sul desktop vuole solo quella.
+
+Il campo di caricamento accetta anche una **traccia in chiaro**, cioè quello che
+copia la scheda `traccia` (sotto debug) e quello che contengono i file `.playthrough.txt`: in
+quel caso non c'è nessuna impostazione da prendere e nessun modo di sapere di
+quale storia sia.
+
+Il salvataggio porta con sé `story_id` e `ir_version`, e servono a due controlli
+diversi. Partita di **un'altra storia**: rifiutata, perché rigiocare quegli id
+qui non darebbe un errore — darebbe una partita sbagliata in silenzio, che è il
+modo peggiore di sbagliare (le impostazioni restano comunque prendibili). Stessa
+storia ma **IR diverso**: solo un avviso, perché lì il caso peggiore è già
+gestito — se la storia è cambiata dove passava la partita la traccia finisce
+prima, e una traccia che finisce restituisce il gioco a chi lo sta giocando.
+
+Il codice è volutamente **sincrono e non compresso**: comprimere nel browser
+vuol dire `CompressionStream`, che è asincrono, e una `await` prima di
+`clipboard.writeText()` fa scadere il gesto dell'utente e la scrittura negli
+appunti viene rifiutata. Qualche kilobyte di base64 si incolla ovunque; una
+copia che fallisce a intermittenza no. Se un giorno servirà una
+sincronizzazione automatica fra device, sarà un'aggiunta *sopra* questo
+formato — lo stesso blob spedito a un endpoint — non una cosa al posto suo:
+questo è l'unico meccanismo che funziona anche da `file://` e dentro una pagina
+pubblicata che non può fare richieste verso l'esterno.
 
 ## La CLI
 
@@ -314,7 +386,7 @@ src/core/     engine, stato, Effect/Condition, linter, resolver, lettura strict 
 src/web/      player web: transcript, chip, pannello, modalita' ascolto
 src/cli/      terminale interattivo, esecutore di script, colori e wrap
 scripts/      embed.mjs: incorpora un IR nella build web
-test/         test di engine, linter e lettura dell'IR
+test/         test di engine, linter, lettura dell'IR e salvataggi
 testdata/     fixture: una storia sana e una deliberatamente rotta
 ```
 

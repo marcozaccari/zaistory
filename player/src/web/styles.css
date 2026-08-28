@@ -623,6 +623,23 @@ button {
   content: "— ";
 }
 
+/* --- Icone -----------------------------------------------------------------
+   Il segno del tipo di risorsa, dentro l'etichetta del campo: prende da lei il
+   colore, quindi non c'e' una seconda tavolozza da tenere allineata. */
+
+.icona {
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  vertical-align: -1.5px;
+}
+
+.gname .icona {
+  width: 13px;
+  height: 13px;
+  vertical-align: -2px;
+}
+
 /* I prompt di un beat di narrazione: appesi al testo che accompagnano, non in
    una scheda propria — il beat resta la cosa da leggere. */
 .assets {
@@ -969,23 +986,20 @@ body.debug .choice .why {
    funzione. Si e' visto aggiungendo la sesta scheda: su un telefono in
    verticale la testata diventava 449px dentro un pannello da 360, e il tasto
    di chiusura finiva oltre il bordo dello schermo. */
+/* Le schede vanno a capo invece di scorrere.
+   Erano una striscia scorrevole, e col dito funzionava: si trascina e basta.
+   Col mouse no — la barra di scorrimento era nascosta, trascinare non si puo'
+   e la rotellina scorre in verticale — quindi da desktop, a debug acceso, le
+   ultime schede erano semplicemente irraggiungibili. Sette voci non sono
+   abbastanza da giustificare una scorciatoia da imparare: ci stanno su due
+   righe, e su due righe si vedono tutte insieme, che e' anche il modo di
+   scoprire che esistono. */
 .tabs {
   flex: 1;
   min-width: 0;
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-behavior: smooth;
-  /* Nessuna sfumatura in coda: si era provata e mangiava proprio la scheda
-     attiva, che sul telefono e' quasi sempre l'ultima raggiunta. Che l'elenco
-     continui lo dice gia' la scheda tagliata a meta' al bordo — e' la stessa
-     affordance, senza spegnere l'unica voce che si sta guardando. */
-  scrollbar-width: none;
-}
-
-.tabs::-webkit-scrollbar {
-  display: none;
 }
 
 .tabs button {
@@ -1025,7 +1039,26 @@ body.debug .choice .why {
 
 /* Chi prova una storia da telefono spesso ha in mano una build vecchia: la
    versione va letta senza dover cercare, da qualunque tab. */
+/* Le schede di ispezione esistono nel documento anche a debug spento: e' il
+   `body.debug` a deciderne la visibilita', come per tutta l'altra
+   diagnostica, cosi' accendere il debug non ricostruisce il pannello. */
+body:not(.debug) #tabs button[data-debug] {
+  display: none;
+}
+
+/* Il piede del menu tiene la versione a sinistra e, a destra, i due comandi
+   che non appartengono a nessuna scheda: ricominciare vale per tutta la
+   partita, il debug per tutto il player. */
+.piede-azioni {
+  display: flex;
+  gap: 8px;
+}
+
 .panel-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   padding: 8px 14px calc(8px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
   color: var(--fg-dim);
@@ -1165,6 +1198,63 @@ body.debug .choice .why {
 .empty {
   color: var(--fg-dim);
   font-size: 13.5px;
+}
+
+/* --- Salvataggio -----------------------------------------------------------
+   Il codice e' una riga sola lunga qualche migliaio di caratteri: senza un
+   tetto si mangerebbe il pannello e i bottoni per copiarlo finirebbero fuori
+   dallo schermo, che e' l'unica cosa che serve fare con lui. */
+
+.trace.codice {
+  max-height: 22vh;
+  overflow: auto;
+  font-size: 11.5px;
+  color: var(--fg-dim);
+}
+
+.esito {
+  margin-top: 12px;
+}
+
+/* --- Conferma --------------------------------------------------------------
+   Sta sopra al pannello (z-index 11) perche' le domande che pone nascono
+   sempre da un bottone che sta li' dentro. */
+
+.conferma-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.conferma {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 10px;
+  padding: 16px 16px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+
+.conferma h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.conferma p {
+  margin: 0;
+  color: var(--fg-dim);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.conferma .rowbtns {
+  justify-content: flex-end;
 }
 
 /* --- Modalita' ascolto -----------------------------------------------------

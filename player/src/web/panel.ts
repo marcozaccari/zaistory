@@ -9,23 +9,38 @@
 
 import {
   type Finding,
+  type Salvataggio,
   type Scene,
   type Story,
+  SalvataggioError,
+  contenuto,
   countFindings,
   describeCondition,
   describeEffect,
   findCharacter,
   isRepeatable,
+  leggiSalvataggio,
   nodeIds,
   sceneType,
   toneOf,
 } from '../core/index.js';
-import { clear, el, kv, premi } from './dom.js';
+import { clear, conferma, el, kv, premi } from './dom.js';
 import type { ConfigEmbedder } from './embedder.js';
 import { ASCOLTO_DEFAULT, type Ascolto, type ImpostazioniAscolto } from './ascolto.js';
 import type { WebUI } from './webui.js';
 
-export type Tab = 'stato' | 'scena' | 'linter' | 'traccia' | 'resolver' | 'ascolto';
+/**
+ * Le schede, nell'ordine in cui stanno nella striscia.
+ *
+ * Le prime quattro sono per chi gioca; le ultime tre ispezionano, e a debug
+ * spento non compaiono nemmeno — un elenco di azioni o di flag risolve gli
+ * enigmi al posto del giocatore, che e' la stessa ragione per cui le chip del
+ * dock stanno sotto il debug.
+ */
+export type Tab = 'principale' | 'disco' | 'interprete' | 'ascolto' | 'stato' | 'linter' | 'traccia';
+
+/** Le schede che esistono solo a debug acceso. */
+export const TAB_DEBUG: readonly Tab[] = ['stato', 'linter', 'traccia'];
 
 export interface PanelContext {
   story: Story;
@@ -35,6 +50,14 @@ export interface PanelContext {
   onRestart: () => void;
   onReplay: (script: string) => void;
   onLoadOther: () => void;
+  /** Il debug e' acceso: qui serve solo alle diagnostiche in mezzo al testo —
+   * quali schede si vedono lo decide il CSS, come per il resto della
+   * diagnostica. */
+  debug: boolean;
+  /** Il codice da copiare: partita corrente piu' impostazioni correnti. */
+  codiceSalvataggio: () => string;
+  /** Carica quello che e' stato incollato, ma solo i pezzi scelti. */
+  onCarica: (s: Salvataggio, cosa: { partita: boolean; config: boolean }) => void;
   /** Il backend attivo e il modo di cambiarlo a partita in corso. */
   resolver: string;
   statoResolver: string;
@@ -50,23 +73,26 @@ export interface PanelContext {
 export function renderPanel(body: HTMLElement, tab: Tab, ctx: PanelContext): void {
   clear(body);
   switch (tab) {
+    case 'principale':
+      renderPrincipale(body, ctx);
+      break;
+    case 'disco':
+      renderDisco(body, ctx);
+      break;
+    case 'interprete':
+      renderInterprete(body, ctx);
+      break;
+    case 'ascolto':
+      renderAscolto(body, ctx);
+      break;
     case 'stato':
       renderStato(body, ctx);
-      break;
-    case 'scena':
-      renderScena(body, ctx);
       break;
     case 'linter':
       renderLinter(body, ctx);
       break;
     case 'traccia':
       renderTraccia(body, ctx);
-      break;
-    case 'resolver':
-      renderResolver(body, ctx);
-      break;
-    case 'ascolto':
-      renderAscolto(body, ctx);
       break;
   }
 }
@@ -79,7 +105,8 @@ function chips(values: string[], vuoto: string): HTMLElement {
 }
 
 /**
- * La scheda del resolver.
+ * La scheda dell'interprete: chi decide a quale azione corrisponde la frase
+ * che si e' scritta.
  *
  * Ha una scheda sua e non un angolo di "stato" perche' non e' stato di gioco:
  * e' uno **strumento di misura**, e la cosa da fare con lui e' accendere
@@ -91,7 +118,7 @@ function chips(values: string[], vuoto: string): HTMLElement {
  * quando questo backend fallisce, fallisce sempre su uno di quei tre, e senza
  * poterli cambiare l'unica diagnosi che arriva all'utente e' "Failed to fetch".
  */
-function renderResolver(body: HTMLElement, ctx: PanelContext): void {
+function renderInterprete(body: HTMLElement, ctx: PanelContext): void {
   const MODI: Array<[string, string, string]> = [
     ['lessicale', 'lessicale', 'Deterministico, nessun modello, nessuna rete, nessun byte scaricato.'],
     [
@@ -168,9 +195,74 @@ function renderResolver(body: HTMLElement, ctx: PanelContext): void {
   body.append(btns);
 }
 
+/**
+ * La scheda principale: dove sei e cosa hai in mano.
+ *
+ * E' la prima perche' e' l'unica che serve a chi sta giocando e basta. Dice le
+ * due cose che si dimenticano davvero — in che scena si e' e cosa si e'
+ * raccolto — con le parole della storia e non con quelle dell'IR: il titolo
+ * della scena, non il suo id; il nome dell'oggetto, non la chiave
+ * dell'inventario. Gli id restano nella scheda «stato», che e' dove si va
+ * quando si sta collaudando invece di giocare.
+ *
+ * «Ricomincia» non sta qui ma nel piede del menu, accanto al debug: non e' una
+ * cosa che si guarda, e' un comando, e vale per tutta la partita e non per la
+ * scheda che si sta leggendo.
+ */
+function renderPrincipale(body: HTMLElement, ctx: PanelContext): void {
+  const sc = ctx.ui.scene;
+
+  body.append(el('h3', undefined, 'dove sei'));
+  if (sc) body.append(el('p', undefined, sc.title || sc.id));
+  else body.append(el('p', 'empty', "La partita non e' ancora cominciata."));
+
+  body.append(el('h3', undefined, 'inventario'));
+  body.append(chips(nomiInventario(ctx), 'non hai niente con te'));
+}
+
+/**
+ * I nomi degli oggetti, non le loro chiavi.
+ *
+ * Un oggetto senza scheda in `items` non ha un nome da mostrare: resta l'id, e
+ * che manchi la scheda si dice solo a debug acceso — e' una diagnostica
+ * sull'IR, e chi gioca non c'entra niente.
+ */
+function nomiInventario(ctx: PanelContext): string[] {
+  return (ctx.ui.state?.inventory ?? []).map((id) => {
+    const nome = ctx.story.items?.find((i) => i.id === id)?.name;
+    if (nome) return nome;
+    return ctx.debug ? `${id} [senza scheda]` : id;
+  });
+}
+
+/**
+ * La domanda prima di ricominciare.
+ *
+ * Da quando la partita si puo' portare via, «ricomincia» e' l'unico bottone
+ * del player che distrugga qualcosa che non si puo' riavere — e la risposta
+ * giusta a un tocco per sbaglio non e' «pazienza», e' dire dov'e' il codice da
+ * copiare prima.
+ */
+export function chiediSeRicominciare(): Promise<boolean> {
+  return conferma({
+    titolo: 'Ricominciare da capo?',
+    testo:
+      "La partita in corso si perde e si riparte dalla prima scena. Se vuoi tenerla, annulla e copia " +
+      "il codice dalla scheda «disco»: da li' si riprende quando vuoi, anche su un altro device.",
+    ok: 'ricomincia',
+  });
+}
+
+/**
+ * La scheda «stato»: la partita vista come dato, piu' la scena vista come IR.
+ *
+ * Le due cose stanno insieme perche' si guardano insieme: un'azione che non
+ * compare si spiega quasi sempre con un flag che manca, e tenerle in due
+ * schede diverse voleva dire saltare avanti e indietro con la domanda in
+ * mente.
+ */
 function renderStato(body: HTMLElement, ctx: PanelContext): void {
-  const { ui, story } = ctx;
-  const st = ui.state;
+  const st = ctx.ui.state;
   if (!st) {
     body.append(el('p', 'empty', 'La partita non e\' ancora cominciata.'));
     return;
@@ -181,16 +273,10 @@ function renderStato(body: HTMLElement, ctx: PanelContext): void {
   body.append(el('h3', undefined, 'flag attivi'));
   body.append(chips(st.sortedFlags(), 'nessun flag impostato'));
 
-  body.append(el('h3', undefined, 'inventario'));
-  body.append(
-    chips(
-      st.inventory.map((id) => story.items?.find((i) => i.id === id)?.name ?? `${id} [senza scheda]`),
-      'inventario vuoto',
-    ),
-  );
-
   body.append(el('h3', undefined, 'scene visitate'));
   body.append(el('p', undefined, st.history.length ? st.history.join(' → ') : '—'));
+
+  renderScena(body, ctx);
 }
 
 function renderScena(body: HTMLElement, ctx: PanelContext): void {
@@ -333,7 +419,7 @@ function renderTraccia(body: HTMLElement, ctx: PanelContext): void {
   const restart = el('button', 'btn', 'ricomincia');
   restart.onclick = async () => {
     await premi(restart);
-    ctx.onRestart();
+    if (await chiediSeRicominciare()) ctx.onRestart();
   };
   const other = el('button', 'btn', 'cambia IR');
   other.onclick = async () => {
@@ -550,4 +636,244 @@ function renderAscolto(body: HTMLElement, ctx: PanelContext): void {
 function clearBody(body: HTMLElement): HTMLElement {
   clear(body);
   return body;
+}
+
+/**
+ * La scheda «disco»: portare una partita su un altro device senza nessun
+ * server.
+ *
+ * Il codice non contiene niente che il player non avesse gia': la traccia — che
+ * *e'* la partita, perche' il resolver puo' solo scegliere fra azioni gia'
+ * definite — e le impostazioni, che vivono fuori dalla partita da sempre. Sono
+ * pero' due cose con due vite diverse, ed e' per questo che al momento di
+ * caricare si sceglie: chi porta la partita sul telefono di solito vuole anche
+ * la sua voce, ma chi ricomincia da capo sul desktop vuole solo quella.
+ *
+ * La scheda resta separata da «traccia» apposta. La traccia in chiaro e' uno
+ * strumento di collaudo: si legge, si mette in un file, si rigioca in CI. Il
+ * codice qui e' un salvataggio: opaco, breve, buono da mandare in chat. Fondere
+ * le due cose avrebbe reso peggiore l'una e l'altra — anche se il campo qui
+ * sotto accetta lo stesso una traccia nuda, perche' rifiutarla sarebbe stato
+ * solo pedanteria.
+ */
+function renderDisco(body: HTMLElement, ctx: PanelContext): void {
+  const codice = ctx.codiceSalvataggio();
+  const passi = ctx.trace().length;
+
+  body.append(el('h3', undefined, 'salva'));
+  body.append(
+    el(
+      'p',
+      'empty',
+      "Un codice solo, e dentro ci sono due cose separate: la partita fin qui e le impostazioni del player. " +
+        "Copialo e mandatelo dove vuoi — una mail a te stesso, una nota, una chat — poi incollalo sull'altro " +
+        "device. Non passa da nessun server: sta tutto in quella riga.",
+    ),
+  );
+  body.append(el('p', 'empty', `${ctx.story.title} · ${quantiPassi(passi)} · ${codice.length} caratteri`));
+
+  const pre = el('pre', 'trace codice', codice);
+  body.append(pre);
+
+  const btns = el('div', 'rowbtns');
+  const copy = el('button', 'btn primary', 'copia il codice');
+  copy.onclick = async () => {
+    // Come per la traccia: la pressione non si aspetta, perche' un timer messo
+    // davanti alla scrittura negli appunti basta a far scadere il gesto e a
+    // farla rifiutare.
+    void premi(copy).then(() => copy.classList.remove('premuto'));
+    try {
+      await navigator.clipboard.writeText(codice);
+      copy.textContent = 'copiato';
+      setTimeout(() => (copy.textContent = 'copia il codice'), 1200);
+    } catch {
+      // Gli appunti si possono negare — capita da `file://` su qualche browser.
+      // Il codice pero' e' li' sopra per intero: lo si seleziona e si dice che
+      // ora tocca a Ctrl-C, invece di lasciare un bottone che non fa niente.
+      seleziona(pre);
+      copy.textContent = 'selezionato: copialo a mano';
+    }
+  };
+  btns.append(copy);
+  body.append(btns);
+
+  // ------------------------------------------------------------------ carica
+
+  body.append(el('h3', undefined, 'carica'));
+  body.append(
+    el(
+      'p',
+      'empty',
+      'Incolla un codice: prima si vede che cosa contiene, poi si sceglie che cosa prenderne. ' +
+        'Va bene anche una traccia in chiaro, come quelle della scheda «traccia».',
+    ),
+  );
+
+  const ta = el('textarea', 'trace');
+  ta.rows = 4;
+  ta.style.width = '100%';
+  ta.placeholder = 'ZAI1.…';
+  body.append(ta);
+
+  const esito = el('div', 'esito');
+  const azioni = el('div', 'rowbtns');
+
+  const esamina = el('button', 'btn primary', 'esamina');
+  esamina.onclick = async () => {
+    await premi(esamina);
+    mostraEsito(esito, ta.value, ctx);
+  };
+
+  // `readText` non c'e' su tutti i browser (Firefox non lo espone alle pagine):
+  // dove manca il bottone non compare affatto, e resta l'incolla a mano nel
+  // campo, che funziona sempre.
+  if (navigator.clipboard?.readText) {
+    const leggi = el('button', 'btn', 'leggi dagli appunti');
+    leggi.onclick = async () => {
+      void premi(leggi).then(() => leggi.classList.remove('premuto'));
+      try {
+        ta.value = await navigator.clipboard.readText();
+        mostraEsito(esito, ta.value, ctx);
+      } catch {
+        clear(esito);
+        esito.append(
+          el('p', 'stato-resolver', 'Il browser non mi lascia leggere gli appunti: incolla il codice nel campo qui sopra.'),
+        );
+      }
+    };
+    azioni.append(leggi);
+  }
+
+  azioni.append(esamina);
+  body.append(azioni, esito);
+}
+
+/**
+ * Che cosa c'e' nel codice incollato, e che cosa se ne puo' prendere.
+ *
+ * Il controllo che conta e' quello sulla storia. Una traccia rigiocata nella
+ * storia sbagliata non da' un errore: gli id semplicemente non corrispondono a
+ * niente e ne esce una partita sbagliata in silenzio — che e' il modo peggiore
+ * di sbagliare. Quindi partita di un'altra storia: bloccata. Stessa storia ma
+ * IR diverso: solo un avviso, perche' li' il caso e' un altro — la traccia puo'
+ * finire prima del previsto, e una traccia che finisce e' gia' gestita: la
+ * partita torna in mano a chi gioca.
+ */
+function mostraEsito(esito: HTMLElement, testo: string, ctx: PanelContext): void {
+  clear(esito);
+
+  let salv: Salvataggio;
+  try {
+    salv = leggiSalvataggio(testo);
+  } catch (err) {
+    esito.append(
+      el(
+        'p',
+        'stato-resolver',
+        err instanceof SalvataggioError ? err.message : `Non riesco a leggerlo: ${(err as Error).message}`,
+      ),
+    );
+    return;
+  }
+
+  const c = contenuto(salv);
+  const p = salv.partita;
+
+  const dl = el('dl', 'kv');
+  kv(
+    dl,
+    'partita',
+    p
+      ? `${p.title ? `«${p.title}»` : 'senza titolo'} · ${quantiPassi(c.passi)}${p.ir_version ? ` · IR ${p.ir_version}` : ''}`
+      : '— non ce n\'e\' una',
+  );
+  kv(dl, 'impostazioni', c.config ? 'voce, backend del resolver, debug' : '— non ci sono');
+  if (salv.salvato) kv(dl, 'salvato', quando(salv.salvato));
+  esito.append(dl);
+
+  let partitaOk = !!p;
+  if (p) {
+    if (p.story_id && p.story_id !== ctx.story.id) {
+      partitaOk = false;
+      esito.append(
+        el(
+          'p',
+          'stato-resolver',
+          `Questa partita e' di un'altra storia (${p.title || p.story_id}), e qui si sta giocando «${ctx.story.title}». ` +
+            "Rigiocarla non darebbe un errore, darebbe una partita sbagliata senza dirlo: carica prima l'IR giusto. " +
+            'Le impostazioni invece si possono prendere lo stesso.',
+        ),
+      );
+    } else if (!p.story_id) {
+      esito.append(
+        el(
+          'p',
+          'empty',
+          `Traccia in chiaro, senza il nome della storia: se non e' di «${ctx.story.title}» quello che ne esce non vuol dire niente.`,
+        ),
+      );
+    } else if (p.ir_version && p.ir_version !== ctx.story.ir_version) {
+      esito.append(
+        el(
+          'p',
+          'stato-resolver',
+          `Salvata con IR ${p.ir_version}, qui c'e' la ${ctx.story.ir_version}. Si carica lo stesso, ma se la storia e' ` +
+            "cambiata dove passava la partita la traccia puo' finire prima: da li' si continua a giocare a mano.",
+        ),
+      );
+    }
+  }
+
+  if (!partitaOk && !c.config) {
+    esito.append(el('p', 'empty', 'Non c\'e\' niente che si possa caricare qui.'));
+    return;
+  }
+
+  const scelte = el('div', 'rowbtns');
+  const bottone = (label: string, cls: string, cosa: { partita: boolean; config: boolean }): HTMLButtonElement => {
+    const b = el('button', cls, label);
+    b.onclick = async () => {
+      await premi(b);
+      ctx.onCarica(salv, cosa);
+      // Caricando la partita il pannello si chiude e riparte tutto: non c'e'
+      // niente da confermare. Le impostazioni invece cambiano qualcosa che non
+      // si vede da qui, e senza una parola sembrerebbe non essere successo
+      // niente.
+      if (!cosa.partita) b.textContent = 'caricate';
+    };
+    return b;
+  };
+
+  if (partitaOk && c.config) {
+    scelte.append(
+      bottone('carica tutto', 'btn primary', { partita: true, config: true }),
+      bottone('solo la partita', 'btn', { partita: true, config: false }),
+      bottone('solo le impostazioni', 'btn', { partita: false, config: true }),
+    );
+  } else if (partitaOk) {
+    scelte.append(bottone('carica la partita', 'btn primary', { partita: true, config: false }));
+  } else {
+    scelte.append(bottone('carica le impostazioni', 'btn primary', { partita: false, config: true }));
+  }
+  esito.append(scelte);
+}
+
+function quantiPassi(n: number): string {
+  return `${n} ${n === 1 ? 'passo' : 'passi'}`;
+}
+
+/** La data del salvataggio come la scriverebbe chi la legge, non in ISO. */
+function quando(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+/** Seleziona un blocco: il ripiego quando gli appunti sono negati. */
+function seleziona(node: Node): void {
+  const sel = window.getSelection();
+  if (!sel) return;
+  const r = document.createRange();
+  r.selectNodeContents(node);
+  sel.removeAllRanges();
+  sel.addRange(r);
 }

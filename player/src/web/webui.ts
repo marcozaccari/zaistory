@@ -38,6 +38,7 @@ import {
   toneOf,
 } from '../core/index.js';
 import { clear, el, premi, staScrivendo } from './dom.js';
+import { icona, iconaGruppo } from './icone.js';
 import type { Ascolto } from './ascolto.js';
 
 /** Il tipo di risorsa che un prompt descrive: da' il colore all'etichetta, e
@@ -61,10 +62,19 @@ function etichettaLuogo(id: string, nome?: string): string {
  */
 type PromptRow = [string, string | undefined, Media, boolean?];
 
+/** L'etichetta del campo, col segno del suo tipo di media davanti. */
+function etichetta(label: string, media: Media): HTMLElement {
+  const span = el('span', 'label');
+  const segno = icona(media);
+  if (segno) span.append(segno);
+  span.append(document.createTextNode(label));
+  return span;
+}
+
 function promptRow([label, value, media, ereditato]: [string, string, Media, boolean?]): HTMLElement {
   if (!ereditato) {
     const row = el('span', `prompt m-${media}`);
-    row.append(el('span', 'label', label), document.createTextNode(value));
+    row.append(etichetta(label, media), document.createTextNode(value));
     return row;
   }
 
@@ -80,7 +90,7 @@ function promptRow([label, value, media, ereditato]: [string, string, Media, boo
   // troncamento, cioe' sparirebbe esattamente quando serve a dire "c'e'
   // dell'altro, toccami".
   const caret = el('span', 'caret', '▸');
-  row.append(el('span', 'label', label), caret, document.createTextNode(value));
+  row.append(etichetta(label, media), caret, document.createTextNode(value));
   row.onclick = () => {
     const aperto = row.classList.toggle('aperto');
     row.setAttribute('aria-expanded', String(aperto));
@@ -102,7 +112,10 @@ function promptGroup(name: string, rows: PromptRow[], who?: string): HTMLElement
   const present = rows.filter((r): r is [string, string, Media, boolean?] => !!r[1]);
   if (present.length === 0) return undefined;
   const box = el('div', 'group');
-  const head = el('span', 'gname', name);
+  const head = el('span', 'gname');
+  const segno = iconaGruppo(name);
+  if (segno) head.append(segno);
+  head.append(document.createTextNode(name));
   if (who) head.append(el('span', 'who', who));
   box.append(head);
   for (const row of present) box.append(promptRow(row));
