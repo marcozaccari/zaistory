@@ -171,6 +171,10 @@ export interface Story {
   start_scene: string;
   state_flags_schema?: string[];
   inventory_schema?: string[];
+  /** Oggetti gia' in inventario quando la partita comincia, prima della
+   * start_scene: quello che il personaggio si porta dietro da prima che la
+   * storia inizi. */
+  initial_inventory?: string[];
   scenes: Scene[];
 }
 

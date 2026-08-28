@@ -262,6 +262,8 @@ class Linter {
       m.set(k, [...(m.get(k) ?? []), v]);
     };
 
+    for (const it of this.story.initial_inventory ?? []) addItems.add(it);
+
     for (const sc of this.story.scenes) {
       for (const f of sc.on_enter_flags_set ?? []) setFlags.add(f);
       for (const e of allEffects(sc)) {
@@ -291,7 +293,7 @@ class Linter {
           );
         }
         if (c.cond.has_item && !addItems.has(c.cond.has_item)) {
-          this.add('errore', c.where, `richiede l'oggetto "${c.cond.has_item}", che nessuna azione mette mai in inventario`);
+          this.add('errore', c.where, `richiede l'oggetto "${c.cond.has_item}", che nessuna azione mette mai in inventario e che non e' in initial_inventory`);
         }
       }
     }
@@ -316,6 +318,19 @@ class Linter {
         if (!declared.has(f)) this.add('info', '', `flag "${f}" usato ma non elencato in state_flags_schema`);
       }
     }
+    const carried = new Set(this.story.initial_inventory ?? []);
+    for (const sc of this.story.scenes) {
+      for (const e of allEffects(sc)) {
+        if (e.eff.add_inventory && carried.has(e.eff.add_inventory)) {
+          this.add(
+            'avviso',
+            e.where,
+            `mette in inventario "${e.eff.add_inventory}", che il giocatore ha gia' da initial_inventory`,
+          );
+        }
+      }
+    }
+
     if (this.story.inventory_schema?.length) {
       const declared = new Set(this.story.inventory_schema);
       for (const it of [...addItems].sort()) {

@@ -214,6 +214,7 @@ export class TermUI implements PlayerUI {
     this.out();
     this.param('state_flags_schema', st.state_flags_schema?.join(', '));
     this.param('inventory_schema', st.inventory_schema?.join(', '));
+    this.param('initial_inventory', st.initial_inventory?.join(', '));
 
     if (this.debug) this.out(this.t.mag("modalita' debug attiva"));
     this.out();

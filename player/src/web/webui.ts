@@ -212,7 +212,15 @@ export class WebUI implements PlayerUI {
   private push(node: Node): void {
     if (this.dead) return;
     this.transcript.append(node);
-    if (this.wantLanding && node instanceof HTMLElement) {
+    // L'atterraggio dev'essere un blocco che si *vede*. Le righe di debug
+    // stanno nel DOM anche a debug spento, e `offsetTop` di un elemento
+    // display:none e' 0: ancorarsi a una di loro riporta la vista in cima al
+    // transcript. Succede sul serio all'ultimo tocco di un dialogo, dove il
+    // turno stampa solo la riga nascosta del flag appena impostato. Finche'
+    // arriva roba invisibile si continua ad aspettare; se il turno non stampa
+    // altro, `landing` resta vuoto e si torna al fondo, che li' e' il punto
+    // giusto.
+    if (this.wantLanding && node instanceof HTMLElement && node.offsetParent !== null) {
       this.landing = node;
       this.wantLanding = false;
     }
@@ -386,6 +394,7 @@ export class WebUI implements PlayerUI {
     };
     list('state_flags_schema', st.state_flags_schema);
     list('inventory_schema', st.inventory_schema);
+    list('initial_inventory', st.initial_inventory);
 
     if (dettagli.childElementCount) cover.append(dettagli);
 

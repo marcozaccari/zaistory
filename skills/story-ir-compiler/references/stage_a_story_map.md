@@ -40,9 +40,13 @@ Un singolo oggetto JSON con questa forma (i campi extra non sono ammessi):
   "characters": [
     { "id": "...", "name": "...", "visual_prompt": "...", "voice": { "style_prompt": "..." } }
   ],
+  "places": [
+    { "id": "...", "name": "...", "visual_prompt": "..." }
+  ],
   "start_scene": "id-prima-scena",
   "state_flags_schema": ["..."],
   "inventory_schema": ["..."],
+  "initial_inventory": ["..."],
   "scene_segments": [
     {
       "id": "id-scena",
@@ -74,7 +78,24 @@ passare il blocco giusto allo Stadio B.
    È normale ed atteso che tu debba colmare vuoti strutturali (es. dedurre
    dove finisce una scena e comincia la successiva).
 
-4. **Un "SEQUENZA"/capitolo della sceneggiatura NON è automaticamente una
+4. **Gli appunti dell'autore non sono sceneggiatura.** Un documento può
+   contenere, mescolate al testo, sezioni che parlano *del gioco* invece che
+   *nel gioco*: note di regia e produzione, una sezione globale
+   `## Note di giocabilità`, blocchi `#### Giocabilità` in coda alle scene.
+   Trattali così:
+   - **non sono un segmento di scena** e non vanno mai in `scene_segments`:
+     nessuna di quelle sezioni diventa una scena giocabile;
+   - le note **di regia/produzione** (formato, fotografia, suono, musica)
+     sono la fonte migliore per `global_style` — `image_style_suffix`,
+     `ambient_music_tags`, il tono di default;
+   - le note **di giocabilità** ti dicono quali flag e quali oggetti
+     serviranno davvero: leggile prima di scrivere `state_flags_schema` e
+     `inventory_schema`, ed è normale che quasi tutta quella lista nasca da lì;
+   - quello che dicono sul *comportamento* del gioco (cosa sblocca cosa, cosa
+     non va mai detto al giocatore) non serve a te: lo userà lo Stadio B, che
+     riceve il blocco sorgente con il suo appunto attaccato.
+
+5. **Un "SEQUENZA"/capitolo della sceneggiatura NON è automaticamente una
    scena del gioco**, e viceversa. Segmenta in base alla giocabilità, non
    alla struttura editoriale del documento:
    - Una sequenza fatta solo di montaggio narrato (V.O. su più inquadrature,
@@ -88,17 +109,51 @@ passare il blocco giusto allo Stadio B.
    - Non creare una scena per ogni singola inquadratura numerata: raggruppa
      inquadrature contigue non interattive nella stessa scena cutscene.
 
-5. **global_style.default_tone**: descrivi il tono con 3-6 aggettivi/frasi
+6. **Segmenta pensando anche a dove si torna indietro.** In questo motore il
+   giocatore non perde mai: il prezzo di un errore è essere rimesso in una
+   scena **già visitata** e dover rifare la strada (vedi le regole di gioco in
+   `SKILL.md`). Quindi una scena non è solo un pezzo di racconto, è anche un
+   posto in cui si può tornare: quando la sceneggiatura dice che il
+   protagonista viene cacciato da una stanza, la stanza in cui finisce deve
+   esistere come segmento suo, e le stanze fra le due anche. Un atto che gli
+   appunti descrivono come "si ripassa due volte dalle stesse stanze" ha
+   bisogno di stanze che siano scene, non di una scena unica che le riassume.
+
+   Una di queste stanze puo' non avere nessun blocco sorgente: la sceneggiatura
+   la descrive una volta sola, ma il gioco ci ripassa in un altro momento e con
+   un altro stato. In quel caso elencala comunque in `scene_segments`,
+   **senza** `source_excerpt_hint`: il segmenter la salta e la segnala, e lo
+   Stadio B la compila a partire dal blocco della scena gemella piu' il
+   contesto del ritorno. Non inventarle a raffica: una stanza di ritorno esiste
+   se qualche azione ci manda il giocatore, non "per simmetria".
+
+7. **global_style.default_tone**: descrivi il tono con 3-6 aggettivi/frasi
    brevi (es. "cupo, laconico, con vena ironica") — verrà riusato per generare
    risposte di fallback quando il giocatore scrive input non riconosciuto.
 
-6. **state_flags_schema / inventory_schema**: sono liste *previsionali*, basate
+8. **state_flags_schema / inventory_schema**: sono liste *previsionali*, basate
    su cosa intuisci servirà per la logica della storia (oggetti chiave, porte
    chiuse, informazioni ottenute). Lo Stadio B può comunque introdurre flag
    aggiuntivi non previsti qui, se la logica di una scena lo richiede: questa
    lista è un aiuto alla coerenza, non un vincolo rigido.
 
-7. **Personaggi**: nella roster globale va **chiunque parli**, anche una sola
+   Due cose che in queste liste non ci vanno mai, perché il motore non le
+   ammette: **contatori** (`cartucce_rimaste`, `tentativi`) e **misure di
+   tempo** (`turni_passati`, `attesa`). Le risorse non si contano e il tempo
+   non esiste: un flag dice che qualcosa è successo, non quante volte.
+
+9. **initial_inventory**: gli oggetti che il protagonista ha **già addosso
+   quando la partita comincia**, prima della prima scena — lo zaino con dentro
+   qualcosa, un'arma che porta da sempre, la lettera che ha in tasca dalla
+   pagina uno. Vanno elencati anche in `inventory_schema`. Ometti il campo se
+   la storia comincia a mani vuote.
+
+   Il caso tipico è un oggetto che serve solo molto più tardi: il giocatore lo
+   vede in inventario dall'inizio e non capisce a cosa serva, ed è esattamente
+   l'effetto voluto. Non trasformarlo in un oggetto da raccogliere nella prima
+   scena solo perché così è più comodo compilare.
+
+10. **Personaggi**: nella roster globale va **chiunque parli**, anche una sola
    volta — protagonisti, comprimari e voci di passaggio ("un anziano", "il
    terzo cieco", "una voce nel buio"). Non è un elenco dei personaggi
    importanti: è l'elenco dei parlanti, e serve al modulo assets, che assegna
@@ -114,7 +169,13 @@ passare il blocco giusto allo Stadio B.
    Se una voce ti sfugge in questa fase, lo Stadio B la ritrova compilando la
    scena e te la fa aggiungere: meglio recuperarla che lasciarla fuori.
 
-8. **Luoghi**: in `places` va ogni ambientazione in cui la storia **torna piu'
+   Una creatura che non parla ma si vede in mezza storia — un animale, una
+   macchina, una presenza — non è un parlante, ma ha comunque bisogno di un
+   `Character` con solo `id`, `name` e `visual_prompt` (niente `voice`): è
+   l'ancora su cui il modulo assets tiene coerente il suo aspetto, ed è quello
+   che `characters_in_frame` referenzierà.
+
+11. **Luoghi**: in `places` va ogni ambientazione in cui la storia **torna piu'
    di una volta** — la casa dove si svolgono tre scene, la piazza, la camera
    del consiglio, il crinale sopra il paese. Servono alla coerenza visiva: due
    scene ambientate nello stesso posto devono riferirsi allo stesso `Place`,
@@ -127,13 +188,15 @@ passare il blocco giusto allo Stadio B.
 
    Un'ambientazione che compare una volta sola non ha bisogno di un `Place`: la
    coerenza fra ritorni e' il problema, non la singola immagine. Non gonfiare
-   l'elenco con un luogo per scena.
+   l'elenco con un luogo per scena. Attenzione però al punto 6: in una storia
+   dove si cammina all'indietro, le stanze in cui si ripassa sono ricorrenti
+   per costruzione, anche se la sceneggiatura le descrive una volta sola.
 
-9. **La story map non porta la provenienza.** `generated_by` (compilatore,
-   versione, modello) viene apposto in fase di assemblaggio, al passo 6 di
+12. **La story map non porta la provenienza.** `generated_by` (compilatore,
+   versione, modello) viene apposto in fase di assemblaggio, al passo 7 di
    `SKILL.md`: qui non serve e non va inventato.
 
-10. **Non includere MAI testo fuori dal JSON**: niente premessa, niente
+13. **Non includere MAI testo fuori dal JSON**: niente premessa, niente
    spiegazioni, niente code fence markdown. Rispondi con il solo oggetto JSON,
    che deve essere direttamente parsabile.
 

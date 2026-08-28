@@ -45,7 +45,7 @@ PWA (principale) + eventuale bot Telegram (secondario, testuale)
 ## Il formato IR: decisioni chiave
 
 Schema: `engine-ir.schema.json` (JSON Schema draft 2020-12), versione
-corrente **1.4.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
+corrente **1.5.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
 
 Decisioni di design, con il *perché* (per non riscoprirle da capo):
 
@@ -150,6 +150,17 @@ Decisioni di design, con il *perché* (per non riscoprirle da capo):
   Corollario, scritto nelle istruzioni del compilatore: `model` va **omesso**
   quando non e' determinabile con certezza. Una provenienza inventata e' peggio
   di una assente, perche' fa cercare differenze dove non ce ne sono.
+- **`initial_inventory`: quello che il personaggio ha gia' addosso** (1.5.0).
+  Una storia puo' cominciare con qualcosa gia' nello zaino — in "Metal Head" un
+  walkie talkie scarico che servira' solo nell'ultima scena, e per tre atti sta
+  li' senza fare niente. Prima di 1.5.0 l'unico modo di darlo al giocatore era
+  un `add_inventory` dentro l'effetto di un'azione della prima scena: un dato di
+  partenza travestito da evento, che il linter non poteva distinguere da un
+  oggetto raccolto e che spariva se quella scena veniva ricompilata diversamente.
+  Il campo e' un elenco di id, sta accanto a `inventory_schema` (che resta
+  l'elenco documentale di *tutti* gli oggetti possibili) e il player lo applica
+  allo stato iniziale prima di entrare in `start_scene`.
+
 - **Riferimenti a scene esterne** (una scena come file separato, per storie
   molto grandi) sono previsti concettualmente ma non ancora affrontati nel
   dettaglio — oggi si lavora solo con IR a scene inline in un unico
@@ -165,6 +176,60 @@ Decisioni di design, con il *perché* (per non riscoprirle da capo):
   è l'equivalente moderno del classico "Non puoi farlo" dei punta-e-clicca,
   ma generato al volo e coerente col tono della scena invece che un
   messaggio di sistema generico.
+
+## Regole di game design che il compilatore applica
+
+Non sono vincoli di schema — l'IR permetterebbe benissimo di scriverne di
+opposte — ma sono il *modo* in cui questo progetto usa lo schema, ed e' il
+compilatore a doverle far rispettere. Sono emerse compilando "Metal Head":
+uno script di sopravvivenza pieno di urgenza recitata, cioe' esattamente il
+materiale che spinge a costruire timer e game over.
+
+- **Non si perde mai** (stile LucasArts). Niente morti, niente game over,
+  niente vicoli ciechi, niente partita da ricominciare. Qualunque cosa faccia
+  il giocatore e in qualunque ordine la faccia, si arriva sempre allo stesso
+  finale. Cio' che cambia non e' *se* ci arriva: e' **quanto gli costa**.
+- **Il costo dell'errore e' camminare all'indietro.** L'unica valuta della
+  punizione sono i passi: il giocatore viene rimesso in una scena gia' vista e
+  deve rifare la strada. Nessuna barra della minaccia, nessun avversario di cui
+  tracciare la posizione, nessuna variabile che dice dove si trova il pericolo:
+  la minaccia e' una **pressione**, cioe' un `goto_scene` all'indietro e un
+  fondo sonoro, non un'entita' simulata.
+- **Le risorse non si contano.** Munizioni, torce, batterie: trovarle e' un
+  evento, amministrarle non e' un gioco. Un oggetto sta in inventario e da'
+  accesso ad azioni; non ha una quantita' che scende, e nessuna azione fallisce
+  perche' e' finito qualcosa.
+- **Il tempo non esiste.** Nessun timer, da nessuna parte, mai: nessuna azione
+  scade, nessuna scena si chiude da sola, nessuna finestra si apre e si
+  richiude, nessuna occasione va persa perche' il giocatore ha esitato. Si
+  puo' restare fermi in una stanza per un'ora e non succede niente. Dove la
+  sceneggiatura ha urgenza, quell'urgenza e' **recitata**: sta nel testo, nel
+  suono e nelle immagini, non nella logica. Il giocatore deve sentire il
+  panico, non subirlo.
+
+  Corollario tecnico, ed e' quello che rende la regola verificabile: l'IR non
+  ha nessun costrutto temporale — nessun campo di durata, nessun effetto
+  ritardato, nessuna transizione automatica — e non deve acquisirne. Una scena
+  cambia solo perche' il giocatore ha scelto qualcosa. Se un giorno servisse un
+  timer, sarebbe una decisione da prendere qui, non un campo da aggiungere di
+  passaggio.
+- **Gli appunti di giocabilita' dell'autore sono specifica, non prosa.** Le
+  sceneggiature di questo progetto possono contenere blocchi marcati
+  (`#### Giocabilita'`, o una sezione globale `## Note di giocabilita'`): sono
+  istruzioni per il compilatore — condizioni di sblocco, azioni previste,
+  errori attesi, cosa non dire mai al giocatore — e non vanno mai riversati
+  nel testo che il giocatore legge.
+
+  Hanno la precedenza sulle regole di forma del compilatore, e il caso
+  concreto e' il limite di 3-6 azioni per scena: quel limite protegge dalle
+  scene-elenco che nascono quando e' il compilatore a inventare, e non ha
+  nessun titolo per correggere un autore che ha gia' deciso quante cose ci
+  sono in una stanza. Se l'appunto ne elenca nove, sono nove.
+- **Il compilatore chiede prima di partire.** Due decisioni non si possono
+  dedurre dal testo: quanto inventare (enigmi, azioni, oggetti, flag) rispetto
+  agli appunti gia' scritti, e quanto rielaborare i dialoghi rispetto alle
+  battute gia' esistenti. Sono scelte dell'autore, e indovinarle sbagliate si
+  paga con una ricompilazione intera.
 
 ## Il compilatore: dove si trova oggi il lavoro
 
@@ -387,6 +452,22 @@ Vite sono soli strumenti di build).
   e 10 interattive) con `examples/nel-paese-dei-ciechi.playthrough.txt`, la
   partita completa dal prologo al finale: è il test di conformità dell'IR
   end-to-end, e va rigiocato quando si tocca lo schema o il player.
+- Una seconda sceneggiatura REALE fornita dall'utente ("Metal Head",
+  adattamento da Black Mirror 4x05) — scritta con gli **appunti di giocabilità
+  dentro il documento** (`## Note di giocabilità` globali e blocchi
+  `#### Giocabilità` per scena), che è la forma in cui l'autore lavora davvero.
+  È la fonte delle quattro regole di game design qui sopra, di
+  `initial_inventory`, e della scoperta che una scena di ritorno può non avere
+  nessun blocco sorgente. Compilata in `examples/metalhead.ir.json` (43 scene,
+  13 cutscene e 30 interattive) con due playthrough completi che finiscono
+  entrambi in `finale_esterno`: `metalhead.playthrough.txt` (124 passi, il
+  percorso pulito) e `metalhead.giro-lungo.playthrough.txt` (134 passi, il
+  percorso che sbaglia tutto quello che si può sbagliare — spara da lontano,
+  dimentica il nastro, fa rumore nello studio, scende in bagno senza cavo,
+  infila la spina sui fili asciutti). La coppia è la verifica eseguibile della
+  regola "non si perde mai, cambia solo quanto costa": stessa storia, stesso
+  finale, dieci passi di differenza. Media di 4 azioni per scena, con una
+  scena da 11 — il tetto, i cui appunti elencano nove cose da fare.
 
 ## Prossimi passi (nell'ordine più naturale, non vincolante)
 

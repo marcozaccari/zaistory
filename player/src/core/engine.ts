@@ -163,6 +163,13 @@ export class Engine {
   /** Gioca la storia dall'inizio fino a un finale, a un vicolo cieco o
    * all'uscita del giocatore. */
   async run(): Promise<Outcome> {
+    // L'inventario iniziale e' l'unico stato che non nasce da un Effect: non e'
+    // logica narrativa aggiunta dal player, e' un dato dell'IR applicato prima
+    // che la partita cominci.
+    for (const item of this.story.initial_inventory ?? []) {
+      if (!this.state.hasItem(item)) this.state.inventory.push(item);
+    }
+
     let sceneId = this.story.start_scene;
 
     for (;;) {

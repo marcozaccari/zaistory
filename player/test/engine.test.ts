@@ -150,3 +150,37 @@ test('un goto verso una scena inesistente e\' un problema segnalato', async () =
   assert.ok(out.problems.length > 0, 'un goto verso una scena inesistente doveva essere segnalato');
   assert.match(out.problems[0], /scena_inesistente/);
 });
+
+test('initial_inventory e\' gia\' in inventario prima della prima scena', async () => {
+  // Un oggetto che il personaggio si porta dietro da prima della storia: la
+  // sua unica azione lo richiede, e deve essere disponibile subito.
+  const story: Story = {
+    ir_version: '1.5.0',
+    id: 'zaino',
+    title: 'Con qualcosa nello zaino',
+    start_scene: 'unica',
+    inventory_schema: ['walkie_talkie'],
+    initial_inventory: ['walkie_talkie'],
+    scenes: [
+      {
+        id: 'unica',
+        background: { image_prompt: 'una stanza' },
+        actions: [
+          {
+            id: 'usa_radio',
+            label: 'Accendi la radio',
+            condition: { has_item: 'walkie_talkie' },
+            effect: { narration: 'Statica.' },
+          },
+        ],
+      },
+    ],
+  };
+
+  const ui = new FakeUI(['a:usa_radio']);
+  const e = new Engine(story, ui);
+  await e.run();
+
+  assert.ok(e.state.hasItem('walkie_talkie'), 'la radio doveva essere in inventario dall\'inizio');
+  assert.equal(ui.hidden.size, 0, "l'azione condizionata all'oggetto non doveva risultare nascosta");
+});

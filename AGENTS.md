@@ -56,12 +56,21 @@ node dist-node/src/cli/zaiplay.js --lint ../examples/nel-paese-dei-ciechi.ir.jso
 node dist-node/src/cli/zaiplay.js \
   --script ../examples/nel-paese-dei-ciechi.playthrough.txt \
   ../examples/nel-paese-dei-ciechi.ir.json
+node dist-node/src/cli/zaiplay.js --lint ../examples/metalhead.ir.json
+node dist-node/src/cli/zaiplay.js \
+  --script ../examples/metalhead.playthrough.txt ../examples/metalhead.ir.json
+node dist-node/src/cli/zaiplay.js \
+  --script ../examples/metalhead.giro-lungo.playthrough.txt \
+  ../examples/metalhead.ir.json
 
 npm run dev                                # player web con ricarica a caldo
 npm run build:web                          # -> dist/index.html, file unico
 ```
 
-Toccando lo schema o il player, il playthrough di riferimento va rigiocato.
+Toccando lo schema o il player, i playthrough di riferimento vanno rigiocati.
+Quelli di "Metal Head" sono due di proposito: arrivano allo stesso finale con un
+numero di passi diverso, ed e' cosi' che si verifica che sbagliare costi strada e
+non la partita.
 
 ## Vincoli di comportamento
 

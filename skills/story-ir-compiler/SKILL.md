@@ -18,8 +18,8 @@ description: >-
 
 # Story IR Compiler
 
-**Versione di questo compilatore: 1.0.0.** Va riportata in `generated_by` di
-ogni IR prodotto (passo 6); alzala quando cambi le regole di compilazione, non
+**Versione di questo compilatore: 1.1.0.** Va riportata in `generated_by` di
+ogni IR prodotto (passo 7); alzala quando cambi le regole di compilazione, non
 a ogni ritocco di forma.
 
 Compila una sceneggiatura in markdown libero nel formato IR (`story.ir.json`)
@@ -37,6 +37,47 @@ feedback narrativo, o scrivere altre scene in prosa libera — è scrittura
 normale, non compilazione. Questa skill serve quando l'output atteso è la
 struttura giocabile (JSON conforme allo schema), non altro testo narrativo.
 
+## Regole di gioco — valgono per ogni scena, non sono negoziabili
+
+Queste quattro regole vengono prima di qualunque scelta di design che farai
+nello Stadio B. Se una scena sembra chiedere il contrario, è la scena che va
+riscritta, non la regola che va sospesa.
+
+1. **Non si perde mai.** Niente morti, niente game over, niente vicoli ciechi,
+   niente partita da ricominciare. Qualunque cosa faccia il giocatore, e in
+   qualunque ordine la faccia, si arriva sempre allo stesso finale. Quello che
+   cambia non è **se** ci arriva, è **quanto gli costa**.
+2. **Il costo dell'errore è camminare all'indietro.** L'unica punizione
+   ammessa è rimettere il giocatore in una scena che ha già visitato, così che
+   debba rifare la strada: un `goto_scene` all'indietro, e basta. Nessuna
+   barra della minaccia, nessun avversario di cui il gioco tenga la posizione,
+   nessuna variabile che dica dove si trova il pericolo. La minaccia è una
+   **pressione**, non un'entità simulata.
+3. **Le risorse non si contano.** Trovare qualcosa è un evento; amministrarlo
+   non è un gioco. Un oggetto in inventario dà accesso ad azioni, non ha una
+   quantità che scende, e nessuna azione fallisce mai perché è finito
+   qualcosa. Se la sceneggiatura dice "mezza scatola di cartucce", quella è
+   un'immagine, non una scorta.
+4. **Il tempo non esiste.** Nessun timer, da nessuna parte, mai. Nessuna
+   azione scade, nessuna scena si chiude da sola, nessuna occasione va persa
+   perché il giocatore ha esitato: si può restare fermi in una stanza per
+   un'ora e non succede niente. Una scena cambia **solo** perché il giocatore
+   ha scelto qualcosa. Dove la sceneggiatura ha urgenza — una porta che viene
+   bucata, qualcosa che gira intorno alla casa — quell'urgenza è **recitata**:
+   sta nel testo, nel suono e nelle immagini, non nella logica. Il giocatore
+   deve sentire il panico, non subirlo.
+
+   Non c'è modo di violare questa regola per sbaglio distratto: l'IR non ha
+   nessun costrutto temporale da usare male. Il modo in cui la si viola è
+   simularlo — un flag "attesa" incrementato a ogni azione, una scena che
+   dopo tre osservazioni ne forza un'altra. Non farlo.
+
+Una conseguenza pratica che vale la pena scrivere: se un'azione dello script
+"uccide" il protagonista, il suo `effect` non chiude la partita — narra il
+colpo mancato, il rumore, lo spavento, e rimanda il giocatore indietro di
+una o due scene. È lì che va a finire tutta la tensione che in un altro gioco
+sarebbe stata un game over.
+
 ## Pipeline
 
 ### 1. Leggi la sceneggiatura sorgente
@@ -44,20 +85,57 @@ struttura giocabile (JSON conforme allo schema), non altro testo narrativo.
 Se è un file caricato, leggilo per intero prima di iniziare (non lavorare
 a blocchi indovinati). Se è incollata nel messaggio, usa quel testo.
 
-### 2. Stadio A — estrai la story map
+Mentre leggi, tieni separate due cose che nel documento stanno mescolate:
+
+- **la sceneggiatura** — quello che il giocatore vedrà, sentirà e leggerà;
+- **gli appunti di giocabilità dell'autore** — blocchi marcati (tipicamente
+  `#### Giocabilità` in coda a una scena, o una sezione globale
+  `## Note di giocabilità`) più le note di regia e produzione. Sono
+  **istruzioni rivolte a te**: condizioni di sblocco, azioni previste, errori
+  attesi, cose da non dire mai al giocatore. Non finiscono mai nel testo che
+  il giocatore legge, e non si trascurano mai.
+
+### 2. Chiedi all'utente, prima di analizzare
+
+Due decisioni non si deducono dal testo, e indovinarle sbagliate si paga con
+una ricompilazione intera. Chiedile **prima** di partire con lo Stadio A, in
+una domanda sola con due punti:
+
+1. **Quanta libertà hai su enigmi, azioni, oggetti e flag?** Segui soltanto
+   gli appunti di giocabilità già presenti nello script; oppure li rispetti
+   dove ci sono e inventi il resto; oppure progetti la giocabilità da game
+   designer, aggiungendo enigmi e oggetti non previsti (senza mai cambiare la
+   trama).
+2. **Quanto puoi rielaborare i dialoghi?** Resti fedele alle battute già
+   scritte, aggiungendo solo il testo tecnicamente necessario (narrazioni
+   d'ingresso, esiti delle azioni); oppure le tieni intatte ma aggiungi scelte
+   e risposte in stile; oppure le riscrivi e le amplii restando nel tono.
+
+Proponi le opzioni con un default esplicito — "segui gli appunti" e "fedele ai
+dialoghi" sono i default sensati: sono quelli che non tradiscono un autore che
+ha già deciso. Se l'utente ha già risposto a queste domande in un messaggio
+precedente, o se ha chiesto esplicitamente di non essere interrotto, non
+richiederle: prendi la risposta che ti ha già dato e dichiara a voce quale hai
+assunto.
+
+Quello che decidi qui vale per tutta la compilazione, e va detto allo Stadio B
+insieme al resto del contesto: è la differenza fra una scena con tre azioni e
+la stessa scena con otto.
+
+### 3. Stadio A — estrai la story map
 
 Leggi **`references/stage_a_story_map.md`** e applica le sue regole
 all'intera sceneggiatura per produrre un oggetto `story_map` (id stabili,
-personaggi, stile globale, elenco `scene_segments` con hint letterali per
-la segmentazione). Non saltare questo passo anche se la sceneggiatura è
-breve: gli id devono essere decisi UNA volta e restare stabili per tutto
-il resto della compilazione.
+personaggi, luoghi, stile globale, inventario iniziale, elenco
+`scene_segments` con hint letterali per la segmentazione). Non saltare questo
+passo anche se la sceneggiatura è breve: gli id devono essere decisi UNA
+volta e restare stabili per tutto il resto della compilazione.
 
 Scrivi `story_map.json` su disco (non solo a parole) — ti servirà come
 riferimento fisso mentre compili le singole scene, per non "dimenticare"
 un id già assegnato con l'avanzare della conversazione.
 
-### 3. Segmenta lo script nei blocchi per-scena
+### 4. Segmenta lo script nei blocchi per-scena
 
 Usa lo script di supporto invece di tagliare a mano il testo (più
 affidabile, stessa logica del segmenter del progetto CLI):
@@ -67,22 +145,22 @@ python3 scripts/segment.py sceneggiatura.md story_map.json > scene_blocks.json
 ```
 
 Se fallisce perché un hint non è stato trovato, il messaggio di errore
-indica quale scena — quasi sempre significa che al passo 2 hai parafrasato
+indica quale scena — quasi sempre significa che al passo 3 hai parafrasato
 l'estratto invece di copiarlo letteralmente dal testo originale: correggi
 `story_map.json` (l'hint di quella scena) e riprova, non serve rifare
 tutta la story map.
 
-### 4. Stadio B — compila ogni scena
+### 5. Stadio B — compila ogni scena
 
-Per ogni blocco prodotto al passo 3, leggi **`references/stage_b_scene.md`**
+Per ogni blocco prodotto al passo 4, leggi **`references/stage_b_scene.md`**
 e applica le sue regole (in particolare le sezioni su `scene_type`
 cutscene/interactive, narrazione multi-beat con immagini per-inquadratura,
-azioni contestuali poche ed esplicite, parlanti non previsti dalla story map)
-per produrre l'oggetto `Scene` in JSON.
+azioni contestuali poche ed esplicite, appunti di giocabilità dell'autore,
+parlanti non previsti dalla story map) per produrre l'oggetto `Scene` in JSON.
 
 Se la scena introduce parlanti o luoghi ricorrenti che non sono nella story
 map, tienine da parte le schede (`new_characters`, `new_places`): servono al
-passo 6.
+passo 7.
 
 Regola pratica per non perdere coerenza su sceneggiature lunghe: prima di
 compilare la scena N, ripassa velocemente gli id già usati nelle scene
@@ -90,7 +168,7 @@ compilare la scena N, ripassa velocemente gli id già usati nelle scene
 story map e nelle scene già scritte, non inventarne di nuovi per la stessa
 entità.
 
-### 5. Valida e correggi, scena per scena
+### 6. Valida e correggi, scena per scena
 
 Dopo aver scritto ogni `Scene`, valida SUBITO (non aspettare la fine):
 
@@ -101,11 +179,11 @@ python3 scripts/validate.py --scene scena.json
 Se fallisce, correggi solo quello segnalato e rivalida — stesso loop del
 compilatore CLI, non riscrivere la scena da zero per un errore di schema.
 
-### 6. Assembla la Story completa
+### 7. Assembla la Story completa
 
 ```json
 {
-  "ir_version": "1.4.0",
+  "ir_version": "1.5.0",
   "generated_by": {
     "compiler": "story-ir-compiler",
     "compiler_version": "<la versione dichiarata in cima a questo file>",
@@ -120,6 +198,7 @@ compilatore CLI, non riscrivere la scena da zero per un errore di schema.
   "start_scene": "<story_map.start_scene>",
   "state_flags_schema": "<story_map.state_flags_schema>",
   "inventory_schema": "<story_map.inventory_schema>",
+  "initial_inventory": "<story_map.initial_inventory, se la storia comincia con qualcosa gia' in mano>",
   "scenes": ["<tutte le Scene compilate, nell'ordine dei segmenti>"]
 }
 ```
@@ -138,22 +217,30 @@ consumatore deve trovare nell'IR perche' cambiarli non deve toccarlo. Qui si
 tratta di una firma in calce al documento, che nessuno legge per decidere cosa
 fare.
 
-### 7. Valida l'intera Story e controlla i riferimenti pendenti
+### 8. Valida l'intera Story e controlla i riferimenti pendenti
 
 ```bash
 python3 scripts/validate.py story.ir.json
 ```
 
 In più, controlla a mano (lo script valida lo schema, non la coerenza
-narrativa) che ogni `goto_scene` punti a un id di scena effettivamente
-presente in `scenes[]` — se non lo è, segnalalo all'utente invece di
-inventare la scena mancante di tua iniziativa: potrebbe essere una parte
-di sceneggiatura non ancora scritta.
+narrativa):
 
-### 8. Consegna
+- che ogni `goto_scene` punti a un id di scena effettivamente presente in
+  `scenes[]` — se non lo è, segnalalo all'utente invece di inventare la scena
+  mancante di tua iniziativa: potrebbe essere una parte di sceneggiatura non
+  ancora scritta;
+- che **ogni scena non finale abbia almeno un'uscita raggiungibile senza
+  condizioni impossibili**, e che nessuna azione lasci il giocatore in uno
+  stato da cui non si prosegue. Una storia in cui si può restare bloccati
+  viola la prima regola di gioco anche se lo schema è valido.
 
-Scrivi `story.ir.json` come file (usa `create_file`, salvalo in
-`/mnt/user-data/outputs/`) e presentalo con `present_files`. Se l'utente
+Se il progetto ha un player con linter (`zaiplay --lint`), passaci l'IR: trova
+scene irraggiungibili, `goto` rotti, flag richiesti e mai impostati.
+
+### 9. Consegna
+
+Scrivi `story.ir.json` come file e presentalo all'utente. Se l'utente
 aveva chiesto esplicitamente un "markdown tecnico intermedio" invece di
 JSON puro, avvolgi lo stesso oggetto in un `.md` con un blocco
 ` ```json ` per sezione scena — il contenuto/schema restano identici,
@@ -174,7 +261,7 @@ cambia solo il contenitore.
 ## Riferimenti
 
 - `references/stage_a_story_map.md` — regole complete per l'estrazione
-  della story map (leggilo per intero al passo 2, non solo l'inizio).
+  della story map (leggilo per intero al passo 3, non solo l'inizio).
 - `references/stage_b_scene.md` — regole complete per la compilazione di
   ogni singola scena (leggilo per intero ad ogni scena finché non ti è
   familiare; non fare shortcut su cutscene/azioni contestuali).

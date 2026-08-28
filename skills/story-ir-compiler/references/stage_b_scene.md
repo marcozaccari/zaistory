@@ -18,16 +18,19 @@ trascrittore.
 ```
 <story_context>
   characters: [...]              // dalla story map, con id stabili
+  places: [...]
   global_style: {...}            // tono di default, stile immagini
   all_scene_ids: ["...", "..."]  // per riferimenti goto_scene validi
   state_flags_schema: [...]
   inventory_schema: [...]
+  authoring_mode: {...}          // quanto inventare, quanto rielaborare i dialoghi
 </story_context>
 
 <scene_id>id-di-questa-scena</scene_id>
 
 <scene_source>
-  ...testo libero della sceneggiatura relativo SOLO a questa scena...
+  ...testo libero della sceneggiatura relativo SOLO a questa scena,
+  appunti di giocabilità dell'autore inclusi...
 </scene_source>
 ```
 
@@ -35,6 +38,64 @@ trascrittore.
 
 Un singolo oggetto JSON conforme al type `Scene` dello schema
 `engine-ir.schema.json` (vedi in fondo). Nessun testo fuori dal JSON.
+
+## Le quattro regole di gioco, applicate alla singola scena
+
+Sono definite in `SKILL.md` e valgono sempre. Qui c'è come si traducono in
+campi dell'IR, perché è compilando una scena che si è tentati di violarle.
+
+- **Non si perde mai.** Nessuna azione può portare a un finale che non sia *il*
+  finale. Se il testo sorgente dice che il protagonista viene preso, colpito,
+  scoperto, l'`effect` di quell'azione narra il colpo e fa un `goto_scene`
+  **all'indietro**, verso una scena già visitata: il giocatore rifà la strada,
+  e quello è tutto il prezzo. Nessuna scena "morte", nessun ramo che finisce.
+- **Le risorse non si contano.** Niente `remove_inventory` per "consumare"
+  qualcosa che nella storia si usa più volte (munizioni, batterie, acqua):
+  `remove_inventory` serve quando un oggetto **cambia stato o smette di
+  esistere nella storia** — il nastro finito, il tracker estratto e piantato
+  in una carcassa — non per tenere una contabilità. Nessuna `condition` deve
+  mai far sparire un'azione perché "è finito qualcosa".
+- **Il tempo non esiste.** Nessuna scena si chiude da sola e nessuna azione
+  scade. Non esistono flag-contatore (`osservazioni_fatte`, `turni`), non
+  esiste "dopo N azioni succede X". Se un'azione ripetuta deve dare una
+  descrizione diversa ogni volta, non serve un contatore: si scrivono due o
+  tre azioni distinte, ognuna con la sua condizione su un flag che la
+  precedente ha impostato, oppure si accetta che la seconda volta il testo sia
+  lo stesso. Un rumore minaccioso in corso "va avanti finché il giocatore
+  resta": si dice nella narrazione, non si modella.
+- **Il costo è camminare all'indietro.** Quando devi punire, l'unico strumento
+  è `goto_scene` verso una scena precedente. Scrivi nella narrazione dove il
+  giocatore si ritrova e perché, così che il ritorno si legga come una
+  conseguenza e non come un bug.
+
+## Gli appunti di giocabilità dell'autore
+
+Il blocco sorgente può contenere una sezione marcata (tipicamente
+`#### Giocabilità`) scritta dall'autore per il compilatore. Quando c'è:
+
+- **è la specifica di questa scena**, e ha la precedenza sulle tue idee. Se
+  dice quali azioni esistono, quante sono, cosa sblocca l'uscita, qual è
+  l'errore che il giocatore farà di sicuro — quello vai a scrivere;
+- **non è testo di gioco**: niente di quelle righe finisce in una `narration`,
+  in una `label` o in una battuta. Se dice "non dire mai al giocatore che la
+  piastra conta", allora nessun testo dell'IR fa notare la piastra: resta una
+  riga di descrizione fra le altre;
+- **la formula "il giocatore resta nella scena finché non..."** si traduce in
+  una `condition` sull'azione di uscita (`flag_present` / `has_item`), non in
+  un blocco a parte: l'uscita esiste sempre come azione, semplicemente non è
+  disponibile prima;
+- **"in qualunque ordine"** significa azioni indipendenti, ciascuna con il suo
+  flag, e l'uscita condizionata alla loro somma — mai una catena obbligata di
+  `goto_dialogue`;
+- se `authoring_mode` dice di **seguire gli appunti**, non aggiungere azioni
+  oltre a quelle che gli appunti prevedono, se non l'uscita e una o due
+  osservazioni d'atmosfera. Se dice di **integrare**, gli appunti restano
+  vincolanti dove ci sono e inventi solo dove tacciono;
+- **l'appunto ha la precedenza sui limiti di forma di questo documento**, in
+  particolare sul numero di azioni per scena (vedi §5). Una scena i cui
+  appunti elencano nove interazioni ne ha nove, e va bene così.
+
+Dove l'appunto manca del tutto, vale il resto di questo documento.
 
 ## Principi di design (leggi con attenzione — non sono dettagli tecnici,
 ## sono scelte di game design che determinano se la scena è giocabile bene)
@@ -53,13 +114,18 @@ Un singolo oggetto JSON conforme al type `Scene` dello schema
   override rispetto a quello globale (es. "stessa oste, ma bagnato di pioggia
   in questa scena") — altrimenti lascia il campo characters[] della scena
   con il solo `id`, erediterà il resto dalla story map.
+- **L'urgenza si recita qui.** Il fondo sonoro continuo di una minaccia che
+  lavora da un'altra parte della casa è `ambient_sound_prompt`; il colpo che
+  arriva mentre il giocatore osserva è `play_sound_prompt` sull'effetto di
+  un'azione. È così che si fa sentire il panico senza simularlo.
 
 ### 2. Scene cutscene vs interactive
 
 Imposta `scene_type: "cutscene"` quando il materiale sorgente per questa
 scena è puro montaggio narrato (V.O. su una o più inquadrature, nessuna
 scelta reale per il giocatore) — tipico di prologhi, flashback, sequenze di
-passaggio del tempo, monologhi mentali. In questo caso:
+passaggio del tempo, monologhi mentali, e degli inserti dal punto di vista di
+qualcosa che non è il protagonista. In questo caso:
 
 - Usa `narration[]` per l'intera sequenza di beat, UNO PER INQUADRATURA
   quando il testo sorgente descrive più "fotografie" diverse. Ogni beat con
@@ -78,6 +144,12 @@ passaggio del tempo, monologhi mentali. In questo caso:
 
 Lascia `scene_type: "interactive"` (o omettilo, è il default) quando la scena
 ha un dialogue_tree e/o più azioni tra cui il giocatore sceglie davvero.
+
+**Una scena d'azione non è per forza una cutscene.** Un inseguimento, una
+fuga, uno sparo restano interactive se il giocatore sceglie *cosa fa* —
+anche quando l'esito è scritto e non può fallire. Il fatto che tutte le
+strade portino allo stesso posto non toglie la scelta: la toglie solo il non
+avere niente da scegliere.
 
 ### 3. Narrazione d'ingresso (scene interactive)
 
@@ -113,8 +185,13 @@ esporre informazioni che il giocatore dovrebbe scoprire tramite dialogo/azioni.
   esatte. Stessa regola per `DialogueNode.text`, dove però il parlante è già
   esplicito nel campo `speaker`: lì le virgolette servono solo se la battuta
   contiene a sua volta una citazione.
+- Se `authoring_mode` dice **dialoghi fedeli**, le battute presenti nel testo
+  sorgente si riportano come sono, nell'ordine in cui stanno: le scelte del
+  giocatore possono decidere *quando* e *se* pronunciarle, non riscriverle.
+  Il testo che aggiungi di tuo è quello che il testo sorgente non ha:
+  narrazioni d'ingresso, esiti delle azioni, rifiuti e osservazioni.
 
-### 4. Azioni contestuali — il cuore della giocabilità (scene interactive)
+### 5. Azioni contestuali — il cuore della giocabilità (scene interactive)
 
 Questa è la parte più importante per le scene `interactive` (per le
 `cutscene`, vedi il punto 2: un'unica azione di prosecuzione basta e va
@@ -122,9 +199,30 @@ bene così). Le azioni sono **poche, esplicite, intuibili dal contesto della
 scena**. NON stai costruendo un motore verbo×oggetto stile SCUMM classico
 (niente "usa X su Y" generico). Regole pratiche:
 
-- **3-6 azioni per scena**, mai di più. Se il materiale sorgente suggerisce
-  più interazioni possibili, scegli le più significative per la storia,
-  scarta il resto.
+- **3-6 azioni per scena — ma solo quando il numero lo decidi tu.** Il limite
+  vale nel caso in cui il blocco sorgente **non abbia appunti di giocabilità**
+  e `authoring_mode` ti lasci progettare: lì poche azioni significative
+  battono sempre l'elenco di tutto quello che si potrebbe toccare, quindi
+  scegli le più importanti per la storia e scarta il resto.
+
+  **Dove l'autore ha scritto un appunto, l'appunto vince, e vince anche sul
+  numero.** Se elenca nove cose da guardare, la scena ne ha nove; se ne
+  elenca due, ne ha due e non ne aggiungi una terza per arrivare al minimo.
+  Non tagliare mai un'azione prevista dall'autore per rientrare in un limite
+  di forma, e non declassarla a riga di descrizione dentro un'altra azione:
+  se l'appunto dice "vanno separate in due azioni distinte", separarle *è* la
+  specifica. Il limite esiste per proteggere il giocatore dalle scene-elenco
+  che nascono quando inventi tu; non serve a correggere chi ha già deciso.
+
+  Attenzione al caso in cui l'appunto sembra chiedere poco: quattro azioni
+  citate non vietano l'uscita e una riga d'atmosfera. Quello che vieta è
+  aggiungere interazioni che cambiano stato e che l'autore non ha previsto.
+
+  Una nota che vale in tutti e due i casi: un'azione che è una **seconda
+  uscita** non conta come interazione. Una scena da cui si esce in due posti
+  diversi a seconda che il lavoro sia fatto o no — finito, si va avanti; non
+  finito, si torna a prendere quello che manca — ha un'azione in più che è la
+  strada del ritorno, non una cosa da fare.
 - **Ogni azione deve essere concreta e specifica alla scena**, non generica.
   Bene: `"Osserva il camino"`, `"Raccogli la chiave sul bancone"`. Male:
   `"Guarda"`, `"Interagisci"`.
@@ -134,6 +232,12 @@ scena**. NON stai costruendo un motore verbo×oggetto stile SCUMM classico
 - **Evita azioni-vicolo cieco**: ogni azione deve produrre un `effect` con
   almeno una `narration`, anche se non cambia lo stato — un'azione che non fa
   nulla di percepibile frustra il giocatore.
+- **Un'azione che "sbaglia" resta un'azione buona.** Gli appunti dell'autore
+  spesso ne prevedono una che non funziona — il salto che manca la maniglia,
+  il tentativo di riparare invece di aggirare, l'oggetto che si prova nel
+  posto sbagliato. Va scritta, va lasciata ripetibile, e il suo `effect` narra
+  il fallimento con precisione: è lì che il giocatore guarda meglio la stanza.
+  Non nasconderla dietro una condizione e non farle cambiare stato.
 - Usa `repeatable: false` per azioni "consuma-oggetto" (es. raccogliere un
   oggetto una sola volta), `repeatable: true` (default) per azioni di
   osservazione/atmosfera che si possono ripetere.
@@ -141,14 +245,20 @@ scena**. NON stai costruendo un motore verbo×oggetto stile SCUMM classico
   esprimere quell'azione scrivendo in linguaggio libero — serve al resolver
   di input testuale, non al player a bottoni.
 
-### 5. Flag e inventario
+### 6. Flag e inventario
 
 - Usa `set_flag`/`unset_flag`/`add_inventory`/`remove_inventory` con gli id
   presenti in `state_flags_schema`/`inventory_schema` quando possibile, per
   restare coerente col resto della storia; introduci nuovi id solo se la
   scena lo richiede davvero e non è già coperto da uno esistente.
+- Un flag registra **che qualcosa è successo**, mai quante volte: niente
+  contatori, niente misure di tempo (vedi le quattro regole in cima).
+- Se una scena ha più preparativi che il giocatore può fare in qualunque
+  ordine, dai a ciascuno il suo flag e condiziona l'esito alla loro presenza:
+  chi ne dimentica uno non deve trovarsi bloccato, deve ottenere un esito
+  peggiore che gli costa un altro giro.
 
-### 6. Parlanti non previsti dalla story map
+### 7. Parlanti non previsti dalla story map
 
 Se il testo sorgente ha un parlante non presente nella roster globale
 (`story_context.characters`) — es. "voce fuori campo", "un anziano",
@@ -185,7 +295,7 @@ lì, con eventuali override locali di `visual_prompt`/`voice` quando in quella
 scena il personaggio appare o suona diverso. Se non c'è niente da
 sovrascrivere, basta `{"id": "..."}`.
 
-### 7. Dove siamo e chi si vede (ogni inquadratura)
+### 8. Dove siamo e chi si vede (ogni inquadratura)
 
 Ogni punto in cui si genera un'immagine — `background` e ogni beat di
 `narration[]` che ha un suo `image_prompt` — puo' dichiarare due cose oltre al
@@ -221,7 +331,7 @@ ricorrente che la story map non ha previsto, comportati come per i parlanti:
 usalo e aggiungi la sua scheda a `new_places`, con la stessa struttura di
 `new_characters`.
 
-### 8. scene_tone
+### 9. scene_tone
 
 Se il tono di questa scena differisce da `global_style.default_tone` (es. una
 scena di sollievo comico in una storia cupa, o una sequenza onirica), 

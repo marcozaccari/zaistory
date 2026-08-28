@@ -73,6 +73,7 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       start_scene: 'string',
       state_flags_schema: 'string[]',
       inventory_schema: 'string[]',
+      initial_inventory: 'string[]',
       scenes: { arr: 'Scene' },
     },
   },

@@ -11,7 +11,7 @@
       "type": "string",
       "description": "Versione dello schema IR, per compatibilita' futura tra compilatore e player (semver).",
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
-      "examples": ["1.4.0"]
+      "examples": ["1.5.0"]
     },
     "generated_by": {
       "$ref": "#/$defs/Provenance"
@@ -53,6 +53,11 @@
     "inventory_schema": {
       "type": "array",
       "description": "Elenco documentale (opzionale) di tutti gli oggetti di inventario possibili nella storia.",
+      "items": { "type": "string" }
+    },
+    "initial_inventory": {
+      "type": "array",
+      "description": "Oggetti gia' in possesso del giocatore quando la partita comincia, prima ancora della start_scene: quello che il personaggio si porta dietro da prima che la storia inizi. Senza questo campo l'unico modo di darglieli sarebbe un add_inventory nell'effetto di un'azione della prima scena, cioe' un dato di partenza travestito da evento. Ogni id qui elencato dovrebbe comparire anche in inventory_schema.",
       "items": { "type": "string" }
     },
     "scenes": {

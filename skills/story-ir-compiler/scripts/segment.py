@@ -38,7 +38,18 @@ def fuzzy_find(haystack: str, hint: str) -> int:
 def segment_script(script_text: str, scene_segments: list[dict]) -> dict[str, str]:
     positions = []
     for seg in scene_segments:
-        hint = seg["source_excerpt_hint"]
+        # Una scena di ritorno (una stanza in cui il gioco rimette il giocatore
+        # dopo un errore) puo' non avere nessun blocco sorgente: la
+        # sceneggiatura la descrive una volta sola. Si dichiara senza hint e qui
+        # si salta, invece di far fallire tutta la segmentazione.
+        hint = seg.get("source_excerpt_hint")
+        if not hint:
+            print(
+                f"scena '{seg['id']}': nessun source_excerpt_hint, saltata "
+                "(scena di ritorno senza blocco sorgente)",
+                file=sys.stderr,
+            )
+            continue
         idx = fuzzy_find(script_text, hint)
         if idx == -1:
             raise ValueError(
