@@ -10,7 +10,7 @@
   "description": "Adattamento giocabile di Metal Head. Quattro atti, nessuna sconfitta possibile: qualunque cosa faccia il giocatore si arriva sempre allo stesso finale, e l'unico prezzo dell'errore e' rifare la strada.",
   "language": "it",
   "global_style": {
-    "image_style_suffix": "fotografia cinematografica in bianco e nero ad alto contrasto, girata a colori e desaturata in post, grana di pellicola, ottiche anamorfiche, luce naturale dura; il colore compare solo dove il prompt lo chiede esplicitamente",
+    "image_style_suffix": "illustrazione cel-shaded a colori piatti, contorni netti e marcati, palette limitata di colori smorzati e desaturati con un solo accento saturo, ombre a stacco netto, niente sfumature, niente texture fotografica, key art da videogioco",
     "default_tone": "asciutto, teso, senza spiegazioni; poche parole, molto silenzio, paura pratica invece che spettacolare",
     "narrator_voice": {
       "style_prompt": "voce femminile bassa e ferma, ritmo lento, nessuna enfasi, come chi racconta una cosa gia' successa"
@@ -21,7 +21,9 @@
       "leggermente stonato",
       "vento",
       "post-apocalittico rurale"
-    ]
+    ],
+    "image_style_suffix_en": "flat cel-shaded illustration, bold clean outlines, limited palette of muted desaturated colours with a single saturated accent, hard-edged shadows, no gradients, no photographic texture, video game key art",
+    "anchor_framing": "waist-up"
   },
   "characters": [
     {
@@ -32,10 +34,11 @@
         "la donna",
         "me stessa"
       ],
-      "visual_prompt": "donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; piu' avanti nella storia sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+      "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica",
       "voice": {
         "style_prompt": "voce roca e controllata, poche parole, respiro corto quando corre, quasi sempre sotto il volume normale"
-      }
+      },
+      "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion"
     },
     {
       "id": "mark",
@@ -45,10 +48,11 @@
         "l'uomo con la barba",
         "il piu' vecchio"
       ],
-      "visual_prompt": "uomo oltre i quaranta, pochi capelli e barba corta, corporatura pesante, giaccone e scarponi, si muove con la calma di chi ha gia' fatto questa cosa altre volte",
+      "visual_prompt": "uomo oltre i quaranta, magro, volto interessante, pochi capelli e barba corta, giaccone da lavoro, si muove con la calma di chi ha gia' fatto questa cosa altre volte",
       "voice": {
         "style_prompt": "voce grave e tranquilla, frasi brevissime, ironia trattenuta"
-      }
+      },
+      "visual_prompt_en": "man past forty, lean, an interesting face, thinning hair and short beard, work coat, moves with the calm of someone who has done this before"
     },
     {
       "id": "tommy",
@@ -59,10 +63,11 @@
         "quello che guida",
         "il giovane"
       ],
-      "visual_prompt": "ragazzo di ventidue anni al massimo, magro, felpa troppo grande, mani nervose sul volante, sembra piu' giovane di quello che e'",
+      "visual_prompt": "ragazzo di ventidue anni al massimo, magro, felpa troppo grande, mani nervose, sembra piu' giovane di quello che e'",
       "voice": {
         "style_prompt": "voce giovane e tesa, sale di tono quando ha paura, parla troppo"
-      }
+      },
+      "visual_prompt_en": "young man of twenty-two at most, thin, oversized hoodie, restless nervous hands, looks younger than he is"
     },
     {
       "id": "cane_robot",
@@ -74,49 +79,59 @@
         "quella cosa",
         "il quadrupede"
       ],
-      "visual_prompt": "quadrupede robotico stile Boston Dynamics, alto circa cinquanta centimetri, corpo liscio senza volto, sensori al posto degli occhi, arti sottili e articolati; si muove con l'inerzia di un animale vero, accelera male e frena peggio; un LED sul fianco destro e uno sportello di lancio"
+      "visual_prompt": "quadrupede robotico stile Boston Dynamics, alto circa cinquanta centimetri, corpo liscio senza volto, sensori al posto degli occhi, arti sottili e articolati; si muove con l'inerzia di un animale vero, accelera male e frena peggio; un LED sul fianco destro e uno sportello di lancio",
+      "visual_prompt_en": "Boston Dynamics style robotic quadruped, about fifty centimetres tall, smooth faceless body, sensors where the eyes would be, thin articulated limbs; moves with the inertia of a real animal, accelerates badly and brakes worse; one LED on the right flank and a launch hatch",
+      "anchor_framing": "full-body"
     }
   ],
   "places": [
     {
       "id": "magazzino_interno",
       "name": "Il magazzino",
-      "visual_prompt": "capannone logistico abbandonato, buio a fasce con colonne di luce polverosa dai lucernari sfondati, scaffalature metalliche alte otto metri, corridoi lunghi che si perdono nell'oscurita', pavimento di cemento con detriti"
+      "visual_prompt": "capannone logistico abbandonato, buio a fasce con colonne di luce polverosa dai lucernari sfondati, scaffalature metalliche alte otto metri, corridoi lunghi che si perdono nell'oscurita', pavimento di cemento con detriti",
+      "visual_prompt_en": "abandoned logistics warehouse, banded darkness with dusty shafts of light from broken skylights, eight-metre steel racking, long aisles fading into the dark, concrete floor strewn with debris"
     },
     {
       "id": "bosco_albero",
       "name": "L'albero biforcuto",
-      "visual_prompt": "bosco rado di latifoglie, tronchi grigi e sottobosco secco; un albero dal tronco biforcuto piu' grosso degli altri, con due rami che si incastrano a cinque metri d'altezza"
+      "visual_prompt": "bosco rado di latifoglie, tronchi grigi e sottobosco secco; un albero dal tronco biforcuto piu' grosso degli altri, con due rami che si incastrano a cinque metri d'altezza",
+      "visual_prompt_en": "sparse deciduous woodland, grey trunks and dry undergrowth; one forked tree thicker than the rest, with two branches meeting five metres up"
     },
     {
       "id": "villa_esterno",
       "name": "La villa, fuori",
-      "visual_prompt": "villa isolata in fondo a una valle, architettura costosa e lineare: cemento, ampie vetrate dal pavimento al soffitto, tetto piano coperto di pannelli fotovoltaici; intorno un prato d'erba alta non tagliata da anni e un patio di pietra"
+      "visual_prompt": "villa isolata in fondo a una valle, architettura costosa e lineare: cemento, ampie vetrate dal pavimento al soffitto, tetto piano coperto di pannelli fotovoltaici; intorno un prato d'erba alta non tagliata da anni e un patio di pietra",
+      "visual_prompt_en": "isolated villa at the end of a valley, expensive linear architecture: concrete, floor-to-ceiling glazing, flat roof covered in photovoltaic panels; around it a lawn of tall grass uncut for years and a stone patio"
     },
     {
       "id": "villa_soggiorno",
       "name": "Il soggiorno",
-      "visual_prompt": "grande soggiorno con vetrate dal pavimento al soffitto, divano modulare chiaro coperto di polvere, foglie secche sul pavimento, cucina a vista sul fondo, luce diurna piatta che entra da tutta una parete"
+      "visual_prompt": "grande soggiorno con vetrate dal pavimento al soffitto, divano modulare chiaro coperto di polvere, foglie secche sul pavimento, cucina a vista sul fondo, luce diurna piatta che entra da tutta una parete",
+      "visual_prompt_en": "large living room with floor-to-ceiling glazing, pale modular sofa under a layer of dust, dry leaves on the floor, open kitchen at the far end, flat daylight entering along a whole wall"
     },
     {
       "id": "villa_bagno",
       "name": "Il bagno",
-      "visual_prompt": "bagno padronale stretto, piastrelle chiare, vasca sotto una finestrella alta e piccola, lavabo in porcellana con grande specchio, una presa a muro con sportellino di plastica accanto allo specchio, controsoffitto con un pannello d'ispezione quadrato sopra il lavabo"
+      "visual_prompt": "bagno padronale stretto, piastrelle chiare, vasca sotto una finestrella alta e piccola, lavabo in porcellana con grande specchio, una presa a muro con sportellino di plastica accanto allo specchio, controsoffitto con un pannello d'ispezione quadrato sopra il lavabo",
+      "visual_prompt_en": "narrow master bathroom, pale tiles, bathtub under a small high window, porcelain basin with a large mirror, a wall socket with a plastic flap beside the mirror, dropped ceiling with a square access panel above the basin"
     },
     {
       "id": "villa_pianerottolo",
       "name": "Scale e pianerottolo",
-      "visual_prompt": "scala interna in cemento e legno con corrimano metallico e tromba aperta sul vuoto, pianerottolo al piano superiore, soffitto con una botola d'ispezione e una cordicella che pende"
+      "visual_prompt": "scala interna in cemento e legno con corrimano metallico e tromba aperta sul vuoto, pianerottolo al piano superiore, soffitto con una botola d'ispezione e una cordicella che pende",
+      "visual_prompt_en": "internal concrete and timber staircase with a metal handrail and an open stairwell, landing on the upper floor, ceiling with an inspection hatch and a dangling cord"
     },
     {
       "id": "villa_studio",
       "name": "Lo studio",
-      "visual_prompt": "stanza piccola con scrivania di legno chiaro, una libreria bassa, una finestra che da' sul patio, cassetti pieni di carte domestiche"
+      "visual_prompt": "stanza piccola con scrivania di legno chiaro, una libreria bassa, una finestra che da' sul patio, cassetti pieni di carte domestiche",
+      "visual_prompt_en": "small room with a pale wooden desk, a low bookcase, a window onto the patio, drawers full of household paperwork"
     },
     {
       "id": "villa_garage",
       "name": "Il garage",
-      "visual_prompt": "garage interrato con una berlina elettrica sotto un telo, banco da lavoro ingombro di barattoli, un caricabatterie a muro, un avvolgicavo arancione appeso"
+      "visual_prompt": "garage interrato con una berlina elettrica sotto un telo, banco da lavoro ingombro di barattoli, un caricabatterie a muro, un avvolgicavo arancione appeso",
+      "visual_prompt_en": "underground garage with an electric saloon car under a dust sheet, a workbench cluttered with jars, a wall charger, an orange cable reel hanging"
     }
   ],
   "protagonist": "laura",
@@ -209,7 +224,8 @@
           },
           "text": "L'apparecchio giallo, adesso con la barretta piena. Ha preso corrente per tutta la notte. Basta girare la manopola."
         }
-      ]
+      ],
+      "visual_prompt_en": "site walkie-talkie in worn yellow plastic, short rubber antenna, dead LCD display"
     },
     {
       "id": "medicinali",
@@ -221,7 +237,8 @@
         "blister"
       ],
       "description": "Scaduti da anni, e non sono antibiotici. Ma sono medicinali, e questo da solo vale il peso.",
-      "visual_prompt": "blister di pasticche in alluminio e plastica, scatole di cartone ammaccate senza marca leggibile"
+      "visual_prompt": "blister di pasticche in alluminio e plastica, scatole di cartone ammaccate senza marca leggibile",
+      "visual_prompt_en": "blister packs of pills in foil and plastic, dented cardboard boxes with no legible brand"
     },
     {
       "id": "chiave_armadietto",
@@ -232,7 +249,8 @@
         "chiave dell'armadietto"
       ],
       "description": "Piccola, piatta, di quelle stampate in serie per un armadietto da spogliatoio.",
-      "visual_prompt": "chiavetta piatta di ottone da armadietto, con un numero stampigliato"
+      "visual_prompt": "chiavetta piatta di ottone da armadietto, con un numero stampigliato",
+      "visual_prompt_en": "flat brass locker key with a stamped number"
     },
     {
       "id": "caramelle",
@@ -244,7 +262,8 @@
         "zuccherini"
       ],
       "description": "Caramelle dure a strisce, la carta ancora tesa. Laura non le assaggiava da quando era bambina.",
-      "visual_prompt": "pacchetto di caramelle dure a strisce, carta lucida un po' impolverata"
+      "visual_prompt": "pacchetto di caramelle dure a strisce, carta lucida un po' impolverata",
+      "visual_prompt_en": "packet of striped hard sweets, glossy wrapper slightly dusty"
     },
     {
       "id": "scatola_bianca",
@@ -256,7 +275,8 @@
         "il pacco"
       ],
       "description": "Cartone bianco, piatta, più piccola di quanto uno se l'aspetti. Non è sigillata: il coperchio viene via al primo dito. Laura non l'ha ancora aperta.",
-      "visual_prompt": "scatola di cartone bianca piatta, tipo scatola da scarpe ma piu' bassa, senza scritte, angoli ammaccati"
+      "visual_prompt": "scatola di cartone bianca piatta, tipo scatola da scarpe ma piu' bassa, senza scritte, angoli ammaccati",
+      "visual_prompt_en": "flat white cardboard box, like a shoebox but shallower, unmarked, dented corners"
     },
     {
       "id": "coltello",
@@ -268,7 +288,8 @@
         "serramanico"
       ],
       "description": "Lama a scatto, manico di gomma, il filo ancora buono. Veniva da una cassetta degli attrezzi.",
-      "visual_prompt": "coltello da lavoro con lama a scatto e manico di gomma nera consumata"
+      "visual_prompt": "coltello da lavoro con lama a scatto e manico di gomma nera consumata",
+      "visual_prompt_en": "work knife with a flick blade and a worn black rubber handle"
     },
     {
       "id": "tracker",
@@ -281,7 +302,8 @@
         "il pallino"
       ],
       "description": "Grande come un chicco di riso, liscio, senza scritte, con una fessura all'estremità. Contro il cielo sembra lampeggiare.",
-      "visual_prompt": "minuscolo cilindro metallico grande come un chicco di riso, tenuto fra due dita sporche di sangue"
+      "visual_prompt": "minuscolo cilindro metallico grande come un chicco di riso, tenuto fra due dita sporche di sangue",
+      "visual_prompt_en": "tiny metal cylinder the size of a grain of rice, held between two blood-smeared fingers"
     },
     {
       "id": "chiave_casa",
@@ -292,7 +314,8 @@
         "copia della chiave"
       ],
       "description": "Una copia, con l'etichetta di una ferramenta ancora attaccata. Stava in una borsetta sul sedile di un'utilitaria.",
-      "visual_prompt": "chiave di casa moderna con etichetta di cartoncino di una ferramenta legata con lo spago"
+      "visual_prompt": "chiave di casa moderna con etichetta di cartoncino di una ferramenta legata con lo spago",
+      "visual_prompt_en": "modern house key with a hardware shop cardboard tag tied on with string"
     },
     {
       "id": "fucile",
@@ -312,7 +335,8 @@
           },
           "text": "Doppietta a due canne, oliata, tenuta bene. Adesso e' carica: due cartucce in canna e il resto in tasca."
         }
-      ]
+      ],
+      "visual_prompt_en": "over-and-under double-barrelled hunting shotgun, dark wooden stock, blued steel"
     },
     {
       "id": "nastro_isolante",
@@ -324,7 +348,8 @@
         "nastro adesivo"
       ],
       "description": "Mezzo consumato, nero, appiccicoso al punto giusto. Sembra la cosa più inutile della casa.",
-      "visual_prompt": "rotolo di nastro isolante nero mezzo consumato, il capo sollevato"
+      "visual_prompt": "rotolo di nastro isolante nero mezzo consumato, il capo sollevato",
+      "visual_prompt_en": "half-used roll of black insulating tape, the end lifted"
     },
     {
       "id": "cavo_spellato",
@@ -337,7 +362,8 @@
         "avvolgicavo"
       ],
       "description": "Qualche metro di cavo arancione da avvolgicavo. Da una parte la spina, dall'altra due fili di rame scoperti.",
-      "visual_prompt": "cavo elettrico arancione tagliato di netto, due fili di rame scoperti da un lato, una spina schuko dall'altro"
+      "visual_prompt": "cavo elettrico arancione tagliato di netto, due fili di rame scoperti da un lato, una spina schuko dall'altro",
+      "visual_prompt_en": "orange electrical cable cut clean through, two bare copper wires at one end, a schuko plug at the other"
     }
   ],
   "initial_inventory": [
@@ -350,7 +376,8 @@
       "scene_type": "interactive",
       "background": {
         "image_prompt": "dall'interno di una vecchia station wagon: parabrezza sporco di polvere e insetti secchi, oltre il vetro una strada di campagna crepata con erba nelle fessure, orizzonte piatto, luce bianca di mezzogiorno",
-        "ambient_sound_prompt": "motore stanco di una station wagon a velocita' costante, fruscio dell'asfalto rovinato, un finestrino che vibra"
+        "ambient_sound_prompt": "motore stanco di una station wagon a velocita' costante, fruscio dell'asfalto rovinato, un finestrino che vibra",
+        "image_prompt_en": "from inside an old station wagon: windscreen dirty with dust and dead insects, beyond the glass a cracked country road with grass in the fissures, flat horizon, white midday light"
       },
       "look": "L'abitacolo di una station wagon in corsa. Tommy guida, Mark occupa il sedile davanti, Laura sta dietro con la fronte al finestrino. Fuori scorre una strada di campagna crepata. Nel palmo chiuso di Laura, tre cifre a pennarello.",
       "scene_tone": "silenzio tra tre persone che si conoscono da troppo tempo, tensione trattenuta, nessuno spiega niente",
@@ -372,12 +399,13 @@
         },
         {
           "text": "Tommy guida. Mark occupa il sedile passeggero come se ci fosse cresciuto dentro. Laura sta dietro, la fronte appoggiata al finestrino. Nessuno parla da un po'.",
-          "image_prompt": "interno auto, ripresa dal cruscotto verso l'abitacolo: il ragazzo al volante, l'uomo pesante accanto a lui, la donna dietro con la fronte al vetro, tutti e tre in silenzio",
+          "image_prompt": "interno auto, ripresa dal cruscotto verso l'abitacolo: il ragazzo al volante, l'uomo magro accanto a lui, la donna dietro con la fronte al vetro, tutti e tre in silenzio",
           "characters_in_frame": [
             "tommy",
             "mark",
             "laura"
-          ]
+          ],
+          "image_prompt_en": "car interior seen from the front through the windscreen: Tommy in the driver's seat on the left, both hands on the only steering wheel; Mark in the front passenger seat on the right, nothing in front of him but the dashboard; Laura on the rear bench behind them, forehead against the side window, all three silent"
         }
       ],
       "dialogue_tree": {
@@ -665,7 +693,8 @@
       "scene_type": "interactive",
       "background": {
         "image_prompt": "piazzale di un capannone logistico abbandonato in mezzo alla campagna, recinzione abbattuta, rimorchi vuoti allineati come costole, un negozietto annesso con insegna impolverata, la station wagon ferma a motore spento",
-        "ambient_sound_prompt": "vento aperto senza ostacoli, lamiera che sbatte piano molto lontano, nessun altro suono"
+        "ambient_sound_prompt": "vento aperto senza ostacoli, lamiera che sbatte piano molto lontano, nessun altro suono",
+        "image_prompt_en": "forecourt of an abandoned logistics warehouse in open countryside, fence knocked down, empty trailers lined up like ribs, a small annexed shop with a dusty sign, the station wagon parked with the engine off"
       },
       "look": "Il piazzale di un capannone logistico: recinzione abbattuta, rimorchi vuoti in fila, un negozietto annesso con l'insegna impolverata. Accanto alla rampa di carico, un furgone bianco. Mark aspetta, Tommy tiene un cacciavite.",
       "characters": [
@@ -941,7 +970,8 @@
       "scene_type": "interactive",
       "background": {
         "image_prompt": "interno di un piccolo spaccio aziendale abbandonato: due scaffali polverosi mezzi vuoti, una scrivania con registratore di cassa, uno schedario metallico e un armadietto a muro, luce grigia dalla vetrina sporca",
-        "ambient_sound_prompt": "silenzio chiuso, polvere, il vento che resta fuori, qualche scricchiolio di lamiera"
+        "ambient_sound_prompt": "silenzio chiuso, polvere, il vento che resta fuori, qualche scricchiolio di lamiera",
+        "image_prompt_en": "interior of a small abandoned company shop: two dusty half-empty shelves, a desk with a cash register, a metal filing cabinet and a wall locker, grey light through the dirty window"
       },
       "look": "Un piccolo spaccio aziendale: due scaffali polverosi mezzi vuoti, una scrivania con il registratore di cassa, uno schedario metallico e un armadietto chiuso a muro. Sul fondo, una porta di servizio che dà sul magazzino.",
       "characters": [
@@ -1277,7 +1307,8 @@
         "characters_in_frame": [
           "laura",
           "mark"
-        ]
+        ],
+        "image_prompt_en": "two torch beams shaking down an aisle between towering racking, banded darkness, dusty shafts of light from broken skylights far above"
       },
       "look": "Corridoi fra scaffalature alte otto metri, buio a fasce, colonne di luce dai lucernari sfondati. Sui montanti, targhette con i numeri dei corridoi. Mark è qui con la sua torcia.",
       "characters": [
@@ -1617,7 +1648,8 @@
       "background": {
         "image_prompt": "punto di vista di una macchina: tutto vira a un rosso sfocato e organico, nessun contorno netto, forme che si fondono l'una nell'altra, un volto umano ridotto a una macchia piu' chiara; in sovrimpressione, minimale e nitida, l'unica cosa a fuoco del quadro: un riquadro di lock e una distanza in metri. Ottica decentrata, forte diffusione davanti alla lente, un solo canale colore",
         "ambient_sound_prompt": "ronzio bassissimo di elettronica, nessun suono ambientale, come sott'acqua",
-        "place": "magazzino_interno"
+        "place": "magazzino_interno",
+        "image_prompt_en": "a machine's point of view: everything shifted to a blurred organic red, no sharp outlines, shapes melting into one another, a human face reduced to a paler smear; overlaid, minimal and crisp, the only thing in focus in the frame: a lock reticle and a distance in metres. Decentred optics, heavy diffusion in front of the lens, a single colour channel"
       },
       "characters": [
         {
@@ -1637,7 +1669,8 @@
         {
           "text": "1,4 m.   1,1 m.   0,7 m.",
           "image_prompt": "stessa visione rossa, il riquadro di lock ora stretto sulla macchia chiara che riempie il quadro, la cifra della distanza sotto di essa",
-          "sound_effect_prompt": "tre tick elettronici sempre piu' ravvicinati, poi il rumore di servomotori che si caricano"
+          "sound_effect_prompt": "tre tick elettronici sempre piu' ravvicinati, poi il rumore di servomotori che si caricano",
+          "image_prompt_en": "the same red vision, the lock reticle now tight on the pale smear filling the frame, the distance figure beneath it"
         }
       ],
       "actions": [
@@ -1681,7 +1714,8 @@
         "characters_in_frame": [
           "cane_robot",
           "mark"
-        ]
+        ],
+        "image_prompt_en": "at the top of a racking unit, Cane-robot folded and snapping open into four limbs; below, Mark beginning to fall backwards into the dark, his dropped torch lighting him from underneath"
       },
       "characters": [
         {
@@ -1706,7 +1740,8 @@
             "cane_robot",
             "mark"
           ],
-          "sound_effect_prompt": "un tonfo pesante, poi il clack metallico di un carrello di caricamento"
+          "sound_effect_prompt": "un tonfo pesante, poi il clack metallico di un carrello di caricamento",
+          "image_prompt_en": "from low and to one side: Cane-robot landed on Mark's chest as he lies on the ground, its legs seeking purchase on the concrete, the fallen torch raking light across"
         },
         {
           "text": "Un clack metallico. Un lampo secco all'altezza della testa di Mark.",
@@ -1717,7 +1752,8 @@
           "image_prompt": "una mano di donna che afferra da terra una scatola di cartone bianca piatta mentre il corpo e' gia' in movimento, mosso di ripresa",
           "characters_in_frame": [
             "laura"
-          ]
+          ],
+          "image_prompt_en": "Laura's hand snatching a flat white cardboard box off the floor while her body is already moving, motion blur"
         }
       ],
       "actions": [
@@ -1759,7 +1795,8 @@
       "background": {
         "image_prompt": "corsa in soggettiva bassa lungo un corridoio di scaffalature, le colonne di luce che passano addosso una dopo l'altra, il fondo del corridoio ancora buio",
         "ambient_sound_prompt": "respiro affannato, passi di corsa su cemento e, dietro, artigli metallici irregolari che scivolano nelle curve e recuperano",
-        "place": "magazzino_interno"
+        "place": "magazzino_interno",
+        "image_prompt_en": "low first-person run down an aisle of racking, columns of light sweeping over the camera one after another, the end of the aisle still dark"
       },
       "look": "Corridoi identici fra scaffali, la luce della rampa di carico da qualche parte sulla destra. Il rumore degli artigli sul cemento non è mai alla stessa distanza.",
       "characters": [
@@ -1966,7 +2003,12 @@
       "scene_type": "interactive",
       "background": {
         "image_prompt": "esterno giorno, controluce fortissimo: una donna esce di corsa dal buio di una rampa di carico nel bianco del piazzale, un furgone bianco fermo col motore acceso e un ragazzo al posto di guida che non capisce",
-        "ambient_sound_prompt": "motore di un furgone al minimo, vento, il proprio respiro fuori controllo"
+        "ambient_sound_prompt": "motore di un furgone al minimo, vento, il proprio respiro fuori controllo",
+        "image_prompt_en": "exterior day, extreme backlight: Laura running out of the darkness of a loading bay into the white of the forecourt, a white van idling and Tommy in the driver's seat who does not understand",
+        "characters_in_frame": [
+          "laura",
+          "tommy"
+        ]
       },
       "look": "Il piazzale nel bianco del giorno, visto dalla bocca della rampa di carico. Il furgone bianco è a dieci metri, motore acceso, Tommy al volante.",
       "characters": [
@@ -2093,7 +2135,11 @@
       "scene_type": "interactive",
       "background": {
         "image_prompt": "ripresa dall'interno del furgone verso lo specchietto retrovisore laterale: nello specchio, una forma quadrupede bassa che corre sull'asfalto e guadagna terreno; oltre il parabrezza una strada di campagna dritta",
-        "ambient_sound_prompt": "motore di un furgone spinto al massimo, lamiera che vibra, vento dal finestrino aperto"
+        "ambient_sound_prompt": "motore di un furgone spinto al massimo, lamiera che vibra, vento dal finestrino aperto",
+        "image_prompt_en": "shot from inside the van towards the wing mirror: in the mirror, Cane-robot running low on the tarmac and gaining ground; beyond the windscreen a straight country road",
+        "characters_in_frame": [
+          "cane_robot"
+        ]
       },
       "look": "L'interno del furgone in corsa. Tommy stringe il volante, la strada è dritta e vuota. Nello specchietto laterale, qualcosa di basso che corre sull'asfalto.",
       "characters": [
@@ -2304,7 +2350,11 @@
       "scene_tone": "panico dentro una scatola di lamiera; qualunque cosa si faccia il finale della scena e' gia' scritto, e si sente",
       "background": {
         "image_prompt": "interno cabina di un furgone in corsa, ripresa dal sedile passeggero: il tetto di lamiera sopra la testa del guidatore deformato verso il basso, un foro netto nel metallo, il ragazzo al volante che sterza",
-        "ambient_sound_prompt": "motore su di giri, lamiera che si deforma, un clack metallico ripetuto sopra la testa"
+        "ambient_sound_prompt": "motore su di giri, lamiera che si deforma, un clack metallico ripetuto sopra la testa",
+        "image_prompt_en": "van cabin interior at speed, shot from the passenger seat: the sheet metal roof above Tommy's head deformed downwards, a clean hole punched in the metal, Tommy at the wheel swerving",
+        "characters_in_frame": [
+          "tommy"
+        ]
       },
       "look": "La cabina di un furgone che sbanda. Sopra la testa di Tommy il tetto si è deformato verso l'interno, e nella lamiera c'è una fila di fori che si allunga.",
       "characters": [
@@ -2325,7 +2375,8 @@
         {
           "text": "Poi una punta buca la lamiera. Si ritrae. Buca di nuovo dieci centimetri più in là.",
           "image_prompt": "primissimo piano del tetto interno di un furgone: una punta metallica che perfora la lamiera dall'alto, si ritrae e ributta fuori un dito piu' in la', in fila come un timbro",
-          "sound_effect_prompt": "clack, poi metallo perforato; una pausa; clack di nuovo"
+          "sound_effect_prompt": "clack, poi metallo perforato; una pausa; clack di nuovo",
+          "image_prompt_en": "extreme close-up of the inner roof of a van: a metal spike piercing the sheet metal from above, withdrawing and punching through again a finger's width along, in a row like a stamp"
         }
       ],
       "actions": [
@@ -2468,7 +2519,12 @@
       "scene_tone": "silenzio dopo il frastuono, tutto storto di novanta gradi, il corpo che si accorge dei danni con calma",
       "background": {
         "image_prompt": "interno di una cabina ribaltata su un fianco in un fosso di scolo: il mondo di novanta gradi, una donna appesa alla cintura di sicurezza, polvere sospesa nel fascio di luce che entra dal parabrezza crepato, il guidatore accanto a lei immobile",
-        "ambient_sound_prompt": "un liquido che gocciola sulla lamiera, il tic tic di un motore che si raffredda, campagna aperta"
+        "ambient_sound_prompt": "un liquido che gocciola sulla lamiera, il tic tic di un motore che si raffredda, campagna aperta",
+        "image_prompt_en": "interior of a cabin rolled onto its side in a drainage ditch: the world at ninety degrees, Laura hanging from her seatbelt, dust suspended in the shaft of light from the cracked windscreen, Tommy motionless beside her",
+        "characters_in_frame": [
+          "laura",
+          "tommy"
+        ]
       },
       "look": "La cabina ribaltata su un fianco, il mondo girato di novanta gradi. Laura è appesa alla cintura, Tommy accanto a lei non si muove. Sotto, sparsi sulla lamiera, gli attrezzi usciti da una cassetta. Sopra, il finestrino del passeggero è diventato il soffitto.",
       "characters": [
@@ -2725,11 +2781,17 @@
       "scene_type": "cutscene",
       "background": {
         "image_prompt": "esterno giorno, campagna aperta: una donna esce a quattro zampe dal lunotto posteriore di un furgone ribaltato in un fosso di scolo e si mette a correre nell'erba secca",
-        "ambient_sound_prompt": "erba secca, respiro, vento aperto"
+        "ambient_sound_prompt": "erba secca, respiro, vento aperto",
+        "image_prompt_en": "exterior day, open countryside: Laura crawling out on all fours through the rear window of a van rolled into a drainage ditch, then breaking into a run through dry grass",
+        "characters_in_frame": [
+          "laura"
+        ]
       },
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -2746,14 +2808,16 @@
             "cane_robot",
             "laura"
           ],
-          "sound_effect_prompt": "passi metallici che accelerano su terra"
+          "sound_effect_prompt": "passi metallici che accelerano su terra",
+          "image_prompt_en": "Cane-robot circling the wreck of the van at an even pace, in the background Laura running away"
         },
         {
           "text": "A trenta metri, un muretto a secco. Laura corre e ci si tuffa dietro.",
           "image_prompt": "un basso muretto a secco di pietre in mezzo a un campo, una donna che ci si tuffa dietro con tutto il corpo",
           "characters_in_frame": [
             "laura"
-          ]
+          ],
+          "image_prompt_en": "a low dry-stone wall in the middle of a field, Laura throwing her whole body down behind it"
         }
       ],
       "actions": [
@@ -2792,12 +2856,18 @@
       "scene_type": "interactive",
       "background": {
         "image_prompt": "dietro un muretto a secco, ripresa bassa e stretta: una donna schiacciata contro le pietre, la schiena al muro, il petto che va su e giu' troppo in fretta; oltre il muro solo cielo bianco",
-        "ambient_sound_prompt": "respiro fuori controllo, battito cardiaco, vento tra le pietre"
+        "ambient_sound_prompt": "respiro fuori controllo, battito cardiaco, vento tra le pietre",
+        "image_prompt_en": "behind a dry-stone wall, low tight framing: Laura pressed against the stones, back to the wall, chest rising and falling too fast; above the wall nothing but white sky",
+        "characters_in_frame": [
+          "laura"
+        ]
       },
       "look": "Un muretto a secco in mezzo a un campo, alto quanto una persona accucciata. Da questa parte ci sono Laura e le pietre; dall'altra, a otto metri, qualcosa che non se ne va. Alla coscia sinistra, un foro piccolissimo.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -2814,7 +2884,8 @@
           "characters_in_frame": [
             "laura"
           ],
-          "sound_effect_prompt": "una detonazione secca e corta, schegge di pietra, poi silenzio pieno"
+          "sound_effect_prompt": "una detonazione secca e corta, schegge di pietra, poi silenzio pieno",
+          "image_prompt_en": "a sharp low explosion against the far side of a dry-stone wall, stone splinters in the air, Laura curled up shielding her head"
         }
       ],
       "actions": [
@@ -2990,11 +3061,14 @@
         "characters_in_frame": [
           "laura",
           "cane_robot"
-        ]
+        ],
+        "image_prompt_en": "open field with no cover at all, very low horizon, Laura running with a limp in the foreground and, far behind her, Cane-robot walking"
       },
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -3009,7 +3083,8 @@
           "image_prompt": "teleobiettivo schiacciato: la macchina quadrupede che cammina in un campo, passo regolare, nessuna fretta",
           "characters_in_frame": [
             "cane_robot"
-          ]
+          ],
+          "image_prompt_en": "compressed telephoto: Cane-robot walking across a field, even pace, no hurry"
         },
         {
           "text": "Non ha fretta."
@@ -3056,12 +3131,15 @@
         "place": "bosco_albero",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "inside sparse woodland, afternoon light cutting in blades between the trunks, Laura limping forward among the trees, looking back"
       },
       "look": "Un bosco rado di tronchi grigi e sottobosco secco. Alberi dritti e lisci, alberi con i rami bassi e marci, e da qualche parte qualcosa su cui si possa davvero salire.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -3271,11 +3349,14 @@
         "place": "bosco_albero",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "from below: Laura wedged between two branches five metres up, motionless, sunset light crossing the wood almost horizontally"
       },
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -3290,7 +3371,8 @@
           "image_prompt": "primo piano di una donna appoggiata a un ramo, gli occhi che si chiudono e si riaprono di scatto, la mano che stringe la corteccia",
           "characters_in_frame": [
             "laura"
-          ]
+          ],
+          "image_prompt_en": "close-up of Laura leaning against a branch, her eyes closing and snapping open again, her hand gripping the bark"
         },
         {
           "text": "Le mani le si intorpidiscono. Cambia posizione, un ramo scricchiola.",
@@ -3302,7 +3384,8 @@
           "characters_in_frame": [
             "cane_robot"
           ],
-          "sound_effect_prompt": "servomotori che si aprono tutti insieme, artigli sul terreno, poi immobilita'"
+          "sound_effect_prompt": "servomotori che si aprono tutti insieme, artigli sul terreno, poi immobilita'",
+          "image_prompt_en": "from below, almost dark: Cane-robot unfolding with a snap at the foot of the tree and raising its sensors upwards, one LED lit on its flank"
         },
         {
           "text": "Poi resta immobile. Ormai è notte piena, e il LED sul suo fianco è quasi l'unica cosa visibile."
@@ -3346,14 +3429,17 @@
       "background": {
         "image_prompt": "punto di vista di una macchina, di notte: rosso scuro quasi nero, tutto fuori fuoco, fra i rami una zona piu' densa che pulsa piano al ritmo di un respiro; in basso a sinistra, minimale e nitida, una percentuale",
         "ambient_sound_prompt": "ronzio elettronico bassissimo e continuo, nessun suono ambientale",
-        "place": "bosco_albero"
+        "place": "bosco_albero",
+        "image_prompt_en": "a machine's point of view, at night: dark red close to black, everything out of focus, among the branches a denser area pulsing slowly to the rhythm of breathing; bottom left, minimal and crisp, a percentage"
       },
       "characters": [
         {
           "id": "cane_robot"
         },
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         }
       ],
       "narration": [
@@ -3366,7 +3452,8 @@
         {
           "text": "Poi 64%.",
           "image_prompt": "stessa visione rossa notturna, invariata; solo la cifra della percentuale in basso a sinistra e' cambiata di un'unita'",
-          "sound_effect_prompt": "un tick elettronico singolo"
+          "sound_effect_prompt": "un tick elettronico singolo",
+          "image_prompt_en": "the same red night vision, unchanged; only the percentage figure at bottom left has changed by one"
         }
       ],
       "actions": [
@@ -3407,12 +3494,19 @@
       "background": {
         "image_prompt": "notte fonda nel bosco, quasi tutto nero: si distingue solo la sagoma di una donna incastrata fra due rami e, molto piu' in basso, un piccolo LED acceso a intermittenza sul fianco di qualcosa di raccolto a terra",
         "ambient_sound_prompt": "bosco di notte, vento alto, nessun animale; ogni tanto il ronzio brevissimo di una ventola che parte e si spegne",
-        "place": "bosco_albero"
+        "place": "bosco_albero",
+        "image_prompt_en": "deep night in the wood, almost entirely black: only Laura's silhouette wedged between two branches is readable and, far below, a small LED blinking on the flank of Cane-robot folded on the ground",
+        "characters_in_frame": [
+          "laura",
+          "cane_robot"
+        ]
       },
       "look": "Notte piena, incastrata fra due rami a cinque metri d'altezza. Sotto, alla base dell'albero, la macchina raccolta su sé stessa con il LED sul fianco. Nello zaino c'è ancora il pacchetto di caramelle dello spaccio.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -3693,12 +3787,15 @@
         "place": "bosco_albero",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "first grey light in the wood, Laura sitting on the ground at the foot of a forked tree, back against the trunk, left leg stretched out in front of her; there is no one else under the tree"
       },
       "look": "Ai piedi dell'albero biforcuto, prima luce. Sotto non c'è più niente e non c'è più nessuno. La coscia sinistra è calda e tirata. Nell'erba alta, a venti passi, la carcassa di una pecora.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         }
       ],
       "narration": [
@@ -3971,11 +4068,14 @@
         "place": "villa_esterno",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "Laura standing on top of a grassy ridge, seen from behind, wide shot; below, in the valley, an isolated villa with wide glazing and a flat roof covered in panels"
       },
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         }
       ],
       "narration": [
@@ -4029,12 +4129,15 @@
         "place": "villa_esterno",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "driveway of a modern villa: a small car parked crooked with its doors open for years, grass in the joints of the concrete, at the far end the front door and a glass wall"
       },
       "look": "Il vialetto di una villa: un'utilitaria parcheggiata storta con le portiere aperte da anni, aiuole diventate un cespuglio solo, una cassetta della posta che non si chiude più. In fondo il portone, e sulla destra il patio che gira dietro l'angolo.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         }
       ],
       "narration": [
@@ -4247,12 +4350,15 @@
         "place": "villa_soggiorno",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "large living room seen from the entrance, flat daylight from a wall of glass, dust over everything, dry leaves blown in through the door, a pale modular sofa"
       },
       "look": "Un grande soggiorno con una parete di vetro sulla valle, polvere su tutto, foglie secche entrate dalla porta. Un divano modulare, un cesto di riviste, e in fondo la cucina a vista con i suoi armadietti. Una scala porta al piano di sopra.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         }
       ],
       "narration": [
@@ -4464,12 +4570,15 @@
       "scene_tone": "non e' orrore: e' riconoscimento. Nessuna enfasi, nessuna musica, il rispetto di chi ha gia' visto la stessa cosa altrove",
       "background": {
         "image_prompt": "camera da letto padronale con la luce filtrata dalle tapparelle abbassate; sul letto, sotto il piumino, due sagome ferme da moltissimo tempo; sul comodino due bicchieri e un flacone vuoto",
-        "ambient_sound_prompt": "silenzio di stanza chiusa, un ronzio di mosche assente, solo il vento fuori"
+        "ambient_sound_prompt": "silenzio di stanza chiusa, un ronzio di mosche assente, solo il vento fuori",
+        "image_prompt_en": "master bedroom with light filtered through lowered shutters; on the bed, under the duvet, two shapes that have been still for a very long time; on the nightstand two glasses and an empty bottle"
       },
       "look": "Una camera da letto con le tapparelle abbassate. Sul letto, sotto il piumino, due sagome ferme da molto tempo. Sul comodino due bicchieri, un flacone vuoto e un cassetto chiuso. Contro la parete, un armadio.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         }
       ],
       "narration": [
@@ -4637,12 +4746,15 @@
         "place": "villa_soggiorno",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "Laura sitting on the floor with her back to the wall, the shotgun resting across her knees, in front of her the glass wall and the empty valley, full light"
       },
       "look": "Il soggiorno, adesso conosciuto. La parete di vetro dà sulla valle vuota, il pavimento è freddo, e Laura ha un fucile da caccia e mezza scatola di cartucce trovate di sopra.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -4824,12 +4936,15 @@
         "characters_in_frame": [
           "laura",
           "cane_robot"
-        ]
+        ],
+        "image_prompt_en": "internal corridor with one wall entirely glazed onto the patio; Laura with her back to the wall and the shotgun raised; beyond the glass, a metre from her, Cane-robot standing still with its sensors turned towards the pane"
       },
       "look": "Un corridoio con una parete di solo vetro sul patio e un muro dove appoggiare la schiena. Oltre il cristallo, a un metro, la macchina ferma con i sensori girati verso di lei.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -4845,7 +4960,8 @@
           "characters_in_frame": [
             "cane_robot",
             "laura"
-          ]
+          ],
+          "image_prompt_en": "close-up through dirty glass: the blind muzzle of Cane-robot centimetres from the surface, the reflection of Laura holding a shotgun"
         }
       ],
       "actions": [
@@ -5021,12 +5137,15 @@
         "place": "villa_pianerottolo",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "internal concrete and timber staircase shot from below, Laura climbing two steps at a time with a shotgun in her hand, the landing above in shadow"
       },
       "look": "La scala interna, cemento e legno, la tromba aperta sul vuoto. In cima il pianerottolo e le porte del piano di sopra. Sotto, sui gradini, gli artigli che slittano.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -5175,12 +5294,15 @@
         "place": "villa_bagno",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "master bathroom seen from the bathtub: the closed door barricaded with a cabinet and a laundry basket, Laura with her back against the wood, shotgun in hand; above the basin, in the dropped ceiling, a square access panel with two wing screws"
       },
       "look": "Un bagno padronale stretto: la porta bloccata con un mobiletto e il cesto della biancheria, una vasca sotto una finestrella alta e piccola, un lavabo di porcellana con un grande specchio. Accanto allo specchio una presa a muro. Sul mobiletto, roba da bagno e un rotolo di nastro isolante. In alto, sopra il lavabo, il controsoffitto.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -5193,7 +5315,8 @@
         {
           "text": "Fuori dalla porta, lo zoppicamento. Si ferma. Poi un suono che Laura conosce già. Un clack.\n\nUna punta buca il legno all'altezza del ginocchio, si ritrae, e ributta fuori un dito più in là.",
           "image_prompt": "primo piano della parte bassa di una porta di legno chiaro: una punta metallica che la perfora dall'esterno, si ritrae e ricomincia un dito piu' in la', in fila come un timbro",
-          "sound_effect_prompt": "clack, legno perforato, pausa di tre secondi, di nuovo clack — identico"
+          "sound_effect_prompt": "clack, legno perforato, pausa di tre secondi, di nuovo clack — identico",
+          "image_prompt_en": "close-up of the lower part of a pale wooden door: a metal spike piercing it from outside, withdrawing and starting again a finger's width along, in a row like a stamp"
         },
         {
           "text": "È lo stesso identico rumore che ha sentito sopra la testa di Tommy, dentro il furgone. La macchina non taglia: perfora. Un buco alla volta, in fila, come un timbro."
@@ -5458,11 +5581,17 @@
       "scene_type": "cutscene",
       "background": {
         "image_prompt": "dentro un controsoffitto: buio, polvere sospesa, il tubo argentato della ventilazione, una donna che avanza a gomiti in uno spazio alto quaranta centimetri, illuminata solo dalla luce che sale dal foro alle sue spalle",
-        "ambient_sound_prompt": "lamiera che flette, polvere, respiro molto vicino al microfono"
+        "ambient_sound_prompt": "lamiera che flette, polvere, respiro molto vicino al microfono",
+        "image_prompt_en": "inside a dropped ceiling: darkness, suspended dust, the silver ventilation duct, Laura crawling forward on her elbows in a space forty centimetres high, lit only by the light rising from the opening behind her",
+        "characters_in_frame": [
+          "laura"
+        ]
       },
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -5525,12 +5654,15 @@
         "place": "villa_studio",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "small tidy room: pale wooden desk with a photo frame, a low bookcase, a window onto the patio with full daylight"
       },
       "look": "Una stanza piccola e ordinata: scrivania di legno chiaro con una cornice fotografica, una libreria bassa, cassetti pieni di carte domestiche. Una finestra dà sul patio, e da lì al suolo c'è un metro e mezzo. I colpi si sentono da un'altra parte della casa.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         }
       ],
       "narration": [
@@ -5730,12 +5862,15 @@
       "background": {
         "image_prompt": "lo stesso soggiorno, adesso con la parete di vetro sfondata: schegge di cristallo sul pavimento, foglie che entrano, il divano intatto, luce piena; nessuno nell'inquadratura",
         "ambient_sound_prompt": "corrente d'aria dalla vetrata rotta, cristalli che si spostano sotto i piedi; molto lontano, in un'altra parte della casa, colpi sordi a intervalli regolari",
-        "place": "villa_soggiorno"
+        "place": "villa_soggiorno",
+        "image_prompt_en": "the same living room, now with the glass wall smashed through: shards across the floor, leaves blowing in, the sofa untouched, full light; no one in frame"
       },
       "look": "Il soggiorno di prima, con un pezzo di parete in meno: il cristallo è a terra e il vento entra. Le scale portano di sopra, il corridoio di sotto porta verso la lavanderia. I colpi arrivano sempre da un'altra stanza.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -5865,12 +6000,15 @@
         "ambient_sound_prompt": "stanzino chiuso, nessun eco; da molto lontano, attutiti, colpi sordi a intervalli regolari",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "windowless utility room: washing machine, sink, shelves; on the far wall an open industrial consumer unit with two levers and a yellow triangular sticker, below it a battery cabinet"
       },
       "look": "Uno stanzino cieco in fondo al corridoio: lavatrice, lavatoio, mensole. Sulla parete di fondo un quadro elettrico aperto con un adesivo giallo e due leve, una piccola in basso e una grande. Sotto, un armadio di batterie.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         }
       ],
       "narration": [
@@ -6041,12 +6179,15 @@
         "place": "villa_pianerottolo",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "upper floor landing, ceiling damaged by a shotgun blast: crumbled plasterboard on the floor and a severed cord dangling three metres up, out of reach; three doors around it and the stairwell open onto the drop"
       },
       "look": "Il pianerottolo del piano di sopra, il soffitto sbriciolato da una fucilata. Dal soffitto penzola la cordicella di una botola, a tre metri: troppo in alto. Intorno, la porta del bagno bucata, la porta dello studio, e la tromba delle scale con il suo corrimano.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         }
       ],
       "narration": [
@@ -6231,12 +6372,15 @@
         "place": "villa_esterno",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "flat roof of a modern villa: twelve photovoltaic panels in rows of six, four summers of leaves and bird droppings, white sky; on one panel a fallen branch and glass cracked into a spiderweb"
       },
       "look": "Il tetto piano: dodici pannelli fotovoltaici in file da sei, foglie e guano di quattro estati, vento. Su un pannello è caduto un ramo e il vetro è a ragnatela; da sotto il telaio escono due monconi di cavo strappati. Dal bordo si vede tutta la valle.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         }
       ],
       "narration": [
@@ -6583,11 +6727,14 @@
       "background": {
         "image_prompt": "nel buio di un soggiorno, un pannellino di vetro nero a muro che si accende: una luce bianca, un'icona, una temperatura; il resto della stanza appena leggibile",
         "ambient_sound_prompt": "il ronzio di un frigorifero che riparte, un boiler che si accende dentro un muro, la casa che comincia a respirare",
-        "place": "villa_soggiorno"
+        "place": "villa_soggiorno",
+        "image_prompt_en": "in the darkness of a living room, a small black glass wall panel lighting up: a white light, an icon, a temperature; the rest of the room barely readable"
       },
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -6649,12 +6796,15 @@
         "place": "villa_garage",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "underground garage with the service light on for the first time in years: an electric saloon under a dust sheet, a workbench cluttered with jars, a wall charger, an orange cable reel hanging"
       },
       "look": "Un garage interrato con la luce di servizio accesa: una berlina elettrica sotto un telo, un banco da lavoro ingombro di barattoli, un caricabatterie a muro con la spia verde, un avvolgicavo arancione appeso.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -6888,12 +7038,15 @@
         "place": "villa_bagno",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "the same bathroom, now with no door: a row of holes crosses it from side to side and the wood around them is crumbling; the bath and basin taps left running, a film of water spreading across the tiles"
       },
       "look": "Il bagno, senza più porta: una fila di fori la attraversa da parte a parte. La vasca, i due rubinetti, il lavabo che ha già retto il peso di una persona, la presa a muro accanto allo specchio con lo sportellino di plastica.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -7096,14 +7249,17 @@
       "background": {
         "image_prompt": "punto di vista di una macchina: rosso, tutto fuori fuoco; una porta bucata come un reticolo di macchie piu' chiare e, oltre, una stanza piccola; in alto contro la parete una massa calda ferma e netta; in sovrimpressione nitida un riquadro di lock, una distanza e una percentuale",
         "ambient_sound_prompt": "ronzio elettronico continuo, attutito; sotto, acqua che scorre",
-        "place": "villa_bagno"
+        "place": "villa_bagno",
+        "image_prompt_en": "a machine's point of view: red, everything out of focus; a door punched through like a grid of paler blotches and, beyond it, a small room; high against the wall a still, sharp warm mass; overlaid and crisp, a lock reticle, a distance and a percentage"
       },
       "characters": [
         {
           "id": "cane_robot"
         },
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         }
       ],
       "narration": [
@@ -7116,7 +7272,8 @@
         {
           "text": "Il riquadro di lock si chiude su di lei.\n\n2,8 m.   2,4 m.   2,1 m.",
           "image_prompt": "stessa visione rossa, il riquadro di lock stretto sulla massa calda in alto; sotto, altre chiazze chiare che prima non c'erano — i muri caldi di una casa riaccesa",
-          "sound_effect_prompt": "tick elettronici sempre piu' ravvicinati"
+          "sound_effect_prompt": "tick elettronici sempre piu' ravvicinati",
+          "image_prompt_en": "the same red vision, the lock reticle tight on the warm mass up high; below it, other pale patches that were not there before — the warm walls of a house switched back on"
         },
         {
           "text": "In basso a sinistra: 11%."
@@ -7164,12 +7321,15 @@
         "characters_in_frame": [
           "cane_robot",
           "laura"
-        ]
+        ],
+        "image_prompt_en": "flooded bathroom seen from above the basin: Cane-robot standing on the broken threshold, sensors turned upwards; the film of water covering every tile catches the light"
       },
       "look": "Il bagno visto dall'alto del lavabo, l'acqua che copre tutte le piastrelle. Sulla soglia sfondata c'è la macchina, i sensori fermi su di lei. Da quassù non ci si muove più: si guarda, e si sceglie il momento.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -7185,7 +7345,8 @@
           "characters_in_frame": [
             "cane_robot"
           ],
-          "sound_effect_prompt": "quattro artigli metallici che entrano in un velo d'acqua, uno dopo l'altro"
+          "sound_effect_prompt": "quattro artigli metallici che entrano in un velo d'acqua, uno dopo l'altro",
+          "image_prompt_en": "extreme close-up of Cane-robot's right flank as it walks through shallow water: the unseated plate lifting with every step and dirty water getting in and not coming out"
         },
         {
           "text": "Laura non si muove. Non alza niente, non lancia niente, non urla. La macchina si abbassa sulle zampe — la posizione con cui uccide."
@@ -7322,11 +7483,14 @@
         "characters_in_frame": [
           "laura",
           "cane_robot"
-        ]
+        ],
+        "image_prompt_en": "flooded bathroom, everything white with light: beneath the film of water a blue electrical arc that stays lit and does not flicker, the room overexposed; Laura crouched on top of the porcelain basin, both feet up on the rim, clear of the water below, pressed against the mirror with both hands flat on the glass; Cane-robot standing in the water on the tiles below her"
       },
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -7342,7 +7506,8 @@
           "characters_in_frame": [
             "cane_robot"
           ],
-          "sound_effect_prompt": "servomotori che vanno su di giri tutti insieme, un suono acuto e continuo, uguale a un urlo, che sale ancora"
+          "sound_effect_prompt": "servomotori che vanno su di giri tutti insieme, un suono acuto e continuo, uguale a un urlo, che sale ancora",
+          "image_prompt_en": "close-up of Cane-robot gone rigid, limbs straight, black smoke rising from an open plate on its flank, blue reflections in the water around it"
         },
         {
           "text": "Un clack mentre i servomotori vanno su di giri tutti insieme, un suono che non hanno mai fatto: acuto, uguale a un urlo, e poi più acuto ancora."
@@ -7352,12 +7517,14 @@
           "image_prompt": "una donna in piedi su un lavabo, schiena e mani contro un grande specchio, il tallone che scivola sulla porcellana; sotto di lei la stanza e' bianca di luce",
           "characters_in_frame": [
             "laura"
-          ]
+          ],
+          "image_prompt_en": "Laura standing on a basin, back and hands against a large mirror, her heel slipping on the porcelain; below her the room is white with light"
         },
         {
           "text": "Poi la luce si spegne, salta la corrente, e si spengono tutti i ronzii e i rumori acuti.\n\nBuio. E l'acqua che continua a scendere dai rubinetti aperti.",
           "image_prompt": "buio quasi totale in un bagno allagato, solo il riflesso grigio della finestrella sull'acqua ferma",
-          "sound_effect_prompt": "tutto che si spegne insieme, poi solo due rubinetti aperti in una stanza buia"
+          "sound_effect_prompt": "tutto che si spegne insieme, poi solo due rubinetti aperti in una stanza buia",
+          "image_prompt_en": "near total darkness in a flooded bathroom, only the grey reflection of the small window on the still water"
         }
       ],
       "actions": [
@@ -7402,12 +7569,15 @@
         "characters_in_frame": [
           "laura",
           "cane_robot"
-        ]
+        ],
+        "image_prompt_en": "dark flooded bathroom: Laura standing motionless on the basin, and below her in the black water the carcass of Cane-robot with dead sensors, its legs folded inwards and the flank plate hanging open"
       },
       "look": "Il bagno al buio, allagato fino alla caviglia. Sotto il lavabo, nell'acqua nera, la carcassa con i sensori spenti e la piastra del fianco spalancata. I rubinetti sono ancora aperti.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -7716,7 +7886,8 @@
         "place": "villa_esterno",
         "characters_in_frame": [
           "cane_robot"
-        ]
+        ],
+        "image_prompt_en": "seen from indoors through a large glazed wall: the valley, the ridge in the distance and three quadruped machines identical to Cane-robot coming down towards the house, spaced apart"
       },
       "characters": [
         {
@@ -7736,7 +7907,8 @@
           "characters_in_frame": [
             "cane_robot"
           ],
-          "sound_effect_prompt": "tre ronzii leggermente sfasati che diventano un suono solo"
+          "sound_effect_prompt": "tre ronzii leggermente sfasati che diventano un suono solo",
+          "image_prompt_en": "compressed telephoto on the ridge: three quadruped machines identical to Cane-robot descending the slope, spaced and coordinated"
         }
       ],
       "actions": [
@@ -7780,12 +7952,15 @@
         "place": "villa_soggiorno",
         "characters_in_frame": [
           "laura"
-        ]
+        ],
+        "image_prompt_en": "living room with the glass wall smashed through, afternoon light: Laura sitting on the floor with her back against the sofa, soaked to the knees, a flat white cardboard box on her lap and a walkie-talkie beside her"
       },
       "look": "Il soggiorno con la vetrata sfondata, la luce del pomeriggio, il divano. Nello zaino: la scatola bianca di cartone e il walkie talkie. Fuori, sul prato, tre punti scuri che si avvicinano senza fretta.",
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         }
       ],
       "narration": [
@@ -8084,11 +8259,14 @@
         "place": "villa_esterno",
         "characters_in_frame": [
           "cane_robot"
-        ]
+        ],
+        "image_prompt_en": "exterior day, locked-off wide shot: the glazing of a villa reflecting the white sky, on the lawn three quadruped machines identical to Cane-robot entering the frame, spaced and coordinated"
       },
       "characters": [
         {
-          "id": "laura"
+          "id": "laura",
+          "visual_prompt": "bella donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+          "visual_prompt_en": "beautiful woman in her forties, dark hair pulled back untidily, worn work jacket, backpack, face marked by exhaustion; smeared with dirt and dried blood, a torn sleeve tied above the left knee"
         },
         {
           "id": "cane_robot"
@@ -8111,7 +8289,8 @@
           "characters_in_frame": [
             "cane_robot"
           ],
-          "sound_effect_prompt": "tre ronzii che si spengono uno alla volta, poi solo vento"
+          "sound_effect_prompt": "tre ronzii che si spengono uno alla volta, poi solo vento",
+          "image_prompt_en": "three quadruped machines identical to Cane-robot standing still in front of a glass-walled house, motionless; on the flank of each one an LED going out, one after another"
         }
       ],
       "actions": []

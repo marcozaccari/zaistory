@@ -1,3 +1,12 @@
 player/node_modules
 player/dist
 player/dist-node
+assets/.profile
+assets/out
+
+# Python: cache dei bytecode, si rigenera sola
+__pycache__/
+*.pyc
+
+# impostazioni locali di Claude Code, per macchina
+.claude/settings.local.json

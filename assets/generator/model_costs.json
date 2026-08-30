@@ -1,0 +1,31 @@
+{
+  "_nota": "Registro dei modelli. `calls_per_dollar` e' il listino come lo espone il fornitore (il costo per immagine e' 1/valore). `preference` e' la scala di qualita' decisa a occhio, dal peggiore al migliore: `generate.py --upgrade` promuove un job al gradino successivo. Un modello assente da `calls_per_dollar` compare senza prezzo, non a prezzo zero; uno assente da `preference` non e' promuovibile.",
+  "_aggiornato": "2026-08-30",
+  "calls_per_dollar": {
+    "zimage": 250,
+    "klein": 200,
+    "gptimage": 100,
+    "grok-imagine": 50,
+    "qwen-image": 40,
+    "kontext": 35,
+    "wan-image": 35,
+    "wan-image-pro": 35,
+    "nanobanana-2-lite": 30,
+    "gpt-image-2": 30,
+    "seedream5": 30,
+    "nanobanana": 25,
+    "gptimage-large": 25,
+    "seedream-pro": 25,
+    "qwen-image-3": 20,
+    "grok-imagine-pro": 20,
+    "nanobanana-2": 15,
+    "grok-imagine-image-2.0": 15
+  },
+  "preference": [
+    "grok-imagine",
+    "nanobanana-2-lite",
+    "gpt-image-2",
+    "gptimage-large",
+    "nanobanana"
+  ]
+}

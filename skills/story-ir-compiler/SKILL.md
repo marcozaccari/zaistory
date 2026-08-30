@@ -304,11 +304,48 @@ vecchio da tollerare: e' un IR incompleto.
 - ogni oggetto ha una **`description`**, e `description_variants` se cambia
   durante la storia.
 
+### 7-ter. Controlla il contratto visivo
+
+I `visual_prompt` e gli `image_prompt` non sono decorazione: sono l'ingresso
+del modulo assets, e un difetto qui si scopre solo pagando immagini sbagliate.
+Le regole complete stanno negli stage A e B; questi sono i quattro punti su
+cui si sbaglia davvero, imparati generando.
+
+- **Ogni prompt di generazione esiste in due lingue.** L'italiano e' il
+  canonico — e' quello che il player mostra in modalita' solo testo — e
+  l'inglese e' quello che va al modello, perche' un prompt italiano perde
+  aderenza e uno style suffix in coda a un prompt italiano lungo puo' venire
+  ignorato in blocco. Se manca un `*_en`, quel prompt viene generato in
+  italiano: non e' un errore di schema, e' un'immagine peggiore.
+- **Nei soli `image_prompt_en`, i personaggi in campo si chiamano per nome.**
+  E' l'unica divergenza ammessa fra le due lingue: il generatore allega il
+  ritratto di ognuno e i nomi sono cio' che lega l'allegato al soggetto. Senza,
+  il modello distribuisce i ruoli a caso — chi guida, chi sta seduto accanto.
+  L'italiano resta prosa da sceneggiatura, come deve essere.
+- **`visual_prompt` descrive l'aspetto, non l'azione**, e si ferma dove si
+  ferma il taglio scelto per il cast. Nominare qualcosa fuori dal taglio (le
+  scarpe, con un taglio a mezzo busto) tira l'immagine a figura intera: il
+  contenuto vince sempre sul promemoria di inquadratura.
+- **`anchor_framing` si decide una volta per tutto il cast**, in stage A. Un
+  cast con ritagli disomogenei sembra venire da storie diverse. L'override per
+  personaggio esiste, ma e' per i soggetti non umani, non per fare eccezioni
+  di gusto.
+
+Un IR gia' compilato senza i campi inglesi non va ricompilato: il progetto ha
+`assets/generator/translate_ir.py` (`extract` / `merge` / `status`) che li
+aggiunge in place lasciando intatti gli id.
+
 ### 8. Valida l'intera Story e controlla i riferimenti pendenti
 
 ```bash
 python3 scripts/validate.py story.ir.json
 ```
+
+Oltre agli errori di schema, lo script elenca i **prompt senza la versione
+inglese**: non è una violazione del formato — l'inglese è opzionale — ma quei
+prompt arriverebbero al generatore di immagini in italiano, dove perdono
+aderenza. Trattali come lavoro da finire, non come rumore (`--no-prompt-check`
+li tace, e serve solo se stai validando una storia senza parte visiva).
 
 In più, controlla a mano (lo script valida lo schema, non la coerenza
 narrativa):

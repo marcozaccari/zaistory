@@ -33,15 +33,16 @@ Un singolo oggetto JSON con questa forma (i campi extra non sono ammessi):
   "language": "it",
   "global_style": {
     "image_style_suffix": "...",
+    "image_style_suffix_en": "...",
     "default_tone": "...",
     "narrator_voice": { "style_prompt": "..." },
     "ambient_music_tags": ["...", "..."]
   },
   "characters": [
-    { "id": "...", "name": "...", "aliases": ["...", "..."], "visual_prompt": "...", "voice": { "style_prompt": "..." } }
+    { "id": "...", "name": "...", "aliases": ["...", "..."], "visual_prompt": "...", "visual_prompt_en": "...", "voice": { "style_prompt": "..." } }
   ],
   "places": [
-    { "id": "...", "name": "...", "visual_prompt": "..." }
+    { "id": "...", "name": "...", "visual_prompt": "...", "visual_prompt_en": "..." }
   ],
   "start_scene": "id-prima-scena",
   "state_flags_schema": ["..."],
@@ -118,6 +119,73 @@ passare il blocco giusto allo Stadio B.
    - quello che dicono sul *comportamento* del gioco (cosa sblocca cosa, cosa
      non va mai detto al giocatore) non serve a te: lo userà lo Stadio B, che
      riceve il blocco sorgente con il suo appunto attaccato.
+
+4bis. **Ogni prompt di generazione si scrive due volte: italiano e inglese.**
+   Riguarda `image_style_suffix` e tutti i `visual_prompt`, e vale identico
+   per gli `image_prompt` dello Stadio B. Il campo italiano è il canonico —
+   è quello che il player mostra come testo in modalità solo testo, ed è
+   quello su cui il generatore ricade se l'inglese manca. Il campo `_en` è
+   quello che va davvero al modello di immagini.
+
+   Non è una preferenza stilistica, è misurato: i modelli sono addestrati in
+   inglese, e su questa pipeline un `image_style_suffix` italiano in coda a
+   un prompt italiano lungo è stato **scartato** — la richiesta diceva bianco
+   e nero e l'immagine è uscita a colori. La coda di un prompt lungo è la
+   prima cosa che il modello lascia cadere, e in una lingua che conosce meno
+   la lascia cadere prima.
+
+   Due regole pratiche: l'inglese è una **traduzione fedele**, non una
+   riscrittura — se cambi il contenuto, il testo che il player mostra e
+   l'immagine che verrà generata smettono di corrispondere; e **o entrambe o
+   nessuna**, perché una traduzione parziale produce prompt misti (uno shot
+   inglese che eredita la descrizione di un'ancora rimasta in italiano), che
+   i modelli leggono peggio di entrambe le lingue pure.
+
+   C'è **una sola divergenza ammessa**, ed è quella descritta nello Stadio B:
+   negli `image_prompt_en` un personaggio in campo si chiama per nome dove
+   l'italiano usa un descrittore ("Tommy" dove l'italiano dice "il ragazzo").
+   Non è una riscrittura, è un'etichetta: indica la stessa persona, non cambia
+   cosa si vede, e serve a legare l'immagine di riferimento allegata al ruolo
+   giusto. Tutto il resto resta traduzione.
+
+4ter. **`visual_prompt` descrive com'è FATTO il soggetto, non cosa sta
+   facendo.** È un'ancora: viene generata una volta per entità e poi allegata
+   come immagine di riferimento a ogni inquadratura in cui quel soggetto
+   compare. Un'azione infilata lì dentro — "mani nervose sul volante" — si
+   trascina dietro un volante anche nelle scene in cui il personaggio non
+   guida. Per un personaggio: età, corporatura, capelli, viso, vestiario,
+   segni particolari. Per un luogo: com'è fatto, di che materiali, che luce
+   ha di solito. L'azione, l'inquadratura e il momento stanno negli
+   `image_prompt` delle scene, dove è giusto che cambino.
+
+   Per lo stesso motivo non mettere nel `visual_prompt` uno stato che il
+   personaggio assume **più avanti** nella storia ("più avanti sarà sporco di
+   sangue"): l'ancora verrebbe generata già sporca e lo sarebbe anche nella
+   prima scena. Uno stato che cambia è un override di `visual_prompt` nella
+   scena in cui comincia, cioè una variante d'ancora.
+
+4quater. **Il taglio delle ancore si decide una volta per tutto il cast**, in
+   `global_style.anchor_framing`: `bust`, `waist-up` (default) o `full-body`.
+   Non è una scelta per personaggio. Ancore con ritagli diversi portano
+   quantità diverse di dettaglio del viso, e il viso è quello su cui si regge
+   il riconoscimento del personaggio da un'inquadratura all'altra.
+
+   Sceglilo guardando il cast intero: se **anche un solo personaggio umano**
+   ha bisogno della figura intera — perché il vestiario o la silhouette sono
+   parte di chi è — allora `full-body` vale per tutti, non solo per lui.
+
+   Sappi che il contenuto può combattere il taglio: descrivere scarpe o
+   pantaloni spinge il modello a mostrare i piedi e allarga il campo da solo
+   (misurato: bastano degli "scarponi"). Con `waist-up` descrivi quindi il
+   personaggio dalla vita in su, e quello che sta più in basso, se conta in
+   una scena precisa, dillo nell'`image_prompt` di quell'inquadratura, dove
+   comunque si vede. Se il vestiario dal ginocchio in giù conta davvero per
+   più di un personaggio, è il segnale che quella storia vuole `full-body`.
+
+   `Character.anchor_framing` esiste come override, ma **solo per i soggetti
+   che non sono una figura umana**: un quadrupede robotico, un veicolo, una
+   creatura, dove "mezzo busto" non vuol dire niente. Non usarlo perché un
+   personaggio ha delle belle scarpe — in quel caso si sposta tutto il cast.
 
 5. **Un "SEQUENZA"/capitolo della sceneggiatura NON è automaticamente una
    scena del gioco**, e viceversa. Segmenta in base alla giocabilità, non

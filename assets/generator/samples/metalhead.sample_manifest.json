@@ -1,0 +1,151 @@
+{
+  "manifest_version": 1,
+  "story_id": "metal-head",
+  "title": "Metal Head",
+  "ir_file": "metalhead.ir.json",
+  "generated_at": "2026-08-29T11:16:17+00:00",
+  "level": "all",
+  "style_suffix": "fotografia cinematografica in bianco e nero ad alto contrasto, girata a colori e desaturata in post, grana di pellicola, ottiche anamorfiche, luce naturale dura; il colore compare solo dove il prompt lo chiede esplicitamente",
+  "defaults": {
+    "width": 768,
+    "height": 768,
+    "steps": 8,
+    "cfg": 0.0
+  },
+  "counts": {
+    "anchors": 4,
+    "shots": 2,
+    "total": 6
+  },
+  "warnings": [],
+  "jobs": [
+    {
+      "id": "anchor.char.laura",
+      "level": "anchor",
+      "kind": "character",
+      "entity_id": "laura",
+      "name": "Laura",
+      "variant_of": null,
+      "base_prompt": "donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; piu' avanti nella storia sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro",
+      "prompt": "ritratto di riferimento a mezzo busto, soggetto isolato su sfondo neutro, posa frontale, nessuna ambientazione, donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; piu' avanti nella storia sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro, fotografia cinematografica in bianco e nero ad alto contrasto, girata a colori e desaturata in post, grana di pellicola, ottiche anamorfiche, luce naturale dura; il colore compare solo dove il prompt lo chiede esplicitamente",
+      "refs": {
+        "place": null,
+        "characters": []
+      },
+      "source": "characters[0]",
+      "seed": 646516203,
+      "file": "anchors/anchor.char.laura.png",
+      "width": 768,
+      "height": 768,
+      "steps": 8,
+      "cfg": 0.0
+    },
+    {
+      "id": "anchor.place.magazzino_interno",
+      "level": "anchor",
+      "kind": "place",
+      "entity_id": "magazzino_interno",
+      "name": "Il magazzino",
+      "variant_of": null,
+      "base_prompt": "capannone logistico abbandonato, buio a fasce con colonne di luce polverosa dai lucernari sfondati, scaffalature metalliche alte otto metri, corridoi lunghi che si perdono nell'oscurita', pavimento di cemento con detriti",
+      "prompt": "veduta d'insieme del luogo, campo largo, nessun personaggio presente, capannone logistico abbandonato, buio a fasce con colonne di luce polverosa dai lucernari sfondati, scaffalature metalliche alte otto metri, corridoi lunghi che si perdono nell'oscurita', pavimento di cemento con detriti, fotografia cinematografica in bianco e nero ad alto contrasto, girata a colori e desaturata in post, grana di pellicola, ottiche anamorfiche, luce naturale dura; il colore compare solo dove il prompt lo chiede esplicitamente",
+      "refs": {
+        "place": null,
+        "characters": []
+      },
+      "source": "places[0]",
+      "seed": 786780033,
+      "file": "anchors/anchor.place.magazzino_interno.png",
+      "width": 768,
+      "height": 768,
+      "steps": 8,
+      "cfg": 0.0
+    },
+    {
+      "id": "anchor.item.walkie_talkie",
+      "level": "anchor",
+      "kind": "item",
+      "entity_id": "walkie_talkie",
+      "name": "walkie talkie",
+      "variant_of": null,
+      "base_prompt": "walkie talkie da cantiere in plastica gialla consumata, antenna corta di gomma, display a cristalli liquidi spento",
+      "prompt": "oggetto isolato e centrato su sfondo neutro, icona d'inventario, nessun personaggio, walkie talkie da cantiere in plastica gialla consumata, antenna corta di gomma, display a cristalli liquidi spento, fotografia cinematografica in bianco e nero ad alto contrasto, girata a colori e desaturata in post, grana di pellicola, ottiche anamorfiche, luce naturale dura; il colore compare solo dove il prompt lo chiede esplicitamente",
+      "refs": {
+        "place": null,
+        "characters": []
+      },
+      "source": "items[0]",
+      "seed": 325842174,
+      "file": "anchors/anchor.item.walkie_talkie.png",
+      "width": 768,
+      "height": 768,
+      "steps": 8,
+      "cfg": 0.0
+    },
+    {
+      "id": "shot.auto_in_viaggio.bg",
+      "level": "shot",
+      "kind": "background",
+      "scene": "auto_in_viaggio",
+      "scene_title": "In auto verso il magazzino",
+      "base_prompt": "dall'interno di una vecchia station wagon: parabrezza sporco di polvere e insetti secchi, oltre il vetro una strada di campagna crepata con erba nelle fessure, orizzonte piatto, luce bianca di mezzogiorno",
+      "prompt": "dall'interno di una vecchia station wagon: parabrezza sporco di polvere e insetti secchi, oltre il vetro una strada di campagna crepata con erba nelle fessure, orizzonte piatto, luce bianca di mezzogiorno, fotografia cinematografica in bianco e nero ad alto contrasto, girata a colori e desaturata in post, grana di pellicola, ottiche anamorfiche, luce naturale dura; il colore compare solo dove il prompt lo chiede esplicitamente",
+      "refs": {
+        "place": null,
+        "characters": []
+      },
+      "source": "scenes[0].background",
+      "seed": 201757556,
+      "file": "shots/auto_in_viaggio/shot.auto_in_viaggio.bg.png",
+      "width": 768,
+      "height": 768,
+      "steps": 8,
+      "cfg": 0.0
+    },
+    {
+      "id": "shot.auto_in_viaggio.n1",
+      "level": "shot",
+      "kind": "narration",
+      "scene": "auto_in_viaggio",
+      "scene_title": "In auto verso il magazzino",
+      "base_prompt": "interno auto, ripresa dal cruscotto verso l'abitacolo: il ragazzo al volante, l'uomo pesante accanto a lui, la donna dietro con la fronte al vetro, tutti e tre in silenzio",
+      "prompt": "interno auto, ripresa dal cruscotto verso l'abitacolo: il ragazzo al volante, l'uomo pesante accanto a lui, la donna dietro con la fronte al vetro, tutti e tre in silenzio, Tommy: ragazzo di ventidue anni al massimo, magro, felpa troppo grande, mani nervose sul volante, sembra piu' giovane di quello che e', Mark: uomo oltre i quaranta, pochi capelli e barba corta, corporatura pesante, giaccone e scarponi, si muove con la calma di chi ha gia' fatto questa cosa altre volte, Laura: donna sulla quarantina, capelli scuri raccolti male, giacca da lavoro consumata, zaino, viso segnato dalla fatica; piu' avanti nella storia sporca di terra e sangue secco, una manica strappata legata sopra il ginocchio sinistro, fotografia cinematografica in bianco e nero ad alto contrasto, girata a colori e desaturata in post, grana di pellicola, ottiche anamorfiche, luce naturale dura; il colore compare solo dove il prompt lo chiede esplicitamente",
+      "refs": {
+        "place": null,
+        "characters": [
+          "anchor.char.tommy",
+          "anchor.char.mark",
+          "anchor.char.laura"
+        ]
+      },
+      "source": "scenes[0].narration[1]",
+      "seed": 847259403,
+      "file": "shots/auto_in_viaggio/shot.auto_in_viaggio.n1.png",
+      "width": 768,
+      "height": 768,
+      "steps": 8,
+      "cfg": 0.0
+    },
+    {
+      "id": "anchor.char.mark",
+      "level": "anchor",
+      "kind": "character",
+      "entity_id": "mark",
+      "name": "Mark",
+      "variant_of": null,
+      "base_prompt": "uomo oltre i quaranta, pochi capelli e barba corta, corporatura pesante, giaccone e scarponi, si muove con la calma di chi ha gia' fatto questa cosa altre volte",
+      "prompt": "ritratto di riferimento a mezzo busto, soggetto isolato su sfondo neutro, posa frontale, nessuna ambientazione, uomo oltre i quaranta, pochi capelli e barba corta, corporatura pesante, giaccone e scarponi, si muove con la calma di chi ha gia' fatto questa cosa altre volte, fotografia cinematografica in bianco e nero ad alto contrasto, girata a colori e desaturata in post, grana di pellicola, ottiche anamorfiche, luce naturale dura; il colore compare solo dove il prompt lo chiede esplicitamente",
+      "refs": {
+        "place": null,
+        "characters": []
+      },
+      "source": "characters[1]",
+      "seed": 1214088700,
+      "file": "anchors/anchor.char.mark.png",
+      "width": 768,
+      "height": 768,
+      "steps": 8,
+      "cfg": 0.0
+    }
+  ]
+}

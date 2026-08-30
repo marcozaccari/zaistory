@@ -494,7 +494,9 @@ ancora presa — è deliberatamente rimandata: prima si stabilizzano le
 regole (iterando via skill su sceneggiature reali), poi si cristallizzano
 in un generatore.
 
-## Modulo assets: decisioni di design (non ancora implementate in codice)
+## Modulo assets: immagini costruite, voce e suoni ancora solo decisi
+
+### Decisioni che valgono per tutto il modulo
 
 - **Estrazione come passo concettualmente separato dalla generazione**:
   prima si attraversa l'intero IR raccogliendo ogni risorsa da produrre, POI si
@@ -525,13 +527,77 @@ in un generatore.
   curata, NON generazione via API**: la generazione musicale è stata
   giudicata ancora troppo acerba rispetto a immagini/voce per essere
   affidabile in una pipeline automatica.
-- **Provider raccomandati** (scelta suggerita in fase di analisi, non
-  vincolante): fal.ai o Replicate (Flux) per le immagini, ElevenLabs per
-  voce e per effetti sonori puntuali.
 - **Pubblicazione/hosting degli asset**: deciso esplicitamente di rimandare
   questa scelta ("solo locale per ora, penseremo al deploy dopo") — un
   player mobile reale avrà comunque bisogno che gli asset siano raggiungibili
   via URL pubblico (storage/CDN), ma quale servizio usare non è stato deciso.
+
+### Immagini: costruito (`assets/generator/`)
+
+Quattro strumenti — estrazione del manifest, generazione da riga di comando,
+studio web locale per guardare e rifare, prototipazione per decidere. L'uso
+sta nel loro `README.md`; qui restano solo le decisioni e il perché.
+
+- **Provider: Pollinations.** La raccomandazione precedente (fal.ai o
+  Replicate su Flux) è decaduta prima di essere provata, e anche il prototipo
+  su Kaggle — Z-Image girato in locale sulla GPU gratuita — è stato
+  abbandonato: lì il livello che porta il rischio vero, quello con immagini di
+  riferimento, non era nemmeno provabile. Un catalogo unico dietro una sola
+  chiave e un solo formato di richiesta ha permesso di confrontare **21
+  modelli sullo stesso identico prompt**, ed è quel confronto ad aver deciso
+  tutto il resto.
+- **Il condizionamento su immagini di riferimento è un requisito, non
+  un'ottimizzazione.** Misurato: a parità di prompt e di seed, un modello
+  text-only restituisce una persona diversa a ogni chiamata. Nessun testo
+  trasporta un'identità — "donna sulla quarantina, capelli scuri raccolti
+  male" descrive un tipo, non una persona. È la giustificazione empirica dei
+  due livelli descritti sopra, che erano stati decisi per ragioni di coerenza
+  e si sono rivelati l'unica strada percorribile.
+- **Il costo non è il vincolo che sembrava.** L'intera storia di riferimento,
+  88 immagini con i modelli scelti, costa **2,61 $**. Ne discende una serie di
+  cose che *non* vanno fatte: niente livelli di prezzo per numero di
+  personaggi in campo, niente scelta automatica del modello per difficoltà
+  stimata, nessuna deduplica furba. Qualunque ottimizzazione di costo vale
+  meno della complessità che aggiunge; il denaro si spende per rigenerare
+  quello che non convince.
+- **La selezione è umana, e questo è un requisito di architettura.** Nessuna
+  euristica sa quale immagine è venuta male: si guarda. Da qui il sidecar JSON
+  accanto a ogni immagine (job id, modello, seed, prompt effettivo, reference
+  con hash) — senza, non è ricostruibile a posteriori perché un'immagine sia
+  venuta così — e da qui lo studio web, che è l'interfaccia che quel sidecar
+  rende possibile: coda controllabile, storico delle versioni, conferma di
+  spesa su ogni rigenerazione, scelta del modello per singola immagine.
+- **Prompt in inglese, IR bilingue.** I modelli sono addestrati in inglese e
+  un prompt italiano perde aderenza — misurato: uno style suffix in coda a un
+  prompt italiano lungo può essere ignorato in blocco. L'IR porta quindi i
+  campi `*_en` accanto a quelli italiani, che restano canonici perché sono
+  quelli che il player mostra in modalità solo testo. **Questa è una decisione
+  di formato, non di pipeline**: tocca lo schema e il compilatore, non il
+  generatore.
+- **Il taglio delle ancore è una decisione sull'intero cast**
+  (`global_style.anchor_framing`), non sul singolo personaggio: un cast con
+  ritagli disomogenei sembra venire da storie diverse. L'override per
+  personaggio esiste ma è ammesso solo per i soggetti non umani.
+- **Lo stile visivo lo detta la storia, ma il fotorealismo a basso costo non
+  regge.** Su "Metal Head" si è passati da fotografia cinematografica in
+  bianco e nero a **cel-shaded piatto a colori**, ed è stata la modifica che
+  ha risolto più problemi di qualunque riscrittura di prompt: più coerente fra
+  un'inquadratura e l'altra, meno riconoscibile come immagine generata, più
+  vicino a un aspetto giocabile. La pixel art resta una **passata
+  deterministica in post**, mai un'istruzione nel prompt — la diffusione non
+  produce vera pixel art e il condizionamento su reference tende per di più a
+  ripulirla.
+- **La dimensione richiesta è un suggerimento, non un contratto**: diversi
+  modelli restituiscono la misura che preferiscono. L'originale non ritagliato
+  viene conservato, e il ritaglio è una scelta visiva presa dopo, che non
+  costa una rigenerazione.
+
+### Voce, suoni ed effetti: ancora solo decisi
+
+Nessun codice. **ElevenLabs** resta il provider suggerito in fase di analisi
+per voce ed effetti sonori puntuali, non vincolante. Le decisioni che
+riguardano la voce sono quelle generali qui sopra: due livelli, il testo che
+non sta nei prompt, la musica per tag invece che generata.
 
 ## Player di test (`player/`, costruito)
 
@@ -1086,5 +1152,14 @@ Vite sono soli strumenti di build).
    una scritta per le parole. Il resto è lavoro di compilazione, non di codice.
 5. Quando le regole si saranno stabilizzate, valutare la costruzione del
    generatore ad hoc (nessuna decisione di stack ancora presa).
-6. Decidere la pubblicazione/hosting degli asset (rimandato finora).
-7. Costruire un player con asset veri (PWA prima, bot Telegram poi).
+6. ~~Costruire il **modulo assets per le immagini**~~ — fatto
+   (`assets/generator/`: estrazione del manifest, generatore, studio web,
+   prototipazione; provider Pollinations, modelli scelti per confronto).
+   Restano aperti: generare per intero il set di "Metal Head" (finora solo
+   campioni di confronto), la passata deterministica in pixel art, e portare
+   al bilingue la seconda sceneggiatura, che ha ancora 67 prompt solo in
+   italiano (`validate.py` li elenca).
+7. Costruire il modulo assets per **voce e suoni**, che è il pezzo più costoso
+   e non è ancora iniziato.
+8. Decidere la pubblicazione/hosting degli asset (rimandato finora).
+9. Costruire un player con asset veri (PWA prima, bot Telegram poi).

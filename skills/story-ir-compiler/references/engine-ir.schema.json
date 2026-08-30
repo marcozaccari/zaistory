@@ -123,6 +123,16 @@
           "type": "string",
           "description": "Suffisso aggiunto a ogni image_prompt, es. 'acquerello scuro, atmosfera gotica, illustrazione editoriale'."
         },
+        "anchor_framing": {
+          "type": "string",
+          "enum": ["bust", "waist-up", "full-body"],
+          "default": "waist-up",
+          "description": "Il taglio con cui vengono generate le ancore di TUTTI i personaggi. E' una decisione d'insieme sul cast, presa una volta per storia: ancore con ritagli diversi portano quantita' diverse di dettaglio del viso, e il viso e' quello su cui si regge il riconoscimento del personaggio da un'inquadratura all'altra. Se anche un solo personaggio umano ha bisogno della figura intera — per il vestiario, per la silhouette — si cambia questo campo e ci vanno tutti insieme, non solo lui."
+        },
+        "image_style_suffix_en": {
+          "type": "string",
+          "description": "Stessa cosa in INGLESE, per la generazione. I modelli di immagini sono addestrati in inglese e un prompt italiano perde aderenza — misurato: uno style suffix in coda a un prompt italiano lungo viene proprio scartato. Il campo italiano resta il canonico: e' quello che il player mostra come testo in modalita' solo testo, ed e' quello su cui si ricade se questo manca."
+        },
         "narrator_voice": { "$ref": "#/$defs/VoiceSpec" },
         "default_tone": {
           "type": "string",
@@ -160,7 +170,13 @@
           "description": "Altri modi in cui il giocatore puo' nominarlo scrivendo liberamente: 'il ragazzo', 'quello con la barba', 'il vecchio'. Servono perche' *entrare* in un dialogo e' un'azione come le altre — «parla con Mark» passa dal resolver — anche se poi dentro il dialogo si sceglie da un elenco e non si scrive piu' niente. Un personaggio a cui il giocatore non sa come rivolgersi e' un personaggio con cui non parlera'.",
           "items": { "type": "string" }
         },
-        "visual_prompt": { "type": "string", "description": "Prompt per generazione immagine/sprite del personaggio." },
+        "visual_prompt": { "type": "string", "description": "Prompt per generazione immagine/sprite del personaggio. Descrive COM'E' FATTA la persona — eta', corporatura, capelli, vestiario, segni particolari — non cosa sta facendo: e' un'ancora riusata come riferimento in ogni inquadratura in cui compare, quindi un'azione infilata qui ('mani sul volante') ricompare anche dove non c'entra niente. L'azione sta nell'image_prompt dell'inquadratura." },
+        "visual_prompt_en": { "type": "string", "description": "Stessa cosa in INGLESE, per la generazione. I modelli di immagini sono addestrati in inglese e un prompt italiano perde aderenza — misurato: uno style suffix in coda a un prompt italiano lungo viene proprio scartato. Il campo italiano resta il canonico: e' quello che il player mostra come testo in modalita' solo testo, ed e' quello su cui si ricade se questo manca." },
+        "anchor_framing": {
+          "type": "string",
+          "enum": ["bust", "waist-up", "full-body"],
+          "description": "Override del taglio globale per QUESTA entita'. Esiste per i soggetti che non sono una figura umana — un quadrupede robotico, un veicolo, una creatura — dove 'mezzo busto' non significa niente e il modello giustamente lo ignora. NON va usato perche' un personaggio ha un vestiario interessante: in quel caso si cambia global_style.anchor_framing e si spostano tutti, altrimenti si torna al disordine che quel campo serve a togliere."
+        },
         "voice": { "$ref": "#/$defs/VoiceSpec" }
       }
     },
@@ -176,6 +192,10 @@
         "visual_prompt": {
           "type": "string",
           "description": "Descrizione stabile del luogo, riusata come riferimento da ogni inquadratura ambientata li'."
+        },
+        "visual_prompt_en": {
+          "type": "string",
+          "description": "Stessa cosa in INGLESE, per la generazione. I modelli di immagini sono addestrati in inglese e un prompt italiano perde aderenza — misurato: uno style suffix in coda a un prompt italiano lungo viene proprio scartato. Il campo italiano resta il canonico: e' quello che il player mostra come testo in modalita' solo testo, ed e' quello su cui si ricade se questo manca."
         }
       }
     },
@@ -208,6 +228,10 @@
         "visual_prompt": {
           "type": "string",
           "description": "Prompt per generare l'immagine dell'oggetto (icona d'inventario). Stessa logica di Character.visual_prompt: un'ancora per entita', non una singola inquadratura."
+        },
+        "visual_prompt_en": {
+          "type": "string",
+          "description": "Stessa cosa in INGLESE, per la generazione. I modelli di immagini sono addestrati in inglese e un prompt italiano perde aderenza — misurato: uno style suffix in coda a un prompt italiano lungo viene proprio scartato. Il campo italiano resta il canonico: e' quello che il player mostra come testo in modalita' solo testo, ed e' quello su cui si ricade se questo manca."
         }
       }
     },
@@ -429,6 +453,7 @@
           "additionalProperties": false,
           "properties": {
             "image_prompt": { "type": "string", "description": "Descrizione di QUESTA inquadratura: taglio, luce, momento. Se c'e' un place, non ripeterne la descrizione: si sommano." },
+            "image_prompt_en": { "type": "string", "description": "Stessa cosa in INGLESE, per la generazione. I modelli di immagini sono addestrati in inglese e un prompt italiano perde aderenza — misurato: uno style suffix in coda a un prompt italiano lungo viene proprio scartato. Il campo italiano resta il canonico: e' quello che il player mostra come testo in modalita' solo testo, ed e' quello su cui si ricade se questo manca." },
             "ambient_sound_prompt": { "type": "string" },
             "place": {
               "type": "string",
@@ -476,6 +501,7 @@
             "properties": {
               "id": { "type": "string" },
               "visual_prompt": { "type": "string" },
+              "visual_prompt_en": { "type": "string", "description": "Stessa cosa in INGLESE, per la generazione. I modelli di immagini sono addestrati in inglese e un prompt italiano perde aderenza — misurato: uno style suffix in coda a un prompt italiano lungo viene proprio scartato. Il campo italiano resta il canonico: e' quello che il player mostra come testo in modalita' solo testo, ed e' quello su cui si ricade se questo manca." },
               "voice": { "$ref": "#/$defs/VoiceSpec" }
             }
           }
@@ -493,6 +519,10 @@
               "image_prompt": {
                 "type": "string",
                 "description": "Prompt immagine per QUESTO beat narrativo, se l'inquadratura cambia rispetto al background della scena (o al beat precedente). Se assente, il player mantiene l'ultima immagine mostrata (background.image_prompt per il primo beat)."
+              },
+              "image_prompt_en": {
+                "type": "string",
+                "description": "Stessa cosa in INGLESE, per la generazione. I modelli di immagini sono addestrati in inglese e un prompt italiano perde aderenza — misurato: uno style suffix in coda a un prompt italiano lungo viene proprio scartato. Il campo italiano resta il canonico: e' quello che il player mostra come testo in modalita' solo testo, ed e' quello su cui si ricade se questo manca."
               },
               "place": {
                 "type": "string",

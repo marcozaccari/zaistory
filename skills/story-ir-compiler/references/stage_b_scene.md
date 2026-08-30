@@ -107,6 +107,36 @@ Dove l'appunto manca del tutto, vale il resto di questo documento.
   globale (`global_style.image_style_suffix`), verrà concatenato
   automaticamente a valle. Per una scena `cutscene` multi-inquadratura,
   `background.image_prompt` è l'immagine del PRIMO beat.
+- **Se un personaggio è in `characters_in_frame`, chiamalo per NOME —
+  ma solo nella versione inglese, `image_prompt_en`.** Il modulo assets
+  allega l'ancora di quel personaggio come immagine di riferimento e nel
+  prompt dichiara "image 2 = Mark": se la frase lo nomina, il legame fra
+  l'allegato e il ruolo è esplicito; se lo descrive e basta, il modello deve
+  indovinare quale immagine corrisponde a quale ruolo — e sbaglia. Misurato:
+  in un'inquadratura con "il ragazzo al volante, l'uomo magro accanto a lui"
+  il modello ha messo alla guida l'uomo sbagliato.
+
+  Nell'`image_prompt` **italiano lascia la prosa della sceneggiatura** — "il
+  ragazzo al volante", "l'uomo magro accanto a lui". Quel campo lo legge una
+  persona mentre gioca, e in quel contesto il registro narrativo vale più
+  della disambiguazione: chi sta giocando sa già chi è il ragazzo. La
+  disambiguazione serve al modello, quindi sta dove va al modello.
+
+  In inglese, quindi: "Tommy at the wheel, Mark beside him". Il nome
+  **sostituisce il descrittore, non aggiunge un soggetto**: deve indicare la
+  stessa persona a cui l'italiano si riferisce, altrimenti i due testi
+  divergono davvero. La descrizione fisica non ripeterla comunque in nessuna
+  delle due — arriva dall'ancora.
+- **`background.image_prompt_en`: la stessa cosa in inglese, obbligatoria.**
+  Vale per ogni `image_prompt` che scrivi, compresi quelli dei beat di
+  `narration[]` e gli override `visual_prompt` dei personaggi di scena.
+  L'italiano resta il campo canonico — è quello che il player mostra come
+  testo — ma è l'inglese che va al modello di immagini, perché un prompt
+  italiano perde aderenza e la sua coda (dove finisce lo stile) viene
+  scartata per prima. Traduzione fedele, non riscrittura: se i due testi
+  divergono, quello che il giocatore legge e quello che vede smettono di
+  corrispondere. E o le scrivi entrambe o nessuna: una copertura parziale
+  produce prompt misti, peggio di entrambe le lingue pure.
 - `background.ambient_sound_prompt`: suoni ambientali continui, non eventi
   puntuali (quelli vanno in `effect.play_sound_prompt` sulle azioni, o in
   `sound_effect_prompt` sui singoli beat di narrazione).
