@@ -30,15 +30,16 @@ npm install
 npm run dev                     # apre un dev server con ricarica a caldo
 
 # player web, file unico da mandare/aprire ovunque
-npm run build:web               # -> dist/index.html (~80 KB, tutto dentro)
-npm run embed -- ../examples/nel-paese-dei-ciechi.ir.json paese.html
+npm run build:web               # -> dist/index.html (~120 KB, tutto dentro)
+npm run embed -- ../stories/nel-paese-dei-ciechi/story.ir.json \
+                 ../stories/nel-paese-dei-ciechi/play.html
 
 # ...e per giocarlo dal telefono (o per provare il backend a vettori)
-npm run serve                   # serve dist/ e stampa gli indirizzi di rete
+npm run serve -- 8000 ../stories # serve le storie e stampa gli indirizzi
 
 # CLI
 npm run build:node
-node dist-node/src/cli/zaiplay.js ../examples/nel-paese-dei-ciechi.ir.json
+node dist-node/src/cli/zaiplay.js ../stories/nel-paese-dei-ciechi/story.ir.json
 ```
 
 Serve solo Node 22+. Nessuna dipendenza a runtime: TypeScript e Vite sono
@@ -48,14 +49,18 @@ da `node_modules`.
 ## Giocare dal telefono
 
 ```bash
-npm run build:web
-npm run embed -- ../examples/metalhead.ir.json dist/metalhead.html
-npm run serve
+../start_local_player.sh        # build + embed in ogni storia + serve
 ```
 
 Stampa gli indirizzi di rete della macchina; dal telefono, sulla stessa wi-fi,
 si apre uno di quelli. Il server è una cinquantina di righe di Node senza
-dipendenze, serve `dist/` e non fa altro.
+dipendenze, serve `stories/` e non fa altro.
+
+Il player incorporato finisce **dentro** la cartella della storia
+(`stories/<id>/play.html`), e non è un dettaglio di comodo: le immagini
+pubblicate stanno in `stories/<id>/assets/images/` e l'IR le nomina per id, non
+per percorso. Una pagina che sta lì le trova — servita da http, e anche copiata
+altrove insieme alla sua cartella.
 
 Due modi, e la differenza conta solo per un motivo:
 
@@ -69,6 +74,99 @@ scarica; servita da http è una pagina web normale e si scarica. Nota che su
 `http://` senza TLS non c'è WebGPU — non è un contesto sicuro — quindi
 l'inferenza gira in WASM: più lenta, ma per una frase di cinque parole resta
 nell'ordine dei millisecondi.
+
+## Tema
+
+Uno solo, scuro, e non segue il tema di sistema. Da quando ci sono le immagini
+il fondo non è più soltanto lo sfondo del testo: un bianco intorno a
+un'inquadratura cel-shaded ne cambia la lettura, ed è la ragione per cui i
+visori di foto sono tutti scuri.
+
+## Testo o immagini
+
+Sono **due modi di leggere la stessa storia**, e si scelgono dal pannello,
+scheda principale, sotto «come si vede»:
+
+| modo | cosa si vede |
+|---|---|
+| **testo** | i prompt e la scheda della scena, come se le immagini non ci fossero: è così che si legge *cosa verrebbe generato*, ed è il modo con cui si lavora sull'IR |
+| **immagini** | le immagini pubblicate **al posto** dei prompt che le hanno prodotte |
+
+Mostrare tutti e due insieme sembrava gratis e non lo è: fra un'inquadratura e
+la sua descrizione l'occhio sceglie l'immagine, il testo diventa mezzo schermo
+di rumore, e la scena si legge peggio che senza immagini.
+
+I prompt però non spariscono. Restano **dentro** l'immagine, dietro un
+bottoncino appoggiato al suo angolo: toccandolo si aprono sotto la figura. Il
+collegamento è quello — non «il prompt sta anche qui sotto da qualche parte»,
+ma «questo è il testo che ha prodotto *questa* immagine». Il bottone è visibile
+sempre, non al passaggio del mouse: metà del collaudo si fa dal telefono, dove
+il mouse non passa mai.
+
+Cosa passa dietro il bottone e cosa no: **l'immagine sostituisce solo ciò che
+mostra** — l'`image_prompt`, il `visual_prompt` del luogo, e i due riferimenti
+che dicono dove siamo e chi è in campo. L'ambiente sonoro, gli effetti e i
+timbri di voce restano in chiaro: quelli un'immagine non li mostra, e sono
+l'unico modo di sapere che ci sono.
+
+La scelta compare **solo quando c'è qualcosa da scegliere**, cioè quando la
+storia ha immagini pubblicate e il player sa dove cercarle. Negli altri due
+casi al suo posto c'è una riga che dice quale dei due pezzi manca — un
+interruttore che non cambia niente è peggio della sua assenza.
+
+Nell'IR le immagini sono **id** (`"image": "shot.auto_in_viaggio.bg"`), e il
+percorso lo compone il player: `assets/images/<id>.webp`, relativo alla
+cartella della storia.
+
+Quale cartella, lo decide da dove è arrivato l'IR:
+
+| l'IR arriva… | le immagini si cercano… |
+|---|---|
+| incorporato nella pagina (`play.html` dentro la storia) | accanto alla pagina |
+| da `?ir=.../stories/x/story.ir.json` | accanto a quell'URL |
+| scelto a mano — file, trascinamento, incolla | da nessuna parte: si gioca in solo testo |
+
+L'ultima riga non è una mancanza: un IR aperto a mano non ha una cartella
+storia intorno, e il pannello lo dice invece di lasciar credere che le immagini
+siano rotte. Lì si vedono i prompt, come si è sempre fatto.
+
+**Toccando un'immagine si apre a schermo intero**, con sotto il prompt che
+l'ha prodotta. Nel transcript le immagini stanno in una colonna di lettura e
+non superano mezzo schermo: è la misura giusta per leggere, non per *guardare*
+— e guardarla è quello che serve quando si sta decidendo se un asset va bene.
+Si chiude con un tocco ovunque, con Esc o con la ✕.
+
+**Un oggetto dell'inventario mostra la sua icona quando lo si guarda**: sia
+scrivendo «guarda il walkie», sia toccandolo nell'elenco dell'inventario, che
+è la stessa risposta d'autore per le due strade. Nell'elenco delle chip no: lì
+l'oggetto è una voce di menu, e dieci miniature in fila sono un inventario da
+gioco di ruolo, non la risposta a «cosa ho in mano».
+
+Le immagini non superano mai **metà schermo scarso in altezza**, e su schermo
+largo il transcript resta una colonna di lettura come il testo. Senza il primo
+limite, su desktop un quadrato largo quanto la colonna è alto quanto la
+finestra: ogni beat spinge fuori vista quello prima, e per leggere due righe di
+narrazione si scorre una schermata intera. Su un telefono in verticale non
+cambia niente — lì comanda la larghezza.
+
+Altre due cose che vale la pena conoscere:
+
+- **un'immagine dichiarata e non trovata si dice**, con il suo id, dov'era
+  attesa. Stessa regola del testo mancante: il player non riempie i buchi e non
+  mette segnaposto muti;
+- **cambiare modo vale da lì in avanti.** Il transcript è il resoconto di quello
+  che è successo, non una vista che si ridisegna: le scene già lette restano
+  come sono state lette. La scelta si conserva nelle impostazioni, insieme a
+  voce e resolver.
+
+Un nodo senza immagine mostra i suoi prompt anche in modalità immagini — che è
+il caso normale di una storia pubblicata a metà: si vede a colpo d'occhio cosa
+manca ancora.
+
+In terminale l'immagine non si vede, ma l'id si stampa come ogni altro campo:
+un beat con `image_prompt` e senza `image` è un beat che nel web resterebbe
+senza inquadratura, e il playthrough di regressione lo mostra senza aprire un
+browser.
 
 ## Tastiera
 
@@ -406,7 +504,7 @@ gioca bene. Per quello serve giocarla.
 ```
 src/core/     engine, stato, Effect/Condition, linter, resolver, lettura strict dell'IR
               (nessun DOM, nessun stdin: e' il pezzo condiviso)
-src/web/      player web: transcript, chip, pannello, modalita' ascolto
+src/web/      player web: transcript, chip, pannello, ascolto, immagini
 src/cli/      terminale interattivo, esecutore di script, colori e wrap
 scripts/      embed.mjs: incorpora un IR nella build web
 test/         test di engine, linter, lettura dell'IR e salvataggi
@@ -598,6 +696,6 @@ Il test end-to-end vero resta il playthrough di riferimento:
 
 ```bash
 node dist-node/src/cli/zaiplay.js \
-  --script ../examples/nel-paese-dei-ciechi.playthrough.txt \
-  ../examples/nel-paese-dei-ciechi.ir.json
+  --script ../stories/nel-paese-dei-ciechi/playthrough/completo.txt \
+  ../stories/nel-paese-dei-ciechi/story.ir.json
 ```

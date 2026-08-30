@@ -10,9 +10,10 @@ formato intermedio giocabile e player-agnostic (`story.ir.json`), che alimenta
 la generazione degli asset e uno o più player.
 
 ```
-sceneggiatura.md  ─►  COMPILATORE  ─►  story.ir.json  ─┬─►  PLAYER DI TEST (solo testo)
-   (markdown libero)                    (formato IR)   │      web + CLI
-                                                       └─►  ASSETS  ─►  PLAYER (PWA, bot)
+sceneggiatura.md  ─►  COMPILATORE  ─►  story.ir.json  ─┬─►  PLAYER  (web + CLI)
+   (markdown libero)                    (formato IR)   │      testo, e immagini se ci sono
+                                                       └─►  ASSETS  ─►  assets/images/
+                                                            (immagini)     + gli id nell'IR
 ```
 
 L'IR è il contratto che tiene i componenti disaccoppiati: nessuno di loro sa
@@ -20,14 +21,20 @@ nulla degli altri.
 
 ## Stato
 
-Prototipo. Funzionano due pezzi: il **compilatore**, realizzato come skill
-Claude che applica le regole di progetto direttamente in conversazione, e il
-**player di test** (`player/`, TypeScript), che gioca un `story.ir.json` in
-puro testo — senza immagini né voci — per scoprire se una storia compilata è
-davvero giocabile. Il player ha due facce sullo stesso core: una **web**, per
-provare la storia dal telefono o dal desktop, e una **CLI**, per il linter e i
-playthrough di regressione headless. Modulo assets e player grafici sono
+Prototipo. Funzionano tre pezzi: il **compilatore**, realizzato come skill
+Claude che applica le regole di progetto direttamente in conversazione; il
+**player** (`player/`, TypeScript), che gioca un `story.ir.json` e mostra le
+immagini che la storia ha già; e il **modulo assets per le immagini**
+(`assets-studio/images/`), che le estrae dall'IR, le genera, le fa guardare una per
+una in uno studio web e pubblica nella storia quelle marcate come definitive.
+Il player ha due facce sullo stesso core: una **web**, per provare la storia
+dal telefono o dal desktop, e una **CLI**, per il linter e i playthrough di
+regressione headless. Voce, suoni e i player definitivi (PWA, bot) sono
 progettati ma non ancora costruiti.
+
+Una storia è **una cartella** (`stories/<id>/`): l'IR, la sceneggiatura, i
+playthrough, gli asset pubblicati e il banco di lavoro del generatore. Vedi
+[stories/README.md](stories/README.md).
 
 Dalla versione 1.8.0 dell'IR **si gioca scrivendo**, non scegliendo da un
 elenco. Il pezzo che lo rende possibile non è un modello: è il compilatore, che
@@ -53,9 +60,12 @@ da mobile, perché da `file://` il browser tratta la pagina come origine opaca e
 il modello non si scarica.
 
 ```bash
-./start_local_player.sh 8080                          # altra porta
-./start_local_player.sh 8080 examples/metalhead.ir.json   # una storia sola
+./start_local_player.sh 8080                       # altra porta
+./start_local_player.sh 8080 stories/metal-head    # una storia sola
 ```
+
+Il player finisce **dentro** la cartella della storia (`play.html`): è così
+che trova le immagini pubblicate, che l'IR nomina per id e non per percorso.
 
 ### A mano
 
@@ -64,20 +74,34 @@ cd player && npm install
 
 # player web: un unico file HTML, si apre anche da file://
 npm run build:web
-npm run embed -- ../examples/nel-paese-dei-ciechi.ir.json paese.html
-# ...poi apri paese.html, anche sul telefono
+npm run embed -- ../stories/nel-paese-dei-ciechi/story.ir.json \
+  ../stories/nel-paese-dei-ciechi/play.html
+# ...poi apri quel file, anche sul telefono
 
 # CLI
 npm run build:node
-node dist-node/src/cli/zaiplay.js ../examples/metalhead.ir.json                    # gioca (si scrive cosa si fa)
-node dist-node/src/cli/zaiplay.js --lint ../examples/nel-paese-dei-ciechi.ir.json  # solo controlli statici
-node dist-node/src/cli/zaiplay.js --copertura ../examples/metalhead.ir.json        # quanto capisce il resolver
+node dist-node/src/cli/zaiplay.js ../stories/metal-head/story.ir.json                    # gioca (si scrive cosa si fa)
+node dist-node/src/cli/zaiplay.js --lint ../stories/nel-paese-dei-ciechi/story.ir.json   # solo controlli statici
+node dist-node/src/cli/zaiplay.js --copertura ../stories/metal-head/story.ir.json        # quanto capisce il resolver
 
 # player web servito in rete locale (equivalente di start_local_player.sh)
-npm run serve
+npm run serve -- 8000 ../stories
 node dist-node/src/cli/zaiplay.js \
-  --script ../examples/nel-paese-dei-ciechi.playthrough.txt \
-  ../examples/nel-paese-dei-ciechi.ir.json                                        # rigioca la partita di riferimento
+  --script ../stories/nel-paese-dei-ciechi/playthrough/completo.txt \
+  ../stories/nel-paese-dei-ciechi/story.ir.json                                          # rigioca la partita di riferimento
+```
+
+### Le immagini
+
+```bash
+# estrai i job dall'IR, poi apri lo studio: si guarda, si rifà, si marca
+# definitivo quello che convince, e il pulsante «Pubblica» le porta nella storia
+python assets-studio/images/extract_manifest.py stories/metal-head/story.ir.json \
+    -o stories/metal-head/_work/assets_manifest.json
+./start_assets_studio.sh stories/metal-head
+
+# oppure, senza interfaccia
+python assets-studio/images/publish.py stories/metal-head --dry-run
 ```
 
 ## Contenuto del repository
@@ -88,8 +112,11 @@ node dist-node/src/cli/zaiplay.js \
 | `skills/story-ir-compiler/references/engine-ir.schema.json` | Lo schema dell'IR — il contratto stabile del progetto |
 | `skills/story-ir-compiler/scripts/` | Validatore dell'IR e segmentatore delle scene |
 | `player/` | Il player di test: web e CLI (`zaiplay`) sullo stesso core, linter di giocabilità, script di playthrough |
-| `start_local_player.sh` | Costruisce il player, ci incorpora le storie e lo serve in rete locale (per giocare dal telefono) |
-| `examples/` | Sceneggiature di riferimento e l'IR compilato da usare come banco di prova |
+| `assets-studio/` | Gli strumenti che trasformano i prompt in asset: una cartella per tipo — oggi `images/`, domani voce e suoni |
+| `assets-studio/images/` | Immagini: estrazione del manifest, generazione, studio web, prototipazione, pubblicazione |
+| `start_local_player.sh` | Costruisce il player, lo incorpora in ogni storia e serve `stories/` in rete locale (per giocare dal telefono) |
+| `start_assets_studio.sh` | Chiede su quale storia aprire lo studio degli asset e lo serve in rete locale |
+| `stories/` | Le storie: una cartella ciascuna, con IR, sceneggiatura, playthrough e asset pubblicati |
 
 ## Documentazione
 
@@ -98,3 +125,8 @@ node dist-node/src/cli/zaiplay.js \
 - **[AGENTS.md](AGENTS.md)** — regole operative per gli agenti di coding.
 - **[player/README.md](player/README.md)** — come si usa il player, i comandi,
   gli script di playthrough e il linter.
+- **[assets-studio/images/README.md](assets-studio/images/README.md)** — la catena
+  delle immagini: manifest, generazione, studio, pubblicazione, e i numeri dei
+  ventuno modelli provati.
+- **[stories/README.md](stories/README.md)** — com'è fatta la cartella di una
+  storia e perché.

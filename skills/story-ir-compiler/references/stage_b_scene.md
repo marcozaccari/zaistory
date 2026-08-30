@@ -137,6 +137,11 @@ Dove l'appunto manca del tutto, vale il resto di questo documento.
   divergono, quello che il giocatore legge e quello che vede smettono di
   corrispondere. E o le scrivi entrambe o nessuna: una copertura parziale
   produce prompt misti, peggio di entrambe le lingue pure.
+- **`image` non si scrive in compilazione.** `background`, i beat di
+  `narration[]` e gli override `characters[]` ammettono un campo `image`, che
+  è l'id dell'immagine già prodotta e approvata per quel nodo. Lo scrive il
+  modulo assets quando pubblica; il compilatore emette prompt, non nomi di
+  file che ancora non esistono.
 - `background.ambient_sound_prompt`: suoni ambientali continui, non eventi
   puntuali (quelli vanno in `effect.play_sound_prompt` sulle azioni, o in
   `sound_effect_prompt` sui singoli beat di narrazione).

@@ -33,6 +33,7 @@ import {
 } from './config.js';
 import { CONFIG_DEFAULT, caricaEmbedder, type ConfigEmbedder } from './embedder.js';
 import { ASCOLTO_DEFAULT, Ascolto, type ImpostazioniAscolto } from './ascolto.js';
+import { Immagini, baseDegliAsset } from './immagini.js';
 import { Voce } from './voce.js';
 import { PLAYER_VERSION } from '../version.js';
 import { $, clear, el, staScrivendo } from './dom.js';
@@ -81,6 +82,15 @@ let configEmbedder: ConfigEmbedder = { ...CONFIG_DEFAULT };
  * ricominciare non deve costringere a riscegliere la voce.
  */
 const voce = new Voce();
+/**
+ * Le immagini.
+ *
+ * Come la voce, vive quanto la pagina e non quanto la partita: dove stanno
+ * gli asset non cambia perche' si ricomincia. La base si fissa quando si sa
+ * da dove arriva l'IR — e resta indefinita se l'IR e' stato scelto a mano,
+ * perche' in quel caso non esiste nessuna cartella storia intorno.
+ */
+const immagini = new Immagini(undefined, true);
 let impAscolto: ImpostazioniAscolto = { ...ASCOLTO_DEFAULT };
 let ascolto = new Ascolto({ ir_version: '', id: '', title: '', start_scene: '', scenes: [] }, voce);
 
@@ -200,6 +210,13 @@ function panelContext(s: Session): PanelContext {
         start(s.story, s.findings, new ScriptDriver([...salv.partita.trace]));
       }
     },
+    immagini,
+    onImmagini: (v) => {
+      immagini.imposta(v);
+      // Le immagini gia' stampate restano: il transcript e' il resoconto di
+      // cio' che e' successo, non una vista che si ridisegna. L'interruttore
+      // vale da qui in avanti, come tutto il resto.
+    },
     ascolto,
     onAscolto: (imp) => {
       impAscolto = imp;
@@ -240,6 +257,7 @@ function configCorrente(): ConfigPlayer {
     ascolto: impAscolto,
     embedder: configEmbedder,
     resolver: nomeResolver,
+    immagini: immagini.accese,
     debug: document.body.classList.contains('debug'),
   };
 }
@@ -247,6 +265,7 @@ function configCorrente(): ConfigPlayer {
 function applicaConfig(c: ConfigPlayer): void {
   impAscolto = c.ascolto;
   ascolto.configura(impAscolto);
+  immagini.imposta(c.immagini);
   configEmbedder = c.embedder;
   impostaDebug(c.debug);
   // Il backend si riaccende solo se cambia davvero: `scegliResolver` esce
@@ -389,7 +408,7 @@ function start(story: Story, findings: Finding[], script?: ScriptDriver): void {
   ascolto = new Ascolto(story, voce);
   ascolto.configura(impAscolto);
 
-  const ui = new WebUI({ story, resolver, transcript, dock, onUpdate: refresh, script, ascolto });
+  const ui = new WebUI({ story, resolver, transcript, dock, onUpdate: refresh, script, ascolto, immagini });
   const engine = new Engine(story, ui);
   session = { story, findings, engine, ui };
 
@@ -476,8 +495,13 @@ const embedded = window.__ZAISTORY_IR__;
 const fromUrl = new URLSearchParams(location.search).get('ir');
 
 if (embedded) {
+  // La pagina con l'IR dentro sta *nella* cartella della storia: e' cosi' che
+  // `start_local_player.sh` la mette, ed e' anche cio' che rende la cartella
+  // copiabile su una chiavetta e ancora giocabile.
+  immagini.impostaBase(baseDegliAsset());
   load(embedded);
 } else if (fromUrl) {
+  immagini.impostaBase(baseDegliAsset(fromUrl));
   fetch(fromUrl)
     .then((r) => {
       if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);

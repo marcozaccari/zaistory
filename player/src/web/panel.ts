@@ -27,6 +27,7 @@ import {
 import { clear, conferma, el, kv, premi } from './dom.js';
 import type { ConfigEmbedder } from './embedder.js';
 import { ASCOLTO_DEFAULT, type Ascolto, type ImpostazioniAscolto } from './ascolto.js';
+import type { Immagini } from './immagini.js';
 import type { WebUI } from './webui.js';
 
 /**
@@ -71,6 +72,9 @@ export interface PanelContext {
   /** La modalita' ascolto e il modo di regolarla a partita in corso. */
   ascolto: Ascolto;
   onAscolto: (imp: ImpostazioniAscolto) => void;
+  /** Le immagini della storia e il modo di spegnerle. */
+  immagini: Immagini;
+  onImmagini: (v: boolean) => void;
 }
 
 export function renderPanel(body: HTMLElement, tab: Tab, ctx: PanelContext): void {
@@ -221,6 +225,93 @@ function renderPrincipale(body: HTMLElement, ctx: PanelContext): void {
 
   body.append(el('h3', undefined, 'inventario'));
   body.append(chipsInventario(ctx));
+
+  body.append(el('h3', undefined, 'come si vede'));
+  modalitaImmagini(body, ctx);
+}
+
+/**
+ * Testo o immagini: due modi di leggere la stessa storia.
+ *
+ * La scelta compare **solo quando c'e' davvero qualcosa da scegliere**, cioe'
+ * quando la storia ha immagini pubblicate e il player sa dove cercarle. Un
+ * interruttore che non cambia niente e' peggio della sua assenza: chi lo trova
+ * spento prova ad accenderlo, non vede cambiare nulla e conclude che il player
+ * e' rotto. Negli altri due casi qui c'e' una riga che dice quale dei due
+ * pezzi manca — e dove si va a prenderlo.
+ */
+function modalitaImmagini(body: HTMLElement, ctx: PanelContext): void {
+  const im = ctx.immagini;
+  if (!im.disponibili) {
+    body.append(
+      el(
+        'p',
+        'empty',
+        "L'IR e' stato aperto a mano, quindi non c'e' nessuna cartella storia intorno da cui prendere " +
+          'le immagini: si gioca in solo testo, con i prompt al posto delle inquadrature. Aprendolo ' +
+          'dalla pagina che sta dentro la cartella della storia — o servito da http — le immagini ' +
+          'compaiono da sole.',
+      ),
+    );
+    return;
+  }
+  const quante = contaImmagini(ctx.story);
+  if (!quante) {
+    body.append(
+      el(
+        'p',
+        'empty',
+        "Questa storia non ha ancora immagini pubblicate: nessun nodo dell'IR porta un id, quindi non " +
+          "c'e' niente da mostrare al posto dei prompt. Si pubblicano dallo studio degli asset, " +
+          'marcando come definitive quelle che convincono.',
+      ),
+    );
+    return;
+  }
+
+  const MODI: Array<[boolean, string, string]> = [
+    [
+      false,
+      'testo',
+      "I prompt e la scheda della scena, come se le immagini non ci fossero: e' cosi' che si legge " +
+        "cosa *verrebbe* generato, ed e' il modo con cui si lavora sull'IR.",
+    ],
+    [
+      true,
+      'immagini',
+      `Le ${quante} immagini pubblicate al posto dei prompt che le hanno prodotte. Il testo non si ` +
+        "perde: sta dentro l'immagine, dietro il bottone «prompt».",
+    ],
+  ];
+  const riga = el('div', 'chips');
+  for (const [valore, etichetta] of MODI) {
+    const b = el('button', `chip scelta${im.accese === valore ? ' on' : ''}`, etichetta);
+    b.onclick = async () => {
+      if (im.accese === valore) return;
+      await premi(b);
+      ctx.onImmagini(valore);
+    };
+    riga.append(b);
+  }
+  body.append(riga);
+  body.append(el('p', 'empty', MODI.find(([v]) => v === im.accese)?.[2] ?? ''));
+}
+
+/** Quanti nodi dell'IR portano gia' un'immagine. */
+function contaImmagini(story: Story): number {
+  let n = 0;
+  const conta = (o?: { image?: string }) => {
+    if (o?.image) n += 1;
+  };
+  for (const c of story.characters ?? []) conta(c);
+  for (const p of story.places ?? []) conta(p);
+  for (const i of story.items ?? []) conta(i);
+  for (const s of story.scenes) {
+    conta(s.background);
+    for (const c of s.characters ?? []) conta(c);
+    for (const b of s.narration ?? []) conta(b);
+  }
+  return n;
 }
 
 /**

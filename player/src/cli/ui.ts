@@ -201,6 +201,7 @@ export class TermUI implements PlayerUI {
           `characters.${c.id}`,
           [
             ['visual_prompt', c.visual_prompt, 'image'],
+            ['image', c.image, 'image'],
             ['voice.style_prompt', c.voice?.style_prompt, 'voice'],
           ],
           c.name,
@@ -214,7 +215,14 @@ export class TermUI implements PlayerUI {
       this.out();
       this.out(this.t.dim(`  luoghi (${st.places.length}):`));
       for (const pl of st.places) {
-        this.group(`places.${pl.id}`, [['visual_prompt', pl.visual_prompt, 'image']], pl.name);
+        this.group(
+          `places.${pl.id}`,
+          [
+            ['visual_prompt', pl.visual_prompt, 'image'],
+            ['image', pl.image, 'image'],
+          ],
+          pl.name,
+        );
       }
     }
 
@@ -256,6 +264,11 @@ export class TermUI implements PlayerUI {
     }
     this.param('characters_in_frame', b.characters_in_frame?.join(', '));
     this.param('image_prompt', b.image_prompt, 'image');
+    // In terminale un'immagine non si vede: quello che si puo' dire e' che
+    // esiste e come si chiama. Serve a collaudare la pubblicazione senza
+    // aprire un browser — un beat con il prompt e senza `image` e' un beat
+    // che nel player web resterebbe senza inquadratura.
+    this.param('image', b.image, 'image');
     this.param('sound_effect_prompt', b.sound_effect_prompt, 'sound');
     this.param('voice.style_prompt', b.voice?.style_prompt, 'voice');
     this.para(this.t.italic(b.text), '  ');
@@ -670,6 +683,7 @@ export class TermUI implements PlayerUI {
       [`places.${sc.background?.place}.visual_prompt`, luogo?.visual_prompt, 'image'],
       ['characters_in_frame', sc.background?.characters_in_frame?.join(', '), 'none'],
       ['image_prompt', sc.background?.image_prompt, 'image'],
+      ['image', sc.background?.image, 'image'],
       ['ambient_sound_prompt', sc.background?.ambient_sound_prompt, 'sound'],
     ]);
 
@@ -683,6 +697,7 @@ export class TermUI implements PlayerUI {
         `characters.${c.id}`,
         [
           [`visual_prompt${c.visual_prompt ? ' (override)' : ''}`, c.visual_prompt ?? g?.visual_prompt, 'image'],
+          ['image', c.image ?? g?.image, 'image'],
           [
             `voice.style_prompt${c.voice?.style_prompt ? ' (override)' : ''}`,
             c.voice?.style_prompt ?? g?.voice?.style_prompt,

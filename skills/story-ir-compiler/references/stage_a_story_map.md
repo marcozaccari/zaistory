@@ -148,6 +148,14 @@ passare il blocco giusto allo Stadio B.
    cosa si vede, e serve a legare l'immagine di riferimento allegata al ruolo
    giusto. Tutto il resto resta traduzione.
 
+4bis-ter. **Il campo `image` non lo scrivi mai.** Personaggi, luoghi,
+   oggetti, inquadrature e beat hanno un campo `image` facoltativo: è l'id
+   dell'immagine già prodotta e approvata per quel nodo, e lo scrive il
+   modulo assets al momento della pubblicazione, non il compilatore. Tu
+   scrivi il prompt; chi genera decide, guardandola, quale immagine è
+   definitiva. Emetterlo in compilazione significherebbe dichiarare
+   l'esistenza di un file che nessuno ha ancora visto.
+
 4ter. **`visual_prompt` descrive com'è FATTO il soggetto, non cosa sta
    facendo.** È un'ancora: viene generata una volta per entità e poi allegata
    come immagine di riferimento a ogni inquadratura in cui quel soggetto

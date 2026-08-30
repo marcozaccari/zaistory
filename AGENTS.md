@@ -23,6 +23,16 @@ delicato del repository: ogni altro componente dipende da lui.
 - **L'IR non nomina mai un generatore.** Solo prompt testuali e tag di mood, mai
   provider, modelli, id di voce o loro parametri: quel binding vive nel file di
   mapping del modulo assets.
+- **Gli strumenti stanno in `assets-studio/`, una cartella per tipo di asset**:
+  `images/` oggi, `voice/` e `sound/` quando esisteranno. Non aggiungere un
+  secondo modulo immagini altrove, e non mescolare tipi diversi nello stesso.
+- **Una storia è una cartella** (`stories/<id>/`): `story.ir.json`,
+  `sceneggiatura.md`, `playthrough/`, `assets/images/` e il banco di lavoro del
+  generatore in `_work/`, che git ignora. Vedi `stories/README.md`. Non
+  spargere i pezzi di una storia altrove.
+- **Il campo `image` non lo scrive il compilatore.** È l'id di un'immagine già
+  prodotta e approvata, e lo scrive `assets-studio/images/publish.py`. Un IR appena
+  compilato non ne ha nessuno, ed è giusto così.
 - **Cambiare lo schema significa toccare sei cose insieme**: lo schema, le
   istruzioni di Stadio A (`references/stage_a_story_map.md`), quelle di Stadio B
   (`references/stage_b_scene.md`), la versione dell'IR annotata in
@@ -38,13 +48,29 @@ delicato del repository: ogni altro componente dipende da lui.
 pip install jsonschema --break-system-packages
 
 # valida un IR completo (exit 0 = valido; errori su stderr, uno per riga)
-python3 skills/story-ir-compiler/scripts/validate.py story.ir.json
+python3 skills/story-ir-compiler/scripts/validate.py stories/metal-head/story.ir.json
 
 # valida una singola scena
 python3 skills/story-ir-compiler/scripts/validate.py --scene scena.json
 
 # segmenta una sceneggiatura usando gli hint di una story map di Stadio A
 python3 skills/story-ir-compiler/scripts/segment.py script.md story_map.json
+```
+
+Serve `jsonschema` **4 o più recente**: lo schema è draft 2020-12, e con la 3.x
+`validate.py` esce con 2 dicendo che manca la libreria.
+
+```bash
+# immagini: estrazione, studio (guarda, rifà, approva, pubblica), pubblicazione
+python assets-studio/images/extract_manifest.py stories/metal-head/story.ir.json \
+    -o stories/metal-head/_work/assets_manifest.json
+./start_assets_studio.sh stories/metal-head
+python assets-studio/images/publish.py stories/metal-head --dry-run
+
+# i selftest del generatore: nessuna rete, nessuna chiave
+python assets-studio/images/selftest.py
+python assets-studio/images/selftest_publish.py
+python assets-studio/images/selftest_studio.py
 ```
 
 Ogni IR prodotto o modificato va validato prima di considerarlo finito.
@@ -56,33 +82,36 @@ npm test                                   # test di engine, linter e lettura IR
 npm run build:node                         # poi la CLI e' in dist-node/
 
 # analisi statica e playthrough di riferimento: entrambi devono uscire con 0
-node dist-node/src/cli/zaiplay.js --lint ../examples/nel-paese-dei-ciechi.ir.json
+node dist-node/src/cli/zaiplay.js --lint ../stories/nel-paese-dei-ciechi/story.ir.json
 node dist-node/src/cli/zaiplay.js \
-  --script ../examples/nel-paese-dei-ciechi.playthrough.txt \
-  ../examples/nel-paese-dei-ciechi.ir.json
+  --script ../stories/nel-paese-dei-ciechi/playthrough/completo.txt \
+  ../stories/nel-paese-dei-ciechi/story.ir.json
 
 # copertura del resolver: quante test_phrases arrivano all'azione giusta
 # (esce con 1 se una frase fa partire l'azione SBAGLIATA, che e' un difetto
 # vero; le frasi perse invece non fanno fallire niente)
-node dist-node/src/cli/zaiplay.js --copertura ../examples/metalhead.ir.json
-node dist-node/src/cli/zaiplay.js --lint ../examples/metalhead.ir.json
+node dist-node/src/cli/zaiplay.js --copertura ../stories/metal-head/story.ir.json
+node dist-node/src/cli/zaiplay.js --lint ../stories/metal-head/story.ir.json
 node dist-node/src/cli/zaiplay.js \
-  --script ../examples/metalhead.playthrough.txt ../examples/metalhead.ir.json
+  --script ../stories/metal-head/playthrough/pulito.txt ../stories/metal-head/story.ir.json
 node dist-node/src/cli/zaiplay.js \
-  --script ../examples/metalhead.giro-lungo.playthrough.txt \
-  ../examples/metalhead.ir.json
+  --script ../stories/metal-head/playthrough/giro-lungo.txt \
+  ../stories/metal-head/story.ir.json
 
 npm run dev                                # player web con ricarica a caldo
 npm run build:web                          # -> dist/index.html, file unico
 npm run serve                              # serve dist/ in rete locale
 ```
 
+I due playthrough di "Metal Head" arrivano allo stesso finale in **125 e 135
+passi**: la differenza di dieci e' il punto, non il numero assoluto.
+
 Dalla radice del repository, `./start_local_player.sh` fa build + embed +
 serve in un colpo: e' il modo di provare il player dal telefono, e l'unico
 modo di provare il backend a vettori da mobile (da `file://` il modello non si
 scarica).
 
-Entrambi gli IR di esempio sono a **IR 1.8.0** e passano il linter con zero
+Entrambi gli IR di esempio sono a **IR 1.9.0** e passano il linter con zero
 errori: se una modifica ne introduce, e' la modifica a essere sbagliata, non
 l'esempio. I campi della 1.8.0 sono opzionali nello schema ma **obbligatori per
 il linter** (`player_voice`, `look` nelle scene interattive, un fallback
@@ -113,6 +142,10 @@ non la partita.
 - **Aggiornare un IR esistente > ricompilarlo.** Il compilatore non è
   deterministico tra sessioni: id e dettagli minori cambiano. Se un
   `story.ir.json` esiste già, editalo in place mantenendo gli id.
+- **La selezione delle immagini è umana, e sta nel filesystem.** Nella storia
+  finisce solo ciò che è stato marcato *definitivo* nello studio; il resto
+  resta in `_work/`. Non aggiungere euristiche che pubblicano da sole, e non
+  usare `--all` se non per una prova.
 - **Nessuno stack è stato scelto** per il generatore ad hoc. La scelta è
   deliberatamente rimandata: chiedi, non decidere per conto tuo. (Per il player
   invece è scelto: TypeScript, `player/` — web e CLI sullo stesso core.)

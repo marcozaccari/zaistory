@@ -41,6 +41,7 @@ import {
 import { clear, el, premi, staScrivendo } from './dom.js';
 import { icona, iconaGruppo } from './icone.js';
 import { doppio, nomeCampo, nomeTipoScena, type Doppio } from './nomi.js';
+import type { Immagini } from './immagini.js';
 import type { Ascolto } from './ascolto.js';
 
 /** Il tipo di risorsa che un prompt descrive: da' il colore all'etichetta, e
@@ -134,9 +135,44 @@ function promptRow([label, value, media, ereditato]: [string, string | Doppio, M
  * e a colpo d'occhio si vede quali risorse ha *quella* entita' e quali le
  * mancano. `who` e' il nome umano, quando l'entita' ne ha uno.
  */
-function promptGroup(name: string, rows: PromptRow[], who?: string): HTMLElement | undefined {
+/**
+ * La riga dice qualcosa che l'immagine, se c'e', mostra gia'.
+ *
+ * Sono i prompt di immagine e i due riferimenti che dicono *cosa* c'e' dentro
+ * l'inquadratura — dove siamo e chi si vede. In modalita' immagini finiscono
+ * dietro il bottone della figura; il suono e la voce no, perche' quelli
+ * un'immagine non li mostra e restano l'unico modo di sapere che ci sono.
+ */
+function mostrataDallImmagine([label, , media]: PromptRow): boolean {
+  return media === 'image' || label === 'place' || label === 'characters_in_frame';
+}
+
+/**
+ * Le righe di prompt senza intestazione, pronte a stare dentro una figura.
+ *
+ * Niente nome del gruppo qui: il gruppo e' l'immagine che le contiene, e
+ * ripetere «ambientazione» sopra a un'inquadratura che si sta guardando non
+ * aggiunge niente.
+ */
+function promptNudi(rows: PromptRow[]): HTMLElement | undefined {
   const present = rows.filter((r): r is [string, string | Doppio, Media, boolean?] => !!r[1]);
   if (present.length === 0) return undefined;
+  const box = el('div');
+  for (const row of present) box.append(promptRow(row));
+  return box;
+}
+
+function promptGroup(
+  name: string,
+  rows: PromptRow[],
+  who?: string,
+  /** Un elemento da tenere nel gruppo anche quando non c'e' nessuna riga: il
+   * ritratto di un personaggio senza altri campi resterebbe altrimenti senza
+   * il nome di chi e'. */
+  extra?: HTMLElement,
+): HTMLElement | undefined {
+  const present = rows.filter((r): r is [string, string | Doppio, Media, boolean?] => !!r[1]);
+  if (present.length === 0 && !extra) return undefined;
   const box = el('div', 'group');
   const head = el('span', 'gname');
   const segno = iconaGruppo(name);
@@ -149,6 +185,7 @@ function promptGroup(name: string, rows: PromptRow[], who?: string): HTMLElement
   head.append(ir);
   box.append(head);
   for (const row of present) box.append(promptRow(row));
+  if (extra) box.append(extra);
   return box;
 }
 
@@ -165,6 +202,10 @@ export interface WebUIOptions {
    * fuori perche' le sue impostazioni sopravvivono alla partita — si
    * ricomincia senza dover riscegliere la voce. */
   ascolto: Ascolto;
+  /** La terza: la stessa storia, guardata. Come l'ascolto arriva da fuori,
+   * per la stessa ragione — dove stanno le immagini non cambia perche' si
+   * ricomincia. */
+  immagini: Immagini;
 }
 
 export class WebUI implements PlayerUI {
@@ -185,6 +226,7 @@ export class WebUI implements PlayerUI {
   private onUpdate: () => void;
   private script?: ScriptDriver;
   private ascolto: Ascolto;
+  private immagini: Immagini;
   /** Promessa in attesa di un tocco: va rifiutata se la partita viene
    * ricominciata, altrimenti resta appesa per sempre. */
   private abort?: (err: unknown) => void;
@@ -251,6 +293,7 @@ export class WebUI implements PlayerUI {
     this.onUpdate = o.onUpdate;
     this.script = o.script;
     this.ascolto = o.ascolto;
+    this.immagini = o.immagini;
   }
 
   /**
@@ -564,13 +607,22 @@ export class WebUI implements PlayerUI {
     param('scene_tone', scene.scene_tone || toneOf(this.story, scene), 'none');
 
     const luogo = scene.background?.place ? findPlace(this.story, scene.background.place) : undefined;
-    const bg = promptGroup('background', [
+    const righeBg: PromptRow[] = [
       ['place', luogoDoppio(scene.background?.place, luogo?.name), 'none'],
       [`places.${scene.background?.place}.visual_prompt`, luogo?.visual_prompt, 'image'],
       ['characters_in_frame', inFrameDoppio(this.story, scene.background?.characters_in_frame), 'none'],
       ['image_prompt', scene.background?.image_prompt, 'image'],
       ['ambient_sound_prompt', scene.background?.ambient_sound_prompt, 'sound'],
-    ]);
+    ];
+    // L'inquadratura prima del titolo: e' quello che si vede entrando in una
+    // stanza, e il titolo e' la didascalia di cio' che si sta guardando. Se
+    // c'e', si porta dentro i prompt che sostituisce e nella scheda restano
+    // solo le righe che non mostra — il suono, per esempio.
+    const fig = this.immagini.figura(scene.background?.image, scene.background?.image_prompt, {
+      prompt: promptNudi(righeBg.filter(mostrataDallImmagine)),
+    });
+    if (fig) card.prepend(fig);
+    const bg = promptGroup('background', fig ? righeBg.filter((r) => !mostrataDallImmagine(r)) : righeBg);
     if (bg) card.append(bg);
 
     // Aspetto e voce di chi e' in scena: l'override locale se c'e', altrimenti
@@ -581,23 +633,31 @@ export class WebUI implements PlayerUI {
       const g = findCharacter(this.story, c.id);
       const aspetto = c.visual_prompt ?? g?.visual_prompt;
       const voce = c.voice?.style_prompt ?? g?.voice?.style_prompt;
+      const rigaAspetto: PromptRow = [
+        `visual_prompt${c.visual_prompt ? ' (override)' : ''}`,
+        aspetto,
+        'image',
+        this.giaLetto(c.id, 'visual_prompt', aspetto),
+      ];
+      const rigaVoce: PromptRow = [
+        `voice.style_prompt${c.voice?.style_prompt ? ' (override)' : ''}`,
+        voce,
+        'voice',
+        this.giaLetto(c.id, 'voice.style_prompt', voce),
+      ];
+      // Il ritratto e' l'ancora: la stessa immagine che il generatore allega
+      // alle inquadrature per tenere la faccia uguale. Vederla qui e' il modo
+      // di accorgersi che due scene stanno usando due Laura diverse — e quando
+      // c'e', l'aspetto scritto sta dentro di lei.
+      const ritratto = this.immagini.figura(c.image ?? g?.image, aspetto, {
+        classe: 'ritratto',
+        prompt: promptNudi([rigaAspetto]),
+      });
       const box = promptGroup(
         `characters.${c.id}`,
-        [
-          [
-            `visual_prompt${c.visual_prompt ? ' (override)' : ''}`,
-            aspetto,
-            'image',
-            this.giaLetto(c.id, 'visual_prompt', aspetto),
-          ],
-          [
-            `voice.style_prompt${c.voice?.style_prompt ? ' (override)' : ''}`,
-            voce,
-            'voice',
-            this.giaLetto(c.id, 'voice.style_prompt', voce),
-          ],
-        ],
+        ritratto ? [rigaVoce] : [rigaAspetto, rigaVoce],
         g?.name,
+        ritratto,
       );
       if (box) card.append(box);
     }
@@ -647,14 +707,21 @@ export class WebUI implements PlayerUI {
     const ereditato = !!b.place && b.place === scene.background?.place;
     // Stesso ordine della scheda di scena: prima i riferimenti che questa
     // inquadratura eredita (dove, chi), poi cio' che vale solo per lei.
-    this.assets([
+    const righe: PromptRow[] = [
       ['place', luogoDoppio(b.place, luogo?.name), 'none'],
       [`places.${b.place}.visual_prompt`, luogo?.visual_prompt, 'image', ereditato],
       ['characters_in_frame', inFrameDoppio(this.story, b.characters_in_frame), 'none'],
       ['image_prompt', b.image_prompt, 'image'],
       ['sound_effect_prompt', b.sound_effect_prompt, 'sound'],
       ['voice.style_prompt', b.voice?.style_prompt, 'voice'],
-    ]);
+    ];
+    const figBeat = this.immagini.figura(b.image, b.image_prompt, {
+      prompt: promptNudi(righe.filter(mostrataDallImmagine)),
+    });
+    // L'inquadratura prima di tutto, come nella scheda di scena: e' quello che
+    // si vede, e il resto — un suono, un tono di voce — la commenta.
+    if (figBeat) this.push(figBeat);
+    this.assets(figBeat ? righe.filter((r) => !mostrataDallImmagine(r)) : righe);
     this.entry('beat', b.text);
     this.ascolto.beat(scene, b, index);
     this.dbg(`beat ${index + 1}/${total}`);
@@ -944,6 +1011,10 @@ export class WebUI implements PlayerUI {
       // d'autore e si resta qui. Nessun Effect e' stato applicato — l'engine
       // non ha nemmeno saputo che il giocatore ha scritto qualcosa.
       if (e.verbo === 'look') this.ascolto.riosserva(p.scene);
+      // «guarda il walkie» e il tocco sulla chip dell'inventario portano alla
+      // stessa risposta d'autore: e' giusto che portino anche alla stessa
+      // immagine.
+      if (e.verbo === 'esamina' && e.oggetto && e.testo) this.mostraOggetto(e.oggetto);
       if (e.testo) {
         this.entryVia(e.kind === 'verbo' ? 'look' : 'narration', e.testo, e);
         this.ascolto.dilo(e.testo);
@@ -1010,9 +1081,29 @@ export class WebUI implements PlayerUI {
     if (!testo) return;
     this.nuovoTurno();
     this.entry('echo', `· ${this.story.items?.find((i) => i.id === id)?.name ?? id}`);
+    this.mostraOggetto(id);
     this.entry('look', testo);
     this.ascolto.dilo(testo);
     this.scrollEnd();
+  }
+
+  /**
+   * L'immagine di un oggetto che si sta guardando.
+   *
+   * L'icona d'inventario e' un'ancora come le altre — generata una volta per
+   * oggetto — e il momento in cui serve e' esattamente questo: quando si tira
+   * fuori la cosa dallo zaino per guardarla. Nell'elenco delle chip no: li'
+   * l'oggetto e' una voce di menu, e dieci miniature in fila sono un
+   * inventario da gioco di ruolo, non la risposta a «cosa ho in mano».
+   */
+  private mostraOggetto(id: string): void {
+    const item = this.story.items?.find((i) => i.id === id);
+    if (!item) return;
+    const fig = this.immagini.figura(item.image, item.visual_prompt, {
+      classe: 'oggetto',
+      prompt: promptNudi([[`items.${id}.visual_prompt`, item.visual_prompt, 'image']]),
+    });
+    if (fig) this.push(fig);
   }
 
   /** Una riga di transcript con il marchio di chi ha deciso il turno. Si vede

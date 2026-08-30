@@ -10,6 +10,16 @@
  * il contratto in un dialetto suo.
  */
 
+/**
+ * L'id di un'immagine gia' prodotta e pubblicata dentro la storia.
+ *
+ * Non lo scrive il compilatore: lo scrive il modulo assets pubblicando le
+ * immagini marcate come definitive. Il player lo risolve per convenzione in
+ * `assets/images/<id>.webp`, relativo alla cartella della storia — l'IR non
+ * porta percorsi, e non nomina nessun generatore.
+ */
+export type ImageRef = string;
+
 /** Descrizione puramente testuale di una voce. Provider-agnostica per scelta
  * architetturale: qui non c'e' e non deve arrivare nessun voice_id. */
 export interface VoiceSpec {
@@ -33,8 +43,17 @@ export interface Provenance {
   model?: string;
 }
 
+/** Il taglio con cui si generano le ancore: e' una decisione sull'intero
+ * cast, non sul singolo personaggio. */
+export type AnchorFraming = 'bust' | 'waist-up' | 'full-body';
+
 export interface GlobalStyle {
   image_style_suffix?: string;
+  /** Lo stesso suffisso in inglese. L'italiano resta il canonico — e' quello
+   * che il player mostra in modalita' solo testo — e l'inglese esiste per il
+   * modello, che in italiano perde aderenza. */
+  image_style_suffix_en?: string;
+  anchor_framing?: AnchorFraming;
   narrator_voice?: VoiceSpec;
   default_tone?: string;
   ambient_music_tags?: string[];
@@ -48,6 +67,12 @@ export interface Character {
    * conversazione poi si gioca a scelte. */
   aliases?: string[];
   visual_prompt?: string;
+  visual_prompt_en?: string;
+  /** Override del taglio dell'ancora, ammesso solo per i soggetti non umani:
+   * su un quadrupede robotico "mezzo busto" non significa niente. */
+  anchor_framing?: AnchorFraming;
+  /** L'immagine di riferimento gia' prodotta per questo personaggio. */
+  image?: ImageRef;
   voice?: VoiceSpec;
 }
 
@@ -62,6 +87,9 @@ export interface Place {
   id: string;
   name?: string;
   visual_prompt: string;
+  visual_prompt_en?: string;
+  /** La veduta di riferimento gia' prodotta per questo luogo. */
+  image?: ImageRef;
 }
 
 /** Anagrafica di un oggetto di inventario. Esiste perche' il player definitivo
@@ -76,6 +104,9 @@ export interface Item {
   description?: string;
   description_variants?: ConditionalText[];
   visual_prompt?: string;
+  visual_prompt_en?: string;
+  /** L'icona d'inventario gia' prodotta per questo oggetto. */
+  image?: ImageRef;
 }
 
 /** Condizione di visibilita' di un'azione o di una scelta.
@@ -201,6 +232,10 @@ export interface PlayerVoice {
 export interface SceneCharacter {
   id: string;
   visual_prompt?: string;
+  visual_prompt_en?: string;
+  /** L'immagine della variante: un override di `visual_prompt` in una scena
+   * e' un'ancora a se', non un'inquadratura. */
+  image?: ImageRef;
   voice?: VoiceSpec;
 }
 
@@ -210,6 +245,9 @@ export interface NarrationBeat {
   text: string;
   voice?: VoiceSpec;
   image_prompt?: string;
+  image_prompt_en?: string;
+  /** L'inquadratura gia' prodotta per questo beat. */
+  image?: ImageRef;
   place?: string;
   characters_in_frame?: string[];
   sound_effect_prompt?: string;
@@ -217,6 +255,9 @@ export interface NarrationBeat {
 
 export interface Background {
   image_prompt: string;
+  image_prompt_en?: string;
+  /** L'inquadratura di base gia' prodotta per la scena. */
+  image?: ImageRef;
   ambient_sound_prompt?: string;
   place?: string;
   characters_in_frame?: string[];

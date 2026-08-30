@@ -1,17 +1,22 @@
 #!/usr/bin/env bash
 #
-# Costruisce il player web, ci incorpora le storie di examples/ e lo serve su
-# http, stampando gli indirizzi con cui aprirlo dal telefono.
+# Costruisce il player web, lo incorpora dentro ogni cartella storia e serve
+# `stories/` su http, stampando gli indirizzi con cui aprirlo dal telefono.
 #
-#   ./start_local_player.sh              # tutte le storie, porta 8000
-#   ./start_local_player.sh 8080         # porta diversa
-#   ./start_local_player.sh 8080 examples/metalhead.ir.json
+#   ./start_local_player.sh                      # tutte le storie, porta 8000
+#   ./start_local_player.sh 8080                 # porta diversa
+#   ./start_local_player.sh 8080 stories/metal-head
 #
-# Perche' passare da un server invece di aprire il file: il player e' un unico
-# HTML e per *giocare* basta aprirlo, anche dal telefono. Ma il backend a
-# vettori del resolver ha bisogno di scaricare libreria e modello, e da
-# `file://` il browser tratta la pagina come origine opaca e le richieste
-# esterne cadono. Servito da http e' una pagina web come un'altra, e funziona.
+# Perche' il player finisce *dentro* la cartella della storia e non in
+# `dist/`: le immagini pubblicate stanno in `stories/<id>/assets/images/`, e
+# l'IR le nomina per id, non per percorso. Il player le cerca accanto a se
+# stesso, quindi una pagina che sta nella cartella della storia le trova —
+# servita da http, e anche copiata su una chiavetta e aperta da file://.
+#
+# Perche' passare da un server invece di aprire il file: il backend a vettori
+# del resolver ha bisogno di scaricare libreria e modello, e da `file://` il
+# browser tratta la pagina come origine opaca e le richieste esterne cadono.
+# Servito da http e' una pagina web come un'altra, e funziona.
 #
 # Nota che evita mezz'ora di perplessita': su http senza TLS il browser non
 # considera la pagina un contesto sicuro, quindi niente WebGPU e l'inferenza
@@ -21,6 +26,7 @@ set -euo pipefail
 
 QUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLAYER="$QUI/player"
+STORIES="$QUI/stories"
 PORTA="${1:-8000}"
 shift || true
 
@@ -29,28 +35,34 @@ if ! command -v node >/dev/null 2>&1; then
   exit 2
 fi
 
-# Le storie da incorporare: quelle passate a mano, o tutte quelle in examples/.
+# Le storie: quelle passate a mano, o tutte quelle in stories/. Si accetta sia
+# la cartella (`stories/metal-head`) sia l'IR dentro di lei — chi ha in mano il
+# percorso di un file non deve fermarsi a togliere l'ultimo pezzo.
+STORIE=()
 if [ "$#" -gt 0 ]; then
-  STORIE=("$@")
+  for arg in "$@"; do
+    if [ -f "$arg" ]; then STORIE+=("$(cd "$(dirname "$arg")" && pwd)")
+    elif [ -d "$arg" ]; then STORIE+=("$(cd "$arg" && pwd)")
+    else echo "non trovo $arg" >&2; exit 2
+    fi
+  done
 else
-  STORIE=()
-  for f in "$QUI"/examples/*.ir.json; do
-    [ -e "$f" ] || continue
-    STORIE+=("$f")
+  for d in "$STORIES"/*/; do
+    [ -f "$d/story.ir.json" ] && STORIE+=("${d%/}")
   done
 fi
 
 if [ "${#STORIE[@]}" -eq 0 ]; then
-  echo "nessun .ir.json da incorporare (ne' passato a mano, ne' in examples/)" >&2
+  echo "nessuna storia con uno story.ir.json (ne' passata a mano, ne' in stories/)" >&2
   exit 2
 fi
 
-# Si controlla che i file ci siano *prima* di costruire: un percorso sbagliato
+# Si controlla che gli IR ci siano *prima* di costruire: un percorso sbagliato
 # non deve costare una build intera per poi fallire alla riga dopo.
 mancanti=0
-for ir in "${STORIE[@]}"; do
-  if [ ! -f "$ir" ]; then
-    echo "non trovo $ir" >&2
+for s in "${STORIE[@]}"; do
+  if [ ! -f "$s/story.ir.json" ]; then
+    echo "in $s non c'e' nessuno story.ir.json" >&2
     mancanti=1
   fi
 done
@@ -66,15 +78,14 @@ fi
 echo "==> costruisco il player"
 npm run build:web --silent
 
-for ir in "${STORIE[@]}"; do
-  # nel-paese-dei-ciechi.ir.json -> dist/nel-paese-dei-ciechi.html
-  nome="$(basename "$ir")"
-  nome="${nome%.ir.json}"
-  echo "==> incorporo $nome"
-  node scripts/embed.mjs "$ir" "dist/$nome.html"
+for s in "${STORIE[@]}"; do
+  nome="$(basename "$s")"
+  immagini=$(ls "$s/assets/images"/*.webp 2>/dev/null | wc -l || true)
+  echo "==> $nome ($immagini immagini pubblicate)"
+  node scripts/embed.mjs "$s/story.ir.json" "$s/play.html"
 done
 
 echo "==> servo su http://0.0.0.0:$PORTA"
 # exec: il server prende il posto dello script, cosi' ctrl-c lo ferma davvero
 # invece di lasciare in giro un figlio orfano.
-exec node scripts/serve.mjs "$PORTA" dist
+exec node scripts/serve.mjs "$PORTA" "$STORIES"

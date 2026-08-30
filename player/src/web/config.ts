@@ -29,6 +29,8 @@ export interface ConfigPlayer {
   ascolto: ImpostazioniAscolto;
   embedder: ConfigEmbedder;
   resolver: string;
+  /** Se mostrare le immagini pubblicate della storia, quando ci sono. */
+  immagini: boolean;
   debug: boolean;
 }
 
@@ -37,6 +39,7 @@ export function configPlayerDefault(): ConfigPlayer {
     ascolto: { ...ASCOLTO_DEFAULT },
     embedder: { ...CONFIG_DEFAULT },
     resolver: 'lessicale',
+    immagini: true,
     debug: false,
   };
 }
@@ -77,6 +80,7 @@ export function leggiConfigPlayer(raw: Record<string, unknown> | undefined, base
     resolver: (RESOLVER_VALIDI as readonly string[]).includes(String(raw.resolver))
       ? String(raw.resolver)
       : base.resolver,
+    immagini: bool(raw.immagini, base.immagini),
     debug: bool(raw.debug, base.debug),
   };
 }
@@ -111,6 +115,7 @@ export function configPlayerSerializzabile(c: ConfigPlayer): Record<string, unkn
     ascolto: { ...c.ascolto },
     embedder: { ...c.embedder },
     resolver: c.resolver,
+    immagini: c.immagini,
     debug: c.debug,
   };
 }

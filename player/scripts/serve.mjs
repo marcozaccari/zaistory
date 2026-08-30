@@ -45,6 +45,10 @@ const TIPI = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.avif': 'image/avif',
+  '.txt': 'text/plain; charset=utf-8',
+  '.md': 'text/markdown; charset=utf-8',
   '.wasm': 'application/wasm',
 };
 
@@ -64,8 +68,13 @@ const server = createServer(async (req, res) => {
     res.writeHead(200, {
       'content-type': TIPI[path.extname(file).toLowerCase()] ?? 'application/octet-stream',
       // Il player e' un file solo e cambia a ogni build: una cache qui
-      // significherebbe giocare la versione di ieri senza accorgersene.
-      'cache-control': 'no-store',
+      // significherebbe giocare la versione di ieri senza accorgersene. Le
+      // immagini di una storia sono l'altro caso: pesano, non cambiano fra
+      // una build e l'altra, e riscaricarle a ogni scena su un telefono in
+      // wi-fi si vede.
+      'cache-control': /\.(webp|png|jpe?g|avif|gif)$/i.test(file)
+        ? 'public, max-age=60'
+        : 'no-store',
     });
     res.end(corpo);
   } catch {
@@ -109,8 +118,26 @@ function indirizzi() {
   return out;
 }
 
+/**
+ * Le pagine da annunciare: quelle nella cartella servita e quelle una
+ * cartella piu' sotto.
+ *
+ * Il secondo livello non e' generalita' per il gusto di averla: da quando una
+ * storia e' una cartella con dentro l'IR e i suoi asset, il player incorporato
+ * sta li' — `stories/metal-head/play.html` — proprio perche' le immagini si
+ * risolvono relative a lui. Fermarsi al primo livello significherebbe servire
+ * le storie e stampare "nessuna pagina".
+ */
 async function elenco(dir) {
   const { readdir } = await import('node:fs/promises');
-  const f = await readdir(dir).catch(() => []);
-  return f.filter((x) => x.endsWith('.html')).sort();
+  const voci = await readdir(dir, { withFileTypes: true }).catch(() => []);
+  const out = [];
+  for (const v of voci) {
+    if (v.isFile() && v.name.endsWith('.html')) out.push(v.name);
+    else if (v.isDirectory() && !v.name.startsWith('_') && !v.name.startsWith('.')) {
+      const dentro = await readdir(path.join(dir, v.name)).catch(() => []);
+      for (const f of dentro) if (f.endsWith('.html')) out.push(`${v.name}/${f}`);
+    }
+  }
+  return out.sort();
 }

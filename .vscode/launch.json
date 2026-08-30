@@ -16,8 +16,8 @@
       "console": "integratedTerminal",
       "args": [
         "--debug",
-        //"--script", "examples/nel-paese-dei-ciechi.playthrough.txt",
-        "examples/nel-paese-dei-ciechi.ir.json"
+        //"--script", "stories/nel-paese-dei-ciechi/playthrough/completo.txt",
+        "stories/nel-paese-dei-ciechi/story.ir.json"
       ]
     },
     {
@@ -27,7 +27,7 @@
       "program": "${workspaceFolder}/player/dist-node/src/cli/zaiplay.js",
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "args": ["--lint", "examples/nel-paese-dei-ciechi.ir.json"]
+      "args": ["--lint", "stories/nel-paese-dei-ciechi/story.ir.json"]
     },
     {
       "name": "player web (dev server)",

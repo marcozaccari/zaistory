@@ -4,7 +4,7 @@
  * che si apre e parte da solo.
  *
  *   npm run build:web
- *   npm run embed -- ../examples/nel-paese-dei-ciechi.ir.json paese-dei-ciechi.html
+ *   npm run embed -- ../stories/nel-paese-dei-ciechi/story.ir.json paese-dei-ciechi.html
  *
  * A cosa serve: mandare a qualcuno *una* storia da provare sul telefono senza
  * spiegargli come si carica un file. Il player resta lo stesso, cambia solo

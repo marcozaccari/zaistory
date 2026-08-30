@@ -91,6 +91,8 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
     required: [],
     fields: {
       image_style_suffix: 'string',
+      image_style_suffix_en: 'string',
+      anchor_framing: { enum: ['bust', 'waist-up', 'full-body'] },
       narrator_voice: { obj: 'VoiceSpec' },
       default_tone: 'string',
       ambient_music_tags: 'string[]',
@@ -107,12 +109,21 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       name: 'string',
       aliases: 'string[]',
       visual_prompt: 'string',
+      visual_prompt_en: 'string',
+      anchor_framing: { enum: ['bust', 'waist-up', 'full-body'] },
+      image: 'string',
       voice: { obj: 'VoiceSpec' },
     },
   },
   Place: {
     required: ['id'],
-    fields: { id: 'string', name: 'string', visual_prompt: 'string' },
+    fields: {
+      id: 'string',
+      name: 'string',
+      visual_prompt: 'string',
+      visual_prompt_en: 'string',
+      image: 'string',
+    },
   },
   Item: {
     required: ['id', 'name'],
@@ -123,6 +134,8 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       description: 'string',
       description_variants: { arr: 'ConditionalText' },
       visual_prompt: 'string',
+      visual_prompt_en: 'string',
+      image: 'string',
     },
   },
   NoMatch: {
@@ -211,7 +224,13 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
   },
   SceneCharacter: {
     required: ['id'],
-    fields: { id: 'string', visual_prompt: 'string', voice: { obj: 'VoiceSpec' } },
+    fields: {
+      id: 'string',
+      visual_prompt: 'string',
+      visual_prompt_en: 'string',
+      image: 'string',
+      voice: { obj: 'VoiceSpec' },
+    },
   },
   NarrationBeat: {
     required: ['text'],
@@ -219,6 +238,8 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       text: 'string',
       voice: { obj: 'VoiceSpec' },
       image_prompt: 'string',
+      image_prompt_en: 'string',
+      image: 'string',
       place: 'string',
       characters_in_frame: 'string[]',
       sound_effect_prompt: 'string',
@@ -228,6 +249,8 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
     required: ['image_prompt'],
     fields: {
       image_prompt: 'string',
+      image_prompt_en: 'string',
+      image: 'string',
       ambient_sound_prompt: 'string',
       place: 'string',
       characters_in_frame: 'string[]',

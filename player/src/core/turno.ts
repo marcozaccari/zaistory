@@ -49,6 +49,13 @@ export interface EsitoTurno {
   /** Perche' ha deciso cosi': punteggi, superficie vincente, soglie. */
   why?: string;
   verbo?: Verbo;
+  /** Solo per il verbo `esamina`: l'id dell'oggetto guardato.
+   *
+   * Il testo da solo non basta a chi mostra: sapere *quale* oggetto e' serve
+   * a mettergli accanto la sua immagine, e ricavarlo di nuovo dalla frase
+   * significherebbe rifare il lavoro del resolver una seconda volta, con la
+   * possibilita' di arrivare a una risposta diversa. */
+  oggetto?: string;
 }
 
 /**
@@ -175,6 +182,7 @@ export class InputLibero {
         kind: 'verbo',
         verbo: 'esamina',
         testo,
+        oggetto,
         nota: buco(`l'oggetto "${oggetto}" non si lascia guardare`, 'items[].description', testo),
         via: res.via,
         why: res.why,
@@ -216,7 +224,7 @@ export class InputLibero {
     if (nominato) {
       const testo = testoOggetto(this.story, nominato, soddisfa);
       if (testo) {
-        return { kind: 'verbo', verbo: 'esamina', testo, via: res.via, why: res.why };
+        return { kind: 'verbo', verbo: 'esamina', testo, oggetto: nominato, via: res.via, why: res.why };
       }
     }
 

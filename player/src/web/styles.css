@@ -1,59 +1,14 @@
 /* Player web: mobile-first, pollice-first.
    Nessun font esterno, nessuna immagine: il player e' testuale come il CLI. */
 
+/* Una palette sola, scura.
+   Non e' una preferenza di stile: una storia si guarda al buio, e da quando
+   ci sono le immagini il tema chiaro non era piu' una seconda pelle ma un
+   secondo prodotto — un fondo bianco intorno a un'inquadratura cel-shaded
+   cambia come si legge l'immagine, non solo come si legge il testo. Tenerne
+   due significa provarli tutti e due a ogni modifica; ne teniamo uno. */
 :root {
-  --bg: #ffffff;
-  --bg-soft: #f4f5f7;
-  --fg: #1b1d22;
-  --fg-dim: #5d626d;
-  --line: #dfe2e8;
-  --accent: #1f6feb;
-  --accent-soft: #e8f0fe;
-  --green: #1a7f4b;
-  --red: #c0392b;
-  --amber: #9a6400;
-  --debug: #7c4dbe;
-  --debug-soft: #f3ecfd;
-  /* Un colore per tipo di risorsa: quattro tinte lontane fra loro, cosi'
-     scorrendo il transcript si vede subito dove mancano le immagini o i suoni
-     senza dover leggere il nome del campo. */
-  --media-image: #1f6feb;
-  --media-sound: #0d7a6f;
-  --media-voice: #9a5a00;
-  --media-music: #a3005c;
-  --radius: 12px;
-  --dock-pad: max(10px, env(safe-area-inset-bottom));
-}
-
-/* Palette scura. E' ripetuta due volte di proposito: la prima segue il tema di
-   sistema, la seconda obbedisce a un `data-theme` imposto dall'host (succede
-   quando la pagina e' incorporata in un visualizzatore con un suo tema). */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg: #12141a;
-    --bg-soft: #1a1d25;
-    --fg: #e6e8ee;
-    --fg-dim: #99a0ae;
-    --line: #2a2f3a;
-    --accent: #6ea8ff;
-    --accent-soft: #1c2740;
-    --green: #56cc8c;
-    --red: #ff7b6b;
-    --amber: #e0b25c;
-    --debug: #c4a2ff;
-    --debug-soft: #241c36;
-    --media-image: #6ea8ff;
-    --media-sound: #45cfc0;
-    --media-voice: #e0a45c;
-    --media-music: #ff85c0;
-  }
-}
-
-:root[data-theme='dark'] {
-  --media-image: #6ea8ff;
-  --media-sound: #45cfc0;
-  --media-voice: #e0a45c;
-  --media-music: #ff85c0;
+  color-scheme: dark;
   --bg: #12141a;
   --bg-soft: #1a1d25;
   --fg: #e6e8ee;
@@ -66,6 +21,15 @@
   --amber: #e0b25c;
   --debug: #c4a2ff;
   --debug-soft: #241c36;
+  /* Un colore per tipo di risorsa: quattro tinte lontane fra loro, cosi'
+     scorrendo il transcript si vede subito dove mancano le immagini o i suoni
+     senza dover leggere il nome del campo. */
+  --media-image: #6ea8ff;
+  --media-sound: #45cfc0;
+  --media-voice: #e0a45c;
+  --media-music: #ff85c0;
+  --radius: 12px;
+  --dock-pad: max(10px, env(safe-area-inset-bottom));
 }
 
 * {
@@ -1021,6 +985,15 @@ body.debug .choice .why {
     width: 420px;
     border-right: 1px solid var(--line);
   }
+
+  /* Su schermo largo il transcript resta una colonna di lettura.
+     Il testo era gia' limitato a 62ch; schede e immagini no, e una scena
+     larga milleduecento pixel con dentro righe da sessanta caratteri era una
+     svista che si notava appena — finche' non sono arrivate le immagini, che
+     quella larghezza la usano tutta. */
+  .transcript > * {
+    max-width: 66ch;
+  }
 }
 
 /* `min-width: 0` due volte, qui e su `.tabs`, e servono entrambe: la testata e'
@@ -1389,4 +1362,289 @@ body:not(.debug) #tabs button[data-debug] {
 .entry.line.didascalia {
   color: var(--fg-dim);
   font-style: italic;
+}
+
+/* ------------------------------------------------------------- immagini */
+
+/* L'inquadratura di una scena o di un beat.
+   Sta nel flusso del transcript come il testo, e non si pretende di
+   conoscerne la forma: i modelli restituiscono quadrati, 3:2 e 4:3, e
+   ritagliarli qui butterebbe via proprio la parte che nello studio si e'
+   scelta guardando. */
+.shot {
+  margin: 0 0 10px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-soft);
+  line-height: 0;
+  text-align: center;
+}
+
+/* La cornice si stringe addosso all'immagine: e' lei ad ancorare il bottone
+   dei prompt, che altrimenti, quando l'altezza rimpicciolisce l'immagine,
+   resterebbe appeso al bordo della figura invece che a quello di cio' a cui
+   si riferisce. */
+.cornice {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+/* La forma la decide l'immagine, dentro due limiti: la colonna in larghezza e
+   **meta' schermo scarso in altezza**.
+   Il secondo esiste per il desktop: senza, un quadrato largo quanto la colonna
+   e' alto quanto la finestra, ogni beat spinge fuori vista quello prima e per
+   leggere due righe di narrazione si scorre una schermata intera. Su un
+   telefono in verticale non cambia niente — li' e' la larghezza a comandare —
+   e in orizzontale, dove lo schermo e' basso, torna utile per la stessa
+   ragione per cui serve al desktop. */
+.shot img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 52vh;
+  /* Quando e' l'altezza a limitare, l'immagine sta in mezzo alla sua cornice:
+     dentro la scheda di scena il fondo e' lo stesso della scheda, quindi non
+     si vede nessuna banda. */
+  margin: 0 auto;
+}
+
+/* Dentro la scheda di scena l'immagine e' il primo elemento: gli angoli
+   arrotondati sono gia' quelli della scheda, e un secondo raggio dentro il
+   primo si vede come una sbavatura. */
+.scene > .shot {
+  margin: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Il ritratto di un personaggio: e' un riferimento, non un'inquadratura, e
+   sta accanto al suo gruppo di prompt come una miniatura. */
+/* Un'inquadratura di beat non ha una scheda intorno: sta larga quanto
+   l'immagine, cosi' quando l'altezza la rimpicciolisce non resta una fascia
+   di fondo diverso a segnare dov'era. */
+.transcript > .shot {
+  width: fit-content;
+  max-width: 100%;
+  background: none;
+  text-align: left;
+}
+
+/* Il ritratto sta largo quanto l'immagine e non quanto la riga: il bottone
+   dei prompt si appoggia al suo angolo, e su una figura larga tutta la
+   colonna finirebbe a mezzo schermo di distanza da cio' a cui si riferisce. */
+.ritratto {
+  display: inline-block;
+  /* Il gruppo di un personaggio e' una griglia, e un figlio di griglia si
+     allarga fino alla colonna anche se e' inline-block: senza questo il
+     bottone dei prompt finisce all'altro capo della riga. */
+  justify-self: start;
+  /* Larghezza fissa quanto la miniatura: il testo che si apre sotto esce
+     dalla cornice invece di allargarla, cosi' il bottone resta appoggiato
+     all'angolo del ritratto e non si sposta mentre lo si usa. */
+  width: 88px;
+  margin: 6px 0 2px;
+  line-height: 0;
+}
+
+.ritratto img {
+  display: block;
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+/* Il bottone che apre i prompt di questa immagine.
+
+   Sta appoggiato sull'angolo dell'inquadratura, non sotto: e' li' che dice
+   «questo testo e' di *questa* immagine», che e' il legame che serve quando
+   in una cutscene di nove beat le figure si susseguono. Visibile sempre e non
+   al passaggio del mouse — meta' del collaudo si fa dal telefono, dove il
+   mouse non passa mai — ma discreto, perche' in modalita' immagini la cosa da
+   guardare e' l'immagine. */
+.ritratto {
+  position: relative;
+}
+
+.prompt-toggle {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15, 17, 22, 0.55);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  opacity: 0.75;
+  backdrop-filter: blur(6px);
+  transition: opacity 0.12s ease, background-color 0.12s ease;
+}
+
+.prompt-toggle:hover,
+.prompt-toggle:focus-visible,
+.prompt-toggle.aperto {
+  opacity: 1;
+  background: rgba(15, 17, 22, 0.8);
+}
+
+/* Sul ritratto, che e' 88px, la pastiglia intera coprirebbe mezza faccia:
+   resta il solo triangolino, nell'angolo. */
+.ritratto .prompt-toggle {
+  right: 4px;
+  top: 4px;
+  gap: 0;
+  padding: 2px 5px;
+  font-size: 11px;
+}
+
+.ritratto .prompt-toggle span:not(.caret) {
+  display: none;
+}
+
+/* I prompt aperti: dentro la cornice dell'immagine, con il filo a sinistra
+   che hanno ovunque nel transcript. */
+.prompt-box {
+  padding: 9px 12px 4px;
+  line-height: 1.5;
+  background: var(--bg-soft);
+}
+
+/* Sotto un ritratto la scatola prende la larghezza del testo, non quella
+   della miniatura: 88px di colonna sarebbero una parola per riga. */
+.ritratto .prompt-box {
+  width: min(60vw, 420px);
+  padding: 7px 0 2px;
+  background: none;
+}
+
+.prompt-box .prompt {
+  display: block;
+  margin: 0 0 5px;
+  padding-left: 9px;
+  border-left: 2px solid var(--line);
+  font-size: 13px;
+  color: var(--fg-dim);
+}
+
+/* L'id sotto l'immagine e' un dato: si vede col debug, come ogni altro id. */
+.shot figcaption,
+.ritratto figcaption {
+  padding: 4px 12px 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--fg-dim);
+}
+
+/* L'icona d'inventario di un oggetto che si sta guardando: piu' piccola di
+   un'inquadratura, perche' e' una cosa che si tiene in mano e non un posto in
+   cui si e'. */
+.oggetto {
+  display: inline-block;
+  justify-self: start;
+  max-width: 100%;
+  margin: 2px 0 10px;
+  line-height: 0;
+  text-align: left;
+}
+
+.oggetto img {
+  display: block;
+  width: 160px;
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+/* Le immagini si aprono grandi: qui si guardano, nel transcript si legge. */
+.shot img,
+.ritratto img,
+.oggetto img {
+  cursor: zoom-in;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: rgba(8, 9, 12, 0.94);
+  cursor: zoom-out;
+  animation: comparsa 160ms ease-out both;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  /* Lo spazio della didascalia resta fuori: un'immagine che ci finisce sotto
+     e' un'immagine che non si vede intera, che e' l'unica cosa che questa
+     modalita' deve garantire. */
+  max-height: calc(100vh - 96px);
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font: inherit;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lightbox-close:hover,
+.lightbox-close:focus-visible {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+/* Il prompt che ha prodotto l'immagine, sotto l'immagine: a schermo intero lo
+   spazio c'e', ed e' la sola descrizione d'autore di cio' che si sta
+   guardando. */
+.lightbox-cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 84px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 16px max(10px, env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, rgba(8, 9, 12, 0.85) 40%);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Un'immagine dichiarata nell'IR e non arrivata: si dice, come ogni altro
+   buco. Il player non mette segnaposto muti. */
+.shot .manca,
+.ritratto .manca {
+  margin: 0;
+  padding: 14px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--amber);
+  background: var(--bg-soft);
 }

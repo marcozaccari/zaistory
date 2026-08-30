@@ -251,7 +251,7 @@ compilatore CLI, non riscrivere la scena da zero per un errore di schema.
 
 ```json
 {
-  "ir_version": "1.8.0",
+  "ir_version": "1.9.0",
   "generated_by": {
     "compiler": "story-ir-compiler",
     "compiler_version": "<la versione dichiarata in cima a questo file>",
@@ -332,7 +332,7 @@ cui si sbaglia davvero, imparati generando.
   di gusto.
 
 Un IR gia' compilato senza i campi inglesi non va ricompilato: il progetto ha
-`assets/generator/translate_ir.py` (`extract` / `merge` / `status`) che li
+`assets-studio/images/translate_ir.py` (`extract` / `merge` / `status`) che li
 aggiunge in place lasciando intatti gli id.
 
 ### 8. Valida l'intera Story e controlla i riferimenti pendenti

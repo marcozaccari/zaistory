@@ -31,21 +31,36 @@ sceneggiatura.md (libera)
     ▼  COMPILATORE (oggi: skill in conversazione; domani: generatore ad hoc)
 story.ir.json (formato IR, contratto stabile — engine-ir.schema.json)
     │
-    ├─▶  PLAYER DI TEST (solo testo, nessun asset — `player/`)
-    │      web (telefono/desktop) + CLI, stesso core; usa il RESOLVER e
-    │      salta completamente il modulo assets
+    ├─▶  PLAYER (`player/`) — web (telefono/desktop) + CLI, stesso core
+    │      testo sempre; immagini se la storia ne ha già di pubblicate
     │
-    ▼  MODULO ASSETS (design definito, non ancora implementato in un generatore)
-manifest.json + file immagini/voce/suoni generati
+    ▼  MODULO ASSETS — immagini costruito (`assets-studio/images/`), voce no
+assets_manifest.json → generazione → studio (si guarda, si rifà, si approva)
     │
-    ▼  PLAYER (non ancora costruito)
+    ▼  PUBBLICAZIONE (`publish.py`)
+stories/<id>/assets/images/*.webp  +  il campo `image` scritto nell'IR
+    │
+    ▼  PLAYER DEFINITIVO (non ancora costruito)
 PWA (principale) + eventuale bot Telegram (secondario, testuale)
 ```
+
+Una storia vive in **una cartella** (`stories/<id>/`), con dentro l'IR, la
+sceneggiatura, i playthrough, gli asset pubblicati e il banco di lavoro del
+generatore. La struttura e il perché stanno in `stories/README.md`; le
+decisioni che l'hanno determinata sono più sotto, in «Il filesystem di una
+storia».
 
 ## Il formato IR: decisioni chiave
 
 Schema: `engine-ir.schema.json` (JSON Schema draft 2020-12), versione
-corrente **1.8.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
+corrente **1.9.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
+
+La 1.9.0 aggiunge una cosa sola: il campo opzionale **`image`** su ogni nodo
+che ha un prompt di immagine — personaggi, luoghi, oggetti, override di scena,
+`background` e i beat di `narration[]`. Porta l'**id** dell'immagine già
+prodotta e approvata, mai un percorso e mai il nome di un generatore, e **non
+lo scrive il compilatore**: lo scrive la pubblicazione del modulo assets. Le
+ragioni stanno in «Gli id delle immagini nell'IR», più sotto.
 
 Decisioni di design, con il *perché* (per non riscoprirle da capo):
 
@@ -532,7 +547,29 @@ in un generatore.
   player mobile reale avrà comunque bisogno che gli asset siano raggiungibili
   via URL pubblico (storage/CDN), ma quale servizio usare non è stato deciso.
 
-### Immagini: costruito (`assets/generator/`)
+### Tema scuro e basta
+
+Player e studio hanno **una palette sola**, scura, e non seguono piu' il tema
+di sistema. Non e' una preferenza di stile: da quando ci sono le immagini, il
+fondo non e' piu' solo lo sfondo del testo — un bianco intorno a
+un'inquadratura cel-shaded ne cambia la lettura, ed e' la ragione per cui i
+visori di foto sono tutti scuri. Tenere due temi significava provarli
+entrambi a ogni modifica per un guadagno che nessuno aveva chiesto; ne
+teniamo uno, quello giusto per guardare.
+
+### Una cartella per tipo di asset
+
+`assets-studio/` raccoglie gli strumenti, e dentro c'e' una cartella per
+**tipo di asset**: `images/` oggi, `voice/` e `sound/` quando esisteranno. Non
+per fornitore, e non tutto in un modulo solo: le tre catene si somigliano da
+lontano e non nel punto che conta, cioe' come si decide se un asset e' buono —
+un'immagine si guarda una alla volta, una battuta si ascolta nel suo contesto,
+un ambiente sonoro si giudica solo insieme all'immagine. Manifest, studio e
+criterio di approvazione saranno diversi; identico restera' il contratto ai due
+capi: prompt letti da `story.ir.json`, lavoro in `stories/<id>/_work/`, asset
+pubblicati in `stories/<id>/assets/` con l'id scritto nell'IR.
+
+### Immagini: costruito (`assets-studio/images/`)
 
 Quattro strumenti — estrazione del manifest, generazione da riga di comando,
 studio web locale per guardare e rifare, prototipazione per decidere. L'uso
@@ -592,6 +629,92 @@ sta nel loro `README.md`; qui restano solo le decisioni e il perché.
   viene conservato, e il ritaglio è una scelta visiva presa dopo, che non
   costa una rigenerazione.
 
+### Il filesystem di una storia
+
+Deciso quando le immagini hanno smesso di essere un esperimento: una storia è
+**una cartella**, `stories/<id>/`, e ci sta dentro tutto quello che la
+riguarda — `story.ir.json`, la sceneggiatura, i playthrough, `assets/` con
+quello che è stato pubblicato, `_work/` con il banco di lavoro del generatore.
+La forma esatta è in `stories/README.md`; qui restano le tre decisioni.
+
+- **Una storia si indica con una cosa sola.** Prima l'IR stava in `examples/`,
+  la sceneggiatura accanto con un altro nome e le immagini in
+  `assets/out/<altro-nome-ancora>/`: tre posti da tenere allineati a mano, e
+  nessun modo di spostare, archiviare o mandare *una storia*. Il costo della
+  vecchia disposizione non era estetico — era che il legame fra un IR e le sue
+  immagini viveva solo nella testa di chi lanciava i comandi.
+- **Il banco di lavoro sta dentro la storia, ma fuori da git** (`_work/`).
+  Contiene per costruzione anche gli scarti: versioni precedenti, grezzi non
+  ritagliati, miniature, sidecar. Sulla storia di riferimento sono 78 MB
+  contro i 6,7 MB di quello che va pubblicato. Dentro la storia perché è di
+  *quella* storia; fuori da git perché si rigenera e perché versionare i
+  tentativi è il modo di rendere il repository ingiocabile da clonare.
+- **`assets/images/<id>.<ext>` è una convenzione, non un indice.** Nessun file
+  di mappatura fra id e percorso: il player compone il percorso dall'id. Un
+  indice sarebbe un secondo contratto da tenere allineato al primo, e la prima
+  volta che i due divergono si passa un pomeriggio a capire quale dei due
+  mente.
+
+### Gli id delle immagini nell'IR
+
+L'IR porta l'id dell'immagine, in un campo `image` accanto al prompt che l'ha
+prodotta. Le alternative scartate e il perché:
+
+- **Un percorso nell'IR** (`assets/images/x.webp`) legherebbe il contratto alla
+  disposizione dei file su disco, che è esattamente la cosa che si è appena
+  finito di poter cambiare.
+- **Un file di mappatura a lato**, lasciando l'IR intatto, sposta soltanto il
+  problema: due file da tenere allineati, e un player che per mostrare
+  un'immagine deve leggerne due.
+- **Nessun id, e il player deduce il nome dalla scena**: ricostruirebbe a
+  runtime la logica dell'estrattore — comprese le varianti d'ancora con
+  l'hash dell'override — e sbaglierebbe al primo caso storto.
+
+Conseguenze volute:
+
+- **L'IR continua a non nominare nessun generatore.** Un id immagine è il nome
+  di un file dentro la storia, non un modello, un provider o un job. Modello,
+  seed, prompt effettivo e reference restano nei sidecar, in `_work/`.
+- **`image` è la firma di un essere umano.** Il campo esiste solo dove
+  qualcuno ha guardato l'immagine e l'ha marcata definitiva: è la selezione
+  umana, resa persistente. Un IR appena compilato non ne ha nessuno.
+- **L'id è lo stem del file**, cioè l'id del job reso sicuro per un
+  filesystem (`anchor.char.laura@1a2b3c4d` → `anchor.char.laura_1a2b3c4d`). Se
+  l'id dell'IR e il nome del file divergessero servirebbe di nuovo un indice.
+
+### Pubblicazione (`publish.py`)
+
+Il passo che porta le immagini dal banco di lavoro dentro la storia, e l'unico
+di tutta la catena che tocchi `story.ir.json`.
+
+- **Si pubblica solo ciò che è marcato definitivo.** Lo stato sta in
+  `_work/_studio.json`, insieme all'**hash del file approvato**: rigenerare
+  un'immagine dopo averla approvata fa decadere l'approvazione, e lo studio lo
+  mostra come stato a sé (`!` invece di `✓`). Senza l'hash, un clic su
+  «rigenera» manderebbe in pubblicazione un'immagine che nessuno ha guardato.
+- **Idempotente per progetto.** `_work/_published.json` registra da quale file
+  viene ogni immagine pubblicata: ripubblicare senza cambiamenti non riscrive
+  niente e non tocca l'IR. Durante una revisione si pubblica dieci volte, e un
+  diff di 336.000 righe a ogni giro renderebbe la revisione illeggibile.
+- **Togliere un'approvazione toglie l'id dall'IR.** Il campo `image` non
+  sopravvive alla decisione che l'ha messo lì, altrimenti il player andrebbe a
+  cercare un file che non c'è più.
+- **WebP, lato lungo 1024.** Gli originali restano in `_work/`. 88 immagini
+  passano da ~52 MB di PNG a ~6,7 MB: è la differenza fra una storia
+  scaricabile da telefono e una che non lo è. Il lossless qui non serve a
+  niente — l'immagine è già il risultato di una diffusione e di un ritaglio.
+- **Se il manifest non combacia più con l'IR, ci si ferma.** Il manifest
+  fotografa gli indici dell'IR al momento dell'estrazione (`scenes[11]`): se da
+  allora una scena è stata inserita, scriverci dentro un id significherebbe la
+  faccia sbagliata nella scena sbagliata. La pubblicazione verifica id di scena
+  ed entità e, se non tornano, chiede di rifare il manifest invece di scrivere.
+- **Le varianti d'ancora ripetute vengono raggiunte tutte.** Un override di
+  aspetto che dura — una ferita, un travestimento — si ripete identico in
+  trenta scene e produce **una sola** ancora, il cui `source` è la prima
+  occorrenza. La pubblicazione propaga quell'id a tutte le scene che
+  dichiarano lo stesso override, altrimenti ventinove di loro resterebbero
+  senza immagine pur avendone una già pronta e pagata.
+
 ### Voce, suoni ed effetti: ancora solo decisi
 
 Nessun codice. **ElevenLabs** resta il provider suggerito in fase di analisi
@@ -601,10 +724,75 @@ non sta nei prompt, la musica per tag invece che generata.
 
 ## Player di test (`player/`, costruito)
 
-Player minimale, **puramente testuale**: nessuna risorsa grafica o audio,
-nessun manifest asset. Consuma **esclusivamente `story.ir.json`** e serve a
-giocare e testare una storia molto prima che esistano il modulo assets e la
-PWA.
+Player minimale. Consuma **esclusivamente `story.ir.json`** — nessun manifest
+asset, nessun indice — e serve a giocare e testare una storia molto prima che
+esista la PWA. Nato puramente testuale; da IR 1.9.0 mostra anche le immagini
+che la storia ha già pubblicato, quando ci sono.
+
+### Le immagini nel player
+
+- **Le trova da sé, o non le mostra.** L'id nell'IR diventa
+  `assets/images/<id>.webp` relativo alla **cartella della storia**, e quella
+  cartella è dedotta da dove è arrivato l'IR: la pagina stessa se l'IR è
+  incorporato (il caso di `start_local_player.sh`, che mette `play.html`
+  dentro la storia), la cartella dell'URL con `?ir=...`, e **nessuna** se l'IR
+  è stato scelto a mano — lì non esiste una storia intorno, e si gioca in solo
+  testo come prima. Il pannello lo dice, invece di lasciar credere che siano
+  rotte.
+- **Un'immagine dichiarata e non trovata si dice.** Stessa regola del testo
+  mancante: il player non mette un segnaposto muto, scrive che l'id c'è nell'IR
+  e il file no. È l'unico modo di accorgersi di una pubblicazione parziale
+  senza aprire la console.
+- **Testo e immagini sono due modi, non un interruttore in più.** In `testo`
+  si vedono i prompt — cosa *verrebbe* generato, che è quello che serve
+  lavorando sull'IR — in `immagini` il risultato, **al posto** dei prompt che
+  lo hanno prodotto. Mostrare entrambi sembrava gratis e non lo è: fra
+  un'inquadratura e la sua descrizione l'occhio sceglie l'immagine, il testo
+  diventa mezzo schermo di rumore e la scena si legge peggio che senza. È la
+  stessa forma della modalità ascolto: la storia ha tre uscite e si scelgono.
+- **I prompt stanno dentro l'immagine, dietro un bottone.** Non sotto, non in
+  un pannello a parte: il legame che serve è «questo testo ha prodotto
+  *questa* immagine», e in una cutscene di nove beat un prompt staccato dalla
+  sua figura non si sa più a chi appartenga. Il bottone è visibile sempre e non
+  al passaggio del mouse — metà del collaudo si fa dal telefono.
+- **L'immagine sostituisce solo ciò che mostra.** Vanno dietro il bottone
+  l'`image_prompt`, il `visual_prompt` del luogo e i riferimenti a dove siamo e
+  chi è in campo; l'ambiente sonoro, gli effetti e i timbri restano in chiaro,
+  perché un'immagine non li mostra e quelli sono l'unico modo di sapere che
+  esistono.
+- **Toccare un'immagine la apre a schermo intero**, con il suo prompt come
+  didascalia. Le due misure servono a due cose diverse: nel transcript
+  l'immagine sta in una colonna di lettura, a schermo intero si guarda — ed è
+  guardandola che si decide se quell'asset va bene. Si chiude con un tocco
+  ovunque, non solo con la ✕: su un telefono un popup che si chiude in un
+  punto solo è il modo più rapido di far uscire qualcuno dalla partita.
+- **L'icona di un oggetto compare quando lo si guarda**, per entrambe le
+  strade che portano alla stessa risposta d'autore — «guarda il walkie» scritto
+  e il tocco sulla chip dell'inventario. Non nell'elenco delle chip: lì
+  l'oggetto è una voce di menu, e una fila di miniature è un inventario da
+  gioco di ruolo, non la risposta a «cosa ho in mano». Perché il player possa
+  farlo, `EsitoTurno` porta anche l'**id** dell'oggetto guardato e non solo il
+  testo: ricavarlo di nuovo dalla frase significherebbe rifare il lavoro del
+  resolver, con la possibilità di arrivare a una risposta diversa da quella che
+  si sta mostrando.
+- **Un'immagine non supera mai metà schermo in altezza**, e su schermo largo
+  il transcript resta una colonna di lettura. Il player è mobile-first e per un
+  telefono in verticale bastava la larghezza; su desktop, senza un limite in
+  altezza, un quadrato largo quanto la colonna è alto quanto la finestra —
+  ogni beat spinge fuori vista quello prima, e leggere due righe di narrazione
+  costa una schermata di scorrimento.
+- **La scelta compare solo quando c'è qualcosa da scegliere**: la storia ha
+  immagini pubblicate e il player sa dove cercarle. Altrimenti al suo posto c'è
+  una riga che dice quale dei due pezzi manca. Un interruttore che non cambia
+  niente è peggio della sua assenza — chi lo trova lo prova, non vede succedere
+  nulla e conclude che il player è rotto.
+- **Il ritratto di un personaggio è la sua ancora**, la stessa immagine che il
+  generatore allega alle inquadrature. Mostrarla accanto ai suoi prompt è il
+  modo di accorgersi che due scene stanno usando due Laura diverse.
+- **In terminale l'id si stampa come gli altri campi.** Non si vede
+  l'immagine, ma si vede se c'è: un beat con `image_prompt` e senza `image` è
+  un beat che nel player web resterebbe senza inquadratura, e il playthrough di
+  regressione lo mostra senza aprire un browser.
 
 Perché serve, in una riga: è il modo più economico per scoprire che una
 storia compilata *non è giocabile* (scena senza uscita, `goto` che punta a
@@ -1113,8 +1301,8 @@ Vite sono soli strumenti di build).
   autore vero, non solo su esempi giocattolo, ha rivelato lacune che
   l'analisi teorica da sola non aveva previsto. Buona fonte per ulteriori
   casi di test se si estende ancora lo schema.
-  Compilata in `examples/nel-paese-dei-ciechi.ir.json` (18 scene, 8 cutscene
-  e 10 interattive) con `examples/nel-paese-dei-ciechi.playthrough.txt`, la
+  Compilata in `stories/nel-paese-dei-ciechi/story.ir.json` (18 scene, 8
+  cutscene e 10 interattive) con `playthrough/completo.txt`, la
   partita completa dal prologo al finale: è il test di conformità dell'IR
   end-to-end, e va rigiocato quando si tocca lo schema o il player.
 - Una seconda sceneggiatura REALE fornita dall'utente ("Metal Head",
@@ -1123,10 +1311,10 @@ Vite sono soli strumenti di build).
   `#### Giocabilità` per scena), che è la forma in cui l'autore lavora davvero.
   È la fonte delle quattro regole di game design qui sopra, di
   `initial_inventory`, e della scoperta che una scena di ritorno può non avere
-  nessun blocco sorgente. Compilata in `examples/metalhead.ir.json` (43 scene,
+  nessun blocco sorgente. Compilata in `stories/metal-head/story.ir.json` (43 scene,
   13 cutscene e 30 interattive) con due playthrough completi che finiscono
-  entrambi in `finale_esterno`: `metalhead.playthrough.txt` (124 passi, il
-  percorso pulito) e `metalhead.giro-lungo.playthrough.txt` (134 passi, il
+  entrambi in `finale_esterno`: `playthrough/pulito.txt` (125 passi, il
+  percorso pulito) e `playthrough/giro-lungo.txt` (135 passi, il
   percorso che sbaglia tutto quello che si può sbagliare — spara da lontano,
   dimentica il nastro, fa rumore nello studio, scende in bagno senza cavo,
   infila la spina sui fili asciutti). La coppia è la verifica eseguibile della
@@ -1153,13 +1341,18 @@ Vite sono soli strumenti di build).
 5. Quando le regole si saranno stabilizzate, valutare la costruzione del
    generatore ad hoc (nessuna decisione di stack ancora presa).
 6. ~~Costruire il **modulo assets per le immagini**~~ — fatto
-   (`assets/generator/`: estrazione del manifest, generatore, studio web,
+   (`assets-studio/images/`: estrazione del manifest, generatore, studio web,
    prototipazione; provider Pollinations, modelli scelti per confronto).
-   Restano aperti: generare per intero il set di "Metal Head" (finora solo
-   campioni di confronto), la passata deterministica in pixel art, e portare
-   al bilingue la seconda sceneggiatura, che ha ancora 67 prompt solo in
-   italiano (`validate.py` li elenca).
+   ~~E la catena fino al player~~ — fatta: `publish.py`, il campo `image`
+   dell'IR 1.9.0, l'approvazione nello studio e le immagini nel player web.
+   Restano aperti: **guardare e approvare** le 88 immagini di "Metal Head",
+   che sono generate ma quasi tutte ancora da decidere; la passata
+   deterministica in pixel art; e portare al bilingue la seconda
+   sceneggiatura, che ha ancora 67 prompt solo in italiano (`validate.py` li
+   elenca).
 7. Costruire il modulo assets per **voce e suoni**, che è il pezzo più costoso
    e non è ancora iniziato.
 8. Decidere la pubblicazione/hosting degli asset (rimandato finora).
-9. Costruire un player con asset veri (PWA prima, bot Telegram poi).
+9. Costruire il player definitivo (PWA prima, bot Telegram poi). Le immagini
+   ci sono già: la PWA eredita `player/src/core/` e la convenzione
+   `assets/images/<id>`, e quello che cambia è l'interfaccia sopra.

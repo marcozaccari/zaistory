@@ -1,8 +1,20 @@
 player/node_modules
 player/dist
 player/dist-node
-assets/.profile
-assets/out
+assets-studio/.profile
+
+# Uscite degli strumenti che non appartengono a nessuna storia: la sonda sui
+# modelli, i confronti. Si rifanno lanciando di nuovo il comando.
+assets-studio/out
+
+# Banco di lavoro del generatore dentro ogni storia: manifest, immagini
+# grezze, versioni, cache. Quello che vale davvero e' gia' pubblicato in
+# stories/<id>/assets/, che invece si versiona.
+stories/*/_work
+
+# Il player incorporato dentro la cartella di una storia da
+# start_local_player.sh: e' un prodotto della build, si rifa' in un secondo.
+stories/*/play.html
 
 # Python: cache dei bytecode, si rigenera sola
 __pycache__/
