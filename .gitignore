@@ -12,6 +12,10 @@ assets-studio/out
 # stories/<id>/assets/, che invece si versiona.
 stories/*/_work
 
+# Il sito composto da build-site.mjs per GitHub Pages: lo monta l'Action a
+# ogni push, in locale serve solo per dare un'occhiata prima di spingere.
+_site/
+
 # Il player incorporato dentro la cartella di una storia da
 # start_local_player.sh: e' un prodotto della build, si rifa' in un secondo.
 stories/*/play.html

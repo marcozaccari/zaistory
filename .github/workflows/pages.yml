@@ -1,0 +1,82 @@
+# Costruisce il player, ci incorpora dentro ogni storia e pubblica il tutto su
+# GitHub Pages. In pratica: la stessa cosa che fa start_local_player.sh sulla
+# rete di casa, ma su un indirizzo pubblico e in https.
+#
+# Dove finisce:  https://marcozaccari.github.io/zaistory/
+#                https://marcozaccari.github.io/zaistory/metal-head/
+#
+# Da fare una volta sola a mano, prima che serva a qualcosa:
+#   Settings -> Pages -> Build and deployment -> Source: "GitHub Actions"
+# (e il repo dev'essere pubblico: Pages da repo privato vuole un piano Pro).
+#
+# Nota che vale la pena sapere: qui la pagina e' servita in https, quindi il
+# browser la considera un contesto sicuro e il resolver a vettori puo' usare
+# WebGPU. Online e' piu' veloce che in locale su http, non piu' lento.
+
+name: Pubblica il player su Pages
+
+on:
+  push:
+    branches: [main]
+    # Solo quello che finisce davvero nel sito: un ritocco all'ARCHITECTURE.md
+    # non ha motivo di far ripartire una build e un deploy.
+    paths:
+      - 'player/**'
+      - 'stories/*/story.ir.json'
+      - 'stories/*/assets/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Una pubblicazione alla volta, e senza annullare quella in corso: meglio
+# aspettare un minuto che restare con un sito montato a meta'.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  costruisci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: player/package-lock.json
+
+      # npm ci e non npm install: installa esattamente l'albero scritto in
+      # package-lock.json, verificando gli hash, e fallisce se il lock e' fuori
+      # sincrono con package.json invece di aggiustarlo di nascosto.
+      - name: Dipendenze del player
+        working-directory: player
+        run: npm ci --no-audit --no-fund
+
+      - name: Costruisci il player
+        working-directory: player
+        run: npm run build:web
+
+      - name: Componi il sito
+        working-directory: player
+        run: npm run build:site
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  pubblica:
+    needs: costruisci
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

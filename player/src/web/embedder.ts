@@ -30,7 +30,10 @@ export interface ConfigEmbedder {
 }
 
 export const CONFIG_DEFAULT: ConfigEmbedder = {
-  libreria: 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4/+esm',
+  // Versione fissata, non '@4': questo modulo e' l'unica cosa che il player
+  // scarica a runtime, e un range lascerebbe che una minor pubblicata domani
+  // cambi il comportamento di una pagina gia' pubblicata, senza un commit.
+  libreria: 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0/+esm',
   // Un encoder di frasi multilingua piccolo, non un modello generativo: qui
   // serve un vettore, non della prosa.
   modello: 'Xenova/paraphrase-multilingual-MiniLM-L12-v2',
