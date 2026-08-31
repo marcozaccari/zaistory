@@ -42,6 +42,7 @@ import { clear, el, premi, staScrivendo } from './dom.js';
 import { icona, iconaGruppo } from './icone.js';
 import { doppio, nomeCampo, nomeTipoScena, type Doppio } from './nomi.js';
 import type { Immagini } from './immagini.js';
+import type { Palco } from './palco.js';
 import type { Ascolto } from './ascolto.js';
 
 /** Il tipo di risorsa che un prompt descrive: da' il colore all'etichetta, e
@@ -139,12 +140,27 @@ function promptRow([label, value, media, ereditato]: [string, string | Doppio, M
  * La riga dice qualcosa che l'immagine, se c'e', mostra gia'.
  *
  * Sono i prompt di immagine e i due riferimenti che dicono *cosa* c'e' dentro
- * l'inquadratura — dove siamo e chi si vede. In modalita' immagini finiscono
- * dietro il bottone della figura; il suono e la voce no, perche' quelli
- * un'immagine non li mostra e restano l'unico modo di sapere che ci sono.
+ * l'inquadratura — dove siamo e chi si vede. Il suono e la voce no, perche'
+ * quelli un'immagine non li mostra e restano l'unico modo di sapere che ci
+ * sono.
  */
 function mostrataDallImmagine([label, , media]: PromptRow): boolean {
-  return media === 'image' || label === 'place' || label === 'characters_in_frame';
+  return media === 'image' || label === 'characters_in_frame' || label === 'place';
+}
+
+/**
+ * La stessa riga, ridotta a un capo che si apre.
+ *
+ * Quando l'inquadratura e' finita sul palco il suo testo non sparisce dal
+ * transcript: sparirebbe con lei alla figura dopo, e il transcript e' il
+ * resoconto di cio' che l'IR dichiara — l'unico posto dove si torna a vedere
+ * con che prompt e' stato costruito il beat di sei tocchi fa. Si mostra pero'
+ * su una riga sola, con il triangolino, perche' *adesso* quello che dice si
+ * sta gia' guardando in cima allo schermo. E' lo stesso trattamento del luogo
+ * ereditato da un beat, per la stessa ragione: c'e', ma non e' la notizia.
+ */
+function collassaSeMostrata(r: PromptRow): PromptRow {
+  return mostrataDallImmagine(r) ? [r[0], r[1], r[2], true] : r;
 }
 
 /**
@@ -206,6 +222,9 @@ export interface WebUIOptions {
    * per la stessa ragione — dove stanno le immagini non cambia perche' si
    * ricomincia. */
   immagini: Immagini;
+  /** Dove finisce l'inquadratura corrente. Arriva da fuori come gli altri due:
+   * e' un pezzo di pagina, e sopravvive alla partita che ci scorre dentro. */
+  palco: Palco;
 }
 
 export class WebUI implements PlayerUI {
@@ -227,6 +246,7 @@ export class WebUI implements PlayerUI {
   private script?: ScriptDriver;
   private ascolto: Ascolto;
   private immagini: Immagini;
+  private palco: Palco;
   /** Promessa in attesa di un tocco: va rifiutata se la partita viene
    * ricominciata, altrimenti resta appesa per sempre. */
   private abort?: (err: unknown) => void;
@@ -294,6 +314,7 @@ export class WebUI implements PlayerUI {
     this.script = o.script;
     this.ascolto = o.ascolto;
     this.immagini = o.immagini;
+    this.palco = o.palco;
   }
 
   /**
@@ -614,15 +635,13 @@ export class WebUI implements PlayerUI {
       ['image_prompt', scene.background?.image_prompt, 'image'],
       ['ambient_sound_prompt', scene.background?.ambient_sound_prompt, 'sound'],
     ];
-    // L'inquadratura prima del titolo: e' quello che si vede entrando in una
-    // stanza, e il titolo e' la didascalia di cio' che si sta guardando. Se
-    // c'e', si porta dentro i prompt che sostituisce e nella scheda restano
-    // solo le righe che non mostra — il suono, per esempio.
-    const fig = this.immagini.figura(scene.background?.image, scene.background?.image_prompt, {
-      prompt: promptNudi(righeBg.filter(mostrataDallImmagine)),
-    });
-    if (fig) card.prepend(fig);
-    const bg = promptGroup('background', fig ? righeBg.filter((r) => !mostrataDallImmagine(r)) : righeBg);
+    // L'inquadratura sale sul palco: entrando in una stanza la prima cosa e'
+    // vedere dove si e', e da li' non si muove piu' mentre si legge. Quando ci
+    // arriva davvero, le righe che descrivono cio' che si sta guardando
+    // restano nella scheda ma chiuse; il suono e i timbri no, perche'
+    // un'immagine non li mostra.
+    const inScena = this.palco.mostra(scene.background?.image, scene.background?.image_prompt);
+    const bg = promptGroup('background', inScena ? righeBg.map(collassaSeMostrata) : righeBg);
     if (bg) card.append(bg);
 
     // Aspetto e voce di chi e' in scena: l'override locale se c'e', altrimenti
@@ -715,13 +734,12 @@ export class WebUI implements PlayerUI {
       ['sound_effect_prompt', b.sound_effect_prompt, 'sound'],
       ['voice.style_prompt', b.voice?.style_prompt, 'voice'],
     ];
-    const figBeat = this.immagini.figura(b.image, b.image_prompt, {
-      prompt: promptNudi(righe.filter(mostrataDallImmagine)),
-    });
-    // L'inquadratura prima di tutto, come nella scheda di scena: e' quello che
-    // si vede, e il resto — un suono, un tono di voce — la commenta.
-    if (figBeat) this.push(figBeat);
-    this.assets(figBeat ? righe.filter((r) => !mostrataDallImmagine(r)) : righe);
+    // Il beat cambia inquadratura: la nuova prende il posto della precedente
+    // sul palco, e il testo che arriva sotto la commenta. Un beat senza
+    // `image` non lo svuota — resta quella di prima, che e' esattamente cio'
+    // che succede quando la macchina non si e' spostata.
+    const inScena = this.palco.mostra(b.image, b.image_prompt);
+    this.assets(inScena ? righe.map(collassaSeMostrata) : righe);
     this.entry('beat', b.text);
     this.ascolto.beat(scene, b, index);
     this.dbg(`beat ${index + 1}/${total}`);

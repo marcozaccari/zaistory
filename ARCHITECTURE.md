@@ -750,19 +750,39 @@ che la storia ha già pubblicato, quando ci sono.
   un'inquadratura e la sua descrizione l'occhio sceglie l'immagine, il testo
   diventa mezzo schermo di rumore e la scena si legge peggio che senza. È la
   stessa forma della modalità ascolto: la storia ha tre uscite e si scelgono.
-- **I prompt stanno dentro l'immagine, dietro un bottone.** Non sotto, non in
-  un pannello a parte: il legame che serve è «questo testo ha prodotto
-  *questa* immagine», e in una cutscene di nove beat un prompt staccato dalla
-  sua figura non si sa più a chi appartenga. Il bottone è visibile sempre e non
-  al passaggio del mouse — metà del collaudo si fa dal telefono.
-- **L'immagine sostituisce solo ciò che mostra.** Vanno dietro il bottone
-  l'`image_prompt`, il `visual_prompt` del luogo e i riferimenti a dove siamo e
-  chi è in campo; l'ambiente sonoro, gli effetti e i timbri restano in chiaro,
-  perché un'immagine non li mostra e quelli sono l'unico modo di sapere che
-  esistono.
+- **L'inquadratura corrente sta ferma, il racconto le scorre sotto.** È il
+  *palco* (`player/src/web/palco.ts`): un pannello solo, in cima allo schermo
+  su telefono e a sinistra su schermo largo, dove **ogni immagine nuova prende
+  il posto della precedente**. Finché le figure scorrevano dentro il transcript
+  come il testo, quella di adesso usciva dallo schermo appena si scorreva per
+  leggere la riga che la commenta, e chi gioca faceva avanti e indietro fra il
+  testo e la sua illustrazione: due movimenti per una cosa sola. Un
+  nodo **senza `image` non svuota il palco** — resta l'ultima inquadratura, che
+  è esattamente ciò che succede quando la macchina non si è spostata.
+- **Il palco si riduce, non si chiude.** Una maniglia sotto l'immagine (a
+  fianco, in due colonne) alterna fra due sole misure: grande e ridotta. Tre
+  stati o un trascinamento ad altezza libera sono un'altra cosa da imparare per
+  una decisione che ha due risposte — «voglio vederla» e «adesso no». Chiuderla
+  del tutto è già possibile e si chiama spegnere le immagini: è una scelta
+  sulla storia, e sta nel pannello.
+- **Nel flusso restano solo le immagini che non sono inquadrature**: il
+  ritratto di un personaggio e l'icona di un oggetto che si sta guardando.
+  Quelle sono riferimenti dentro un discorso, e il posto di un riferimento è
+  accanto alla riga di cui parla.
+- **I prompt restano nel transcript, collassati.** Il palco non se li porta
+  dietro: sparirebbero con l'immagine al beat successivo, e il transcript è il
+  resoconto di ciò che l'IR dichiara — l'unico posto dove si torna a vedere con
+  che prompt è stato costruito il beat di sei tocchi fa. Le righe che
+  l'immagine mostra già — l'`image_prompt`, il `visual_prompt` del luogo, dove
+  siamo e chi è in campo — si mostrano quindi su una riga sola che si apre
+  toccandola, lo stesso trattamento del luogo ereditato da un beat e per la
+  stessa ragione: ci sono, ma non sono la notizia. L'ambiente sonoro, gli
+  effetti e i timbri restano in chiaro, perché un'immagine non li mostra e
+  quelli sono l'unico modo di sapere che esistono.
 - **Toccare un'immagine la apre a schermo intero**, con il suo prompt come
-  didascalia. Le due misure servono a due cose diverse: nel transcript
-  l'immagine sta in una colonna di lettura, a schermo intero si guarda — ed è
+  didascalia — ed è lì, e non nel transcript, che si legge il prompt di ciò che
+  si sta guardando adesso. Le due misure servono a due cose diverse: sul palco
+  l'immagine accompagna la lettura, a schermo intero si guarda, ed è
   guardandola che si decide se quell'asset va bene. Si chiude con un tocco
   ovunque, non solo con la ✕: su un telefono un popup che si chiude in un
   punto solo è il modo più rapido di far uscire qualcuno dalla partita.
@@ -775,12 +795,18 @@ che la storia ha già pubblicato, quando ci sono.
   testo: ricavarlo di nuovo dalla frase significherebbe rifare il lavoro del
   resolver, con la possibilità di arrivare a una risposta diversa da quella che
   si sta mostrando.
-- **Un'immagine non supera mai metà schermo in altezza**, e su schermo largo
-  il transcript resta una colonna di lettura. Il player è mobile-first e per un
-  telefono in verticale bastava la larghezza; su desktop, senza un limite in
-  altezza, un quadrato largo quanto la colonna è alto quanto la finestra —
-  ogni beat spinge fuori vista quello prima, e leggere due righe di narrazione
-  costa una schermata di scorrimento.
+- **Due layout, non due prodotti.** Su telefono in verticale il palco è una
+  fascia in alto (42dvh, 19 da ridotto) e sotto scorrono testo e azioni; da 900
+  px di larghezza — o su uno schermo basso e largo, cioè un telefono coricato —
+  la stessa fascia diventa la colonna di sinistra a tutta altezza e la storia
+  si legge a destra. Cambia solo se il collasso restituisca altezza o
+  larghezza: il palco resta uno e la maniglia resta una. L'immagine non viene
+  **mai ritagliata** per riempire il palco (`contain`, bande sul fondo del
+  pannello): ritagliare butterebbe via proprio la parte che nello studio si è
+  scelta guardando.
+- **Il testo resta una colonna di lettura** anche quando ce n'è lo spazio: a
+  centoventi caratteri l'occhio perde il capo tornando a sinistra. Su schermo
+  largo quello che avanza va nei margini, non nella lunghezza delle righe.
 - **La scelta compare solo quando c'è qualcosa da scegliere**: la storia ha
   immagini pubblicate e il player sa dove cercarle. Altrimenti al suo posto c'è
   una riga che dice quale dei due pezzi manca. Un interruttore che non cambia

@@ -32,15 +32,23 @@
  * bottone. Il collegamento e' quello — non "il prompt sta anche qui sotto da
  * qualche parte", ma "questo e' il testo che ha prodotto *questa* immagine".
  *
+ * ## Due posti, non uno
+ *
+ * Le **inquadrature** — la scena e i suoi beat — non stanno qui dentro: vanno
+ * sul palco (`palco.ts`), ferme in cima allo schermo, perche' dicono *dove si
+ * e'* e non *cosa e' successo un momento fa*. Qui restano le immagini che sono
+ * riferimenti dentro un discorso: il ritratto di un personaggio e l'icona di
+ * un oggetto che si sta guardando. Quelle nel flusso ci stanno bene, perche'
+ * appartengono alla riga accanto a cui compaiono.
+ *
  * ## A schermo intero
  *
- * Nel transcript le immagini stanno dentro una colonna di lettura e non
- * superano mezzo schermo: e' la misura giusta per *leggere*, non per
- * *guardare*. Toccandone una si apre com'e', grande quanto lo schermo — che
- * poi e' il modo in cui la si giudica quando si sta decidendo se quell'asset
- * va bene. Si chiude con un tocco, con Esc, o con la freccia indietro del
- * telefono, dove un popup che si chiude solo con la ✕ e' il modo piu' rapido
- * di far uscire qualcuno dalla partita.
+ * Nel transcript e sul palco un'immagine sta dentro la misura di chi legge.
+ * Toccandola si apre com'e', grande quanto lo schermo — che poi e' il modo in
+ * cui la si giudica quando si sta decidendo se quell'asset va bene. Si chiude
+ * con un tocco, con Esc, o con la freccia indietro del telefono, dove un popup
+ * che si chiude solo con la ✕ e' il modo piu' rapido di far uscire qualcuno
+ * dalla partita.
  */
 
 import { el } from './dom.js';
@@ -184,11 +192,11 @@ export class Immagini {
    * l'unica descrizione d'autore di cio' che si vede. In ascolto e' anche
    * l'unica cosa che rende quell'inquadratura udibile.
    */
-  figura(id: string | undefined, alt?: string, opzioni: OpzioniFigura = {}): HTMLElement | undefined {
+  figura(id: string | undefined, alt: string | undefined, opzioni: OpzioniFigura): HTMLElement | undefined {
     if (!id || !this.accese) return undefined;
     const src = this.url(id);
     if (!src) return undefined;
-    const fig = el('figure', opzioni.classe ?? 'shot');
+    const fig = el('figure', opzioni.classe);
     // La cornice esiste per una ragione sola: stringersi addosso
     // all'immagine. Quando e' l'altezza a limitarla — su desktop, dove un
     // quadrato largo quanto la colonna sarebbe alto quanto la finestra —
@@ -252,9 +260,12 @@ export class Immagini {
 }
 
 export interface OpzioniFigura {
-  /** La classe della cornice: `shot` per un'inquadratura, `ritratto` per
-   * un'ancora di personaggio. */
-  classe?: string;
+  /** La classe della cornice: `ritratto` per l'ancora di un personaggio,
+   * `oggetto` per l'icona di una cosa che si sta guardando. Obbligatoria: da
+   * quando le inquadrature vivono sul palco non esiste piu' una figura
+   * "normale" a cui ricadere, e un default silenzioso sarebbe una classe che
+   * il CSS non conosce. */
+  classe: string;
   /** Le righe di prompt che questa immagine sostituisce, da tenere a
    * disposizione dietro un bottone. */
   prompt?: HTMLElement;

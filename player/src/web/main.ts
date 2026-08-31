@@ -34,6 +34,7 @@ import {
 import { CONFIG_DEFAULT, caricaEmbedder, type ConfigEmbedder } from './embedder.js';
 import { ASCOLTO_DEFAULT, Ascolto, type ImpostazioniAscolto } from './ascolto.js';
 import { Immagini, baseDegliAsset } from './immagini.js';
+import { Palco } from './palco.js';
 import { Voce } from './voce.js';
 import { PLAYER_VERSION } from '../version.js';
 import { $, clear, el, staScrivendo } from './dom.js';
@@ -91,6 +92,14 @@ const voce = new Voce();
  * perche' in quel caso non esiste nessuna cartella storia intorno.
  */
 const immagini = new Immagini(undefined, true);
+/**
+ * Il palco, cioe' dove l'inquadratura corrente sta ferma.
+ *
+ * Vive quanto la pagina per la stessa ragione delle immagini: e' un pezzo di
+ * interfaccia, non un pezzo di partita. Quello che invece appartiene alla
+ * partita — quale figura ci sta sopra — se ne va quando si ricomincia.
+ */
+const palco = new Palco($('#palco'), immagini);
 let impAscolto: ImpostazioniAscolto = { ...ASCOLTO_DEFAULT };
 let ascolto = new Ascolto({ ir_version: '', id: '', title: '', start_scene: '', scenes: [] }, voce);
 
@@ -216,6 +225,12 @@ function panelContext(s: Session): PanelContext {
       // Le immagini gia' stampate restano: il transcript e' il resoconto di
       // cio' che e' successo, non una vista che si ridisegna. L'interruttore
       // vale da qui in avanti, come tutto il resto.
+      //
+      // Il palco no: quello non e' un resoconto ma una vista, ed e' l'unica
+      // cosa che l'interruttore deve poter spegnere subito — un pannello di
+      // immagini che resta acceso dopo aver detto "niente immagini" e' un
+      // interruttore che non fa niente.
+      if (!v) palco.svuota();
     },
     ascolto,
     onAscolto: (imp) => {
@@ -266,6 +281,7 @@ function applicaConfig(c: ConfigPlayer): void {
   impAscolto = c.ascolto;
   ascolto.configura(impAscolto);
   immagini.imposta(c.immagini);
+  if (!c.immagini) palco.svuota();
   configEmbedder = c.embedder;
   impostaDebug(c.debug);
   // Il backend si riaccende solo se cambia davvero: `scegliResolver` esce
@@ -402,13 +418,26 @@ function start(story: Story, findings: Finding[], script?: ScriptDriver): void {
   session?.ui.cancel();
   clear(transcript);
   clear(dock);
+  // L'ultima inquadratura della partita di prima non e' la prima di questa: il
+  // palco riparte vuoto e ricompare da se' alla prossima immagine.
+  palco.svuota();
 
   // Una partita nuova, una memoria nuova: i registri del collapse acustico
   // sono lunghi quanto la partita, come quello visivo dentro `WebUI`.
   ascolto = new Ascolto(story, voce);
   ascolto.configura(impAscolto);
 
-  const ui = new WebUI({ story, resolver, transcript, dock, onUpdate: refresh, script, ascolto, immagini });
+  const ui = new WebUI({
+    story,
+    resolver,
+    transcript,
+    dock,
+    onUpdate: refresh,
+    script,
+    ascolto,
+    immagini,
+    palco,
+  });
   const engine = new Engine(story, ui);
   session = { story, findings, engine, ui };
 

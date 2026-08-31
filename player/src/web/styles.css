@@ -196,10 +196,80 @@ button {
 
 /* ------------------------------------------------------------------- app */
 
+/* Quattro fasce, dall'alto: la barra, il palco con l'inquadratura corrente, il
+   transcript che scorre, il dock che si tocca. Il palco puo' non esserci — in
+   solo testo non c'e' — e allora la sua riga vale zero e la griglia torna a
+   essere quella di prima senza doverlo scrivere da nessuna parte.
+
+   `minmax(0, 1fr)` e non `1fr`: la misura minima automatica di un figlio di
+   griglia e' il suo contenuto, e senza questo un transcript lungo spingerebbe
+   il dock fuori dallo schermo invece di scorrere dentro di se'. */
 .app {
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   height: 100dvh;
+}
+
+/* Con il palco acceso il dock cede qualcosa: alle sue misure di prima —
+   fino a mezzo schermo di chip — piu' un'inquadratura sopra, il transcript
+   fra i due si sarebbe ridotto a due righe. */
+body.con-palco .dock {
+  max-height: 38dvh;
+}
+
+/* Schermo largo, o basso e largo (un telefono coricato): l'inquadratura passa
+   a sinistra a tutta altezza e la storia si legge in colonna a destra. E' lo
+   stesso layout di prima ruotato di novanta gradi, non un secondo prodotto:
+   il palco resta uno, la maniglia resta una, cambia solo se il collasso
+   restituisca altezza o larghezza. */
+@media (min-width: 900px), (min-width: 640px) and (max-height: 560px) {
+  .app {
+    grid-template-columns: minmax(0, 1.15fr) minmax(340px, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "barra barra"
+      "palco transcript"
+      "palco dock";
+  }
+
+  /* Ridotto: la colonna dell'immagine si stringe e la lettura si allarga.
+     Non sparisce — spegnere le immagini e' un'altra scelta, e sta nel
+     pannello. */
+  body.palco-ridotto .app {
+    grid-template-columns: minmax(0, 0.42fr) minmax(340px, 1fr);
+  }
+
+  /* Senza palco non c'e' niente da mettere nella prima colonna, e una colonna
+     vuota larga meta' finestra sarebbe solo un buco. */
+  body:not(.con-palco) .app,
+  body:not(.con-palco).palco-ridotto .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "barra"
+      "transcript"
+      "dock";
+  }
+
+  .topbar {
+    grid-area: barra;
+  }
+
+  .palco {
+    grid-area: palco;
+  }
+
+  .transcript {
+    grid-area: transcript;
+  }
+
+  .dock {
+    grid-area: dock;
+  }
+
+  /* Qui il dock non toglie niente al palco: sono in due colonne diverse. */
+  body.con-palco .dock {
+    max-height: 52dvh;
+  }
 }
 
 .topbar {
@@ -1364,23 +1434,170 @@ body:not(.debug) #tabs button[data-debug] {
   font-style: italic;
 }
 
-/* ------------------------------------------------------------- immagini */
+/* ---------------------------------------------------------------- palco */
 
-/* L'inquadratura di una scena o di un beat.
-   Sta nel flusso del transcript come il testo, e non si pretende di
-   conoscerne la forma: i modelli restituiscono quadrati, 3:2 e 4:3, e
-   ritagliarli qui butterebbe via proprio la parte che nello studio si e'
-   scelta guardando. */
-.shot {
-  margin: 0 0 10px;
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: var(--bg-soft);
-  line-height: 0;
+/* Il pannello dell'inquadratura corrente. Fondo piu' scuro della pagina: e'
+   uno schermo dentro lo schermo, e il salto di tinta e' quello che dice dove
+   finisce la figura e comincia il racconto quando l'immagine non riempie
+   tutto lo spazio.
+
+   L'altezza e' una misura dello schermo e non dell'immagine: le figure
+   arrivano quadrate, 3:2 e 4:3, e far ballare l'altezza del palco a ogni beat
+   sposterebbe sotto il dito il testo che si sta leggendo. */
+.palco {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: 42dvh;
+  background: #0a0c11;
+  border-bottom: 1px solid var(--line);
+  transition: height 200ms ease;
+}
+
+body.palco-ridotto .palco {
+  height: 19dvh;
+}
+
+.palco-tela {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 8px;
+}
+
+/* `contain` e non `cover`: ritagliare butterebbe via proprio la parte che
+   nello studio si e' scelta guardando. Le bande che restano sono del fondo
+   del palco, e non si leggono come un errore. */
+.palco-tela img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* L'id del file: un dato, quindi si vede col debug come tutti gli altri.
+   Sopra l'immagine e non sotto — sotto ruberebbe altezza alla figura ogni
+   volta che il debug e' acceso. */
+.palco-id {
+  position: absolute;
+  left: 10px;
+  top: 8px;
+  margin: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(8, 9, 12, 0.66);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--fg-dim);
+}
+
+/* La maniglia. Una tacca larga e un'area da toccare piu' alta di lei: il
+   bersaglio dev'essere quello del pollice, il segno quello dell'occhio. */
+.palco-maniglia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 26px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.palco-maniglia .tacca {
+  display: block;
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background-color 120ms ease, width 120ms ease;
+}
+
+.palco-maniglia:hover .tacca,
+.palco-maniglia:focus-visible .tacca {
+  background: var(--accent);
+}
+
+.palco-maniglia:active .tacca {
+  width: 60px;
+  background: var(--accent);
+}
+
+/* In due colonne la maniglia sta sul filo verticale fra l'immagine e il
+   testo: e' quel bordo che si sposta, ed e' li' che si va a prenderlo. */
+@media (min-width: 900px), (min-width: 640px) and (max-height: 560px) {
+  .palco {
+    grid-template-rows: minmax(0, 1fr);
+    height: auto;
+    padding-right: 18px;
+    border-bottom: 0;
+    border-right: 1px solid var(--line);
+    transition: none;
+  }
+
+  body.palco-ridotto .palco {
+    height: auto;
+  }
+
+  .palco-maniglia {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 18px;
+    min-height: 0;
+  }
+
+  .palco-maniglia .tacca {
+    width: 4px;
+    height: 44px;
+    transition: background-color 120ms ease, height 120ms ease;
+  }
+
+  .palco-maniglia:active .tacca {
+    width: 4px;
+    height: 60px;
+  }
+
+  /* La lettura resta una colonna larga quanto una colonna di lettura: lo
+     spazio che il collasso restituisce non serve a righe piu' lunghe — a
+     centoventi caratteri l'occhio perde il capo tornando a sinistra — serve a
+     mettere il testo in mezzo a cio' che ha intorno invece di lasciarlo
+     appeso al bordo dell'immagine. Vale anche per il dock: chip larghe quanto
+     il testo che le riguarda, non quanto la finestra.
+
+     Sta qui, dopo le regole che danno il padding a tutti e due, perche' la
+     scorciatoia `padding` le riazzererebbe se venisse dopo. */
+  .transcript,
+  .dock {
+    padding-inline: max(14px, (100% - 64ch) / 2);
+  }
+}
+
+/* Un'immagine dichiarata e non arrivata: si dice qui come si direbbe nel
+   transcript. */
+.palco .manca {
+  margin: 0;
+  padding: 14px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--amber);
   text-align: center;
 }
 
-/* La cornice si stringe addosso all'immagine: e' lei ad ancorare il bottone
+/* ------------------------------------------------------------- immagini */
+
+/* Le inquadrature di scena e di beat non stanno piu' nel flusso: vivono sul
+   palco, in cima. Qui restano le due immagini che non sono inquadrature — il
+   ritratto di un personaggio e l'icona di un oggetto — e per loro il flusso e'
+   il posto giusto, perche' sono riferimenti dentro un discorso.
+
+   La cornice si stringe addosso all'immagine: e' lei ad ancorare il bottone
    dei prompt, che altrimenti, quando l'altezza rimpicciolisce l'immagine,
    resterebbe appeso al bordo della figura invece che a quello di cio' a cui
    si riferisce. */
@@ -1388,47 +1605,6 @@ body:not(.debug) #tabs button[data-debug] {
   position: relative;
   display: inline-block;
   max-width: 100%;
-}
-
-/* La forma la decide l'immagine, dentro due limiti: la colonna in larghezza e
-   **meta' schermo scarso in altezza**.
-   Il secondo esiste per il desktop: senza, un quadrato largo quanto la colonna
-   e' alto quanto la finestra, ogni beat spinge fuori vista quello prima e per
-   leggere due righe di narrazione si scorre una schermata intera. Su un
-   telefono in verticale non cambia niente — li' e' la larghezza a comandare —
-   e in orizzontale, dove lo schermo e' basso, torna utile per la stessa
-   ragione per cui serve al desktop. */
-.shot img {
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 52vh;
-  /* Quando e' l'altezza a limitare, l'immagine sta in mezzo alla sua cornice:
-     dentro la scheda di scena il fondo e' lo stesso della scheda, quindi non
-     si vede nessuna banda. */
-  margin: 0 auto;
-}
-
-/* Dentro la scheda di scena l'immagine e' il primo elemento: gli angoli
-   arrotondati sono gia' quelli della scheda, e un secondo raggio dentro il
-   primo si vede come una sbavatura. */
-.scene > .shot {
-  margin: 0;
-  border-radius: 0;
-  border-bottom: 1px solid var(--line);
-}
-
-/* Il ritratto di un personaggio: e' un riferimento, non un'inquadratura, e
-   sta accanto al suo gruppo di prompt come una miniatura. */
-/* Un'inquadratura di beat non ha una scheda intorno: sta larga quanto
-   l'immagine, cosi' quando l'altezza la rimpicciolisce non resta una fascia
-   di fondo diverso a segnare dov'era. */
-.transcript > .shot {
-  width: fit-content;
-  max-width: 100%;
-  background: none;
-  text-align: left;
 }
 
 /* Il ritratto sta largo quanto l'immagine e non quanto la riga: il bottone
@@ -1538,7 +1714,6 @@ body:not(.debug) #tabs button[data-debug] {
 }
 
 /* L'id sotto l'immagine e' un dato: si vede col debug, come ogni altro id. */
-.shot figcaption,
 .ritratto figcaption {
   padding: 4px 12px 6px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -1569,7 +1744,6 @@ body:not(.debug) #tabs button[data-debug] {
 }
 
 /* Le immagini si aprono grandi: qui si guardano, nel transcript si legge. */
-.shot img,
 .ritratto img,
 .oggetto img {
   cursor: zoom-in;
@@ -1639,7 +1813,6 @@ body:not(.debug) #tabs button[data-debug] {
 
 /* Un'immagine dichiarata nell'IR e non arrivata: si dice, come ogni altro
    buco. Il player non mette segnaposto muti. */
-.shot .manca,
 .ritratto .manca {
   margin: 0;
   padding: 14px 12px;

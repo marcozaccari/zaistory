@@ -279,8 +279,9 @@ function modalitaImmagini(body: HTMLElement, ctx: PanelContext): void {
     [
       true,
       'immagini',
-      `Le ${quante} immagini pubblicate al posto dei prompt che le hanno prodotte. Il testo non si ` +
-        "perde: sta dentro l'immagine, dietro il bottone «prompt».",
+      `Le ${quante} immagini pubblicate: l'inquadratura corrente resta ferma in cima e il racconto ` +
+        'le scorre sotto. I prompt che l\'immagine mostra non si perdono, si chiudono su una riga ' +
+        'sola che si apre toccandola.',
     ],
   ];
   const riga = el('div', 'chips');

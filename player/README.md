@@ -96,14 +96,14 @@ Mostrare tutti e due insieme sembrava gratis e non lo è: fra un'inquadratura e
 la sua descrizione l'occhio sceglie l'immagine, il testo diventa mezzo schermo
 di rumore, e la scena si legge peggio che senza immagini.
 
-I prompt però non spariscono. Restano **dentro** l'immagine, dietro un
-bottoncino appoggiato al suo angolo: toccandolo si aprono sotto la figura. Il
-collegamento è quello — non «il prompt sta anche qui sotto da qualche parte»,
-ma «questo è il testo che ha prodotto *questa* immagine». Il bottone è visibile
-sempre, non al passaggio del mouse: metà del collaudo si fa dal telefono, dove
-il mouse non passa mai.
+I prompt però non spariscono, si **chiudono**: le righe che l'immagine mostra
+già restano nel transcript su una riga sola, con il triangolino, e si aprono
+toccandole. È lo stesso trattamento del luogo che un beat eredita dalla scena,
+per la stessa ragione: ci sono, ma non sono la notizia. Il prompt di ciò che si
+sta guardando *adesso* si legge invece dove si guarda l'immagine, cioè a
+schermo intero, come didascalia.
 
-Cosa passa dietro il bottone e cosa no: **l'immagine sostituisce solo ciò che
+Cosa si chiude e cosa no: **l'immagine sostituisce solo ciò che
 mostra** — l'`image_prompt`, il `visual_prompt` del luogo, e i due riferimenti
 che dicono dove siamo e chi è in campo. L'ambiente sonoro, gli effetti e i
 timbri di voce restano in chiaro: quelli un'immagine non li mostra, e sono
@@ -131,9 +131,8 @@ storia intorno, e il pannello lo dice invece di lasciar credere che le immagini
 siano rotte. Lì si vedono i prompt, come si è sempre fatto.
 
 **Toccando un'immagine si apre a schermo intero**, con sotto il prompt che
-l'ha prodotta. Nel transcript le immagini stanno in una colonna di lettura e
-non superano mezzo schermo: è la misura giusta per leggere, non per *guardare*
-— e guardarla è quello che serve quando si sta decidendo se un asset va bene.
+l'ha prodotta. Sul palco l'immagine accompagna la lettura; a schermo intero si
+*guarda*, ed è guardarla che serve quando si sta decidendo se un asset va bene.
 Si chiude con un tocco ovunque, con Esc o con la ✕.
 
 **Un oggetto dell'inventario mostra la sua icona quando lo si guarda**: sia
@@ -142,12 +141,31 @@ scrivendo «guarda il walkie», sia toccandolo nell'elenco dell'inventario, che
 l'oggetto è una voce di menu, e dieci miniature in fila sono un inventario da
 gioco di ruolo, non la risposta a «cosa ho in mano».
 
-Le immagini non superano mai **metà schermo scarso in altezza**, e su schermo
-largo il transcript resta una colonna di lettura come il testo. Senza il primo
-limite, su desktop un quadrato largo quanto la colonna è alto quanto la
-finestra: ogni beat spinge fuori vista quello prima, e per leggere due righe di
-narrazione si scorre una schermata intera. Su un telefono in verticale non
-cambia niente — lì comanda la larghezza.
+## Il palco
+
+L'inquadratura corrente **sta ferma** e il racconto le scorre sotto: in cima
+allo schermo su telefono in verticale, nella colonna di sinistra da 900 px di
+larghezza in su (e su uno schermo basso e largo, cioè un telefono coricato).
+Ogni immagine nuova **prende il posto** della precedente; un beat senza `image`
+non svuota niente, resta quella di prima — che è esattamente ciò che succede
+quando la macchina non si è spostata.
+
+Finché le figure scorrevano dentro il transcript come il testo, quella di
+adesso usciva dallo schermo appena si scorreva per leggere la riga che la
+commenta: si faceva avanti e indietro fra il testo e la sua illustrazione, due
+movimenti per una cosa sola.
+
+La maniglia sotto l'immagine (di fianco, in due colonne) la **riduce**, e sono
+due misure sole — grande e ridotta. Quanta altezza tenersi dipende da cosa si
+sta facendo: in un dialogo lungo serve leggere, davanti a una scena nuova serve
+guardare. Chiuderla del tutto non serve alla maniglia: si spengono le immagini
+dal pannello, che è una scelta sulla storia e non sul momento.
+
+Nel flusso restano solo le immagini che **non** sono inquadrature — il ritratto
+di un personaggio e l'icona di un oggetto — perché quelle sono riferimenti
+dentro un discorso e stanno accanto alla riga di cui parlano. L'immagine sul
+palco non viene mai ritagliata per riempirlo: ritagliare butterebbe via proprio
+la parte che nello studio si è scelta guardando.
 
 Altre due cose che vale la pena conoscere:
 

@@ -44,6 +44,24 @@
         <button class="icon toggle" id="btn-debug" aria-pressed="false" title="Modalita' debug">debug</button>
       </header>
 
+      <!-- Il palco: l'inquadratura corrente, ferma. Il testo le scorre sotto,
+           e la maniglia la riduce quando serve piu' spazio per leggere. Nasce
+           chiuso: senza immagini pubblicate non compare mai. -->
+      <section id="palco" class="palco" hidden aria-label="l'inquadratura corrente">
+        <div class="palco-tela" id="palco-tela"></div>
+        <button
+          class="palco-maniglia"
+          id="palco-maniglia"
+          type="button"
+          aria-controls="palco-tela"
+          aria-expanded="true"
+          aria-label="riduci l'immagine"
+          title="riduci l'immagine"
+        >
+          <span class="tacca"></span>
+        </button>
+      </section>
+
       <main id="transcript" class="transcript" tabindex="-1"></main>
 
       <footer id="dock" class="dock"></footer>
