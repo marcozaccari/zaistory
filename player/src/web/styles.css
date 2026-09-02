@@ -827,6 +827,84 @@ body.debug .dbg {
   display: block;
 }
 
+/* --- Blocchi ripiegati --------------------------------------------------
+   Elenchi da ispezionare — la roster, i luoghi, i flag, le azioni sotto il
+   debug — che nascono chiusi. Aperti tutti insieme sono schermate di
+   anagrafica fra chi legge e cio' che stava leggendo; chiusi, il conto accanto
+   al titolo risponde gia' alla meta' della domanda. */
+
+.piega {
+  margin: 0;
+}
+
+.piega > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  cursor: pointer;
+  list-style: none;
+  color: var(--fg-dim);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Il triangolino di sistema cambia faccia a ogni browser e non prende il
+   colore del testo: si toglie e se ne disegna uno che li fa entrambi. */
+.piega > summary::-webkit-details-marker {
+  display: none;
+}
+
+.piega > summary::before {
+  content: "▸";
+  font-size: 11px;
+  letter-spacing: 0;
+  transition: transform 120ms ease;
+}
+
+.piega[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.piega > summary:hover,
+.piega[open] > summary {
+  color: var(--fg);
+}
+
+/* Il conto: e' un dato, e a colpo d'occhio e' meta' di quello che si voleva
+   sapere aprendo il blocco. */
+.piega-quanti {
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-soft);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.piega-corpo {
+  display: grid;
+  gap: 8px;
+  padding: 4px 0 12px;
+}
+
+/* Dentro il dock la piega e' una voce fra le chip: prende il loro respiro e
+   sparisce con loro quando il debug e' spento. */
+.dock .piega.solo-debug {
+  display: none;
+}
+
+body.debug .dock .piega.solo-debug {
+  display: block;
+}
+
+.dock .piega-corpo {
+  gap: 8px;
+}
+
 /* Contenuti che stanno nel documento ma si guardano solo ispezionando. A
    differenza di `.dbg` non hanno un aspetto proprio: sono normali, solo
    nascosti. */
@@ -2003,35 +2081,13 @@ body.palco-ridotto .volto .nome {
   max-width: 100%;
 }
 
-/* Il ritratto sta largo quanto l'immagine e non quanto la riga: il bottone
-   dei prompt si appoggia al suo angolo, e su una figura larga tutta la
-   colonna finirebbe a mezzo schermo di distanza da cio' a cui si riferisce. */
-.ritratto {
-  display: inline-block;
-  /* Il gruppo di un personaggio e' una griglia, e un figlio di griglia si
-     allarga fino alla colonna anche se e' inline-block: senza questo il
-     bottone dei prompt finisce all'altro capo della riga. */
-  justify-self: start;
-  /* Larghezza fissa quanto la miniatura: il testo che si apre sotto esce
-     dalla cornice invece di allargarla, cosi' il bottone resta appoggiato
-     all'angolo del ritratto e non si sposta mentre lo si usa. */
-  width: 88px;
-  margin: 6px 0 2px;
-  line-height: 0;
-}
-
-.ritratto img {
+/* L'id sotto l'immagine e' un dato: si vede col debug, come ogni altro id.
+   `line-height` esplicito perche' le figure che lo ospitano hanno interlinea
+   zero — serve a non lasciare spazio sotto l'immagine — e una didascalia alta
+   zero finisce **sopra** la figura invece che sotto. */
+figcaption.ir {
   display: block;
-  width: 88px;
-  height: 88px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-}
-
-/* L'id sotto l'immagine e' un dato: si vede col debug, come ogni altro id. */
-.ritratto figcaption {
-  padding: 4px 12px 6px;
+  padding: 4px 2px 6px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11px;
   line-height: 1.4;
@@ -2097,7 +2153,6 @@ body.palco-ridotto .volto .nome {
 }
 
 /* Le immagini si aprono grandi: qui si guardano, nel transcript si legge. */
-.ritratto img,
 .figura-oggetto img {
   cursor: zoom-in;
 }
@@ -2216,11 +2271,3 @@ body.palco-ridotto .volto .nome {
 
 /* Un'immagine dichiarata nell'IR e non arrivata: si dice, come ogni altro
    buco. Il player non mette segnaposto muti. */
-.ritratto .manca {
-  margin: 0;
-  padding: 14px 12px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--amber);
-  background: var(--bg-soft);
-}

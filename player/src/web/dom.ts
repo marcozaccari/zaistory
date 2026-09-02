@@ -55,6 +55,31 @@ export function staScrivendo(e: Event): boolean {
   return /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable;
 }
 
+/**
+ * Un blocco che nasce chiuso e si apre toccandolo.
+ *
+ * Serve dove il player mostra *elenchi da ispezionare* — la roster, i luoghi,
+ * i flag, gli oggetti, le azioni sotto il debug. Sono cose che vanno esistere
+ * nel documento, perche' senza di loro il debug non direbbe niente, ma che
+ * aperte tutte insieme sono mezzo schermo di elenco fra chi legge e cio' che
+ * stava leggendo. Chiuse, il conto accanto al titolo dice gia' la meta' di
+ * quello che si voleva sapere — «quanti personaggi ha questa storia» — e
+ * l'altra meta' e' a un tocco.
+ *
+ * `<details>` nativo e non un bottone fatto a mano: si apre con la tastiera,
+ * lo screen reader lo annuncia per quello che e', e la ricerca del browser lo
+ * trova anche chiuso. Un finto accordion costa codice per fare peggio.
+ */
+export function piega(titolo: string, quanti?: number): { root: HTMLDetailsElement; corpo: HTMLElement } {
+  const root = el('details', 'piega');
+  const testa = el('summary');
+  testa.append(el('span', 'piega-titolo', titolo));
+  if (quanti !== undefined) testa.append(el('span', 'piega-quanti', String(quanti)));
+  const corpo = el('div', 'piega-corpo');
+  root.append(testa, corpo);
+  return { root, corpo };
+}
+
 /** Coppia chiave/valore in una <dl class="kv">. */
 export function kv(dl: HTMLElement, key: string, value: string): void {
   dl.append(el('dt', undefined, key), el('dd', undefined, value));

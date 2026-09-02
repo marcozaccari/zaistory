@@ -54,7 +54,7 @@ import {
   testoOggetto,
   toneOf,
 } from '../core/index.js';
-import { clear, el, premi, staScrivendo } from './dom.js';
+import { clear, el, piega, premi, staScrivendo } from './dom.js';
 import { doppio, nomeCampo, nomeTipoScena, type Doppio } from './nomi.js';
 import { promptGroup, promptNudi, promptRow, valore, type Media, type PromptRow } from './prompt.js';
 import type { Immagini } from './immagini.js';
@@ -489,8 +489,14 @@ export class WebUI implements PlayerUI {
     // il resto della diagnostica.
     const dettagli = el('div', 'only-debug');
 
+    // Tutti chiusi, e il conto nel titolo. Sono cinque elenchi che aperti
+    // insieme fanno diverse schermate di roster prima ancora che la storia
+    // cominci: chi apre una copertina vuole sapere *che storia e'*, non
+    // leggere l'anagrafica. Il numero accanto al nome risponde gia' alla meta'
+    // della domanda che ci si fa davvero — quanti personaggi, quanti luoghi,
+    // quanti flag — e l'altra meta' e' a un tocco.
     if (st.characters?.length) {
-      dettagli.append(el('h3', undefined, `personaggi (${st.characters.length})`));
+      const { root, corpo } = piega('personaggi', st.characters.length);
       for (const c of st.characters) {
         const box = promptGroup(
           `characters.${c.id}`,
@@ -500,29 +506,32 @@ export class WebUI implements PlayerUI {
           ],
           c.name,
         );
-        if (box) dettagli.append(box);
-        else dettagli.append(el('span', 'gname', `characters.${c.id}`));
+        if (box) corpo.append(box);
+        else corpo.append(el('span', 'gname', `characters.${c.id}`));
       }
+      dettagli.append(root);
     }
 
     // I luoghi: come i personaggi, hanno un prompt che vale da riferimento
     // stabile per ogni inquadratura ambientata li'.
     if (st.places?.length) {
-      dettagli.append(el('h3', undefined, `luoghi (${st.places.length})`));
+      const { root, corpo } = piega('luoghi', st.places.length);
       for (const pl of st.places) {
         const box = promptGroup(`places.${pl.id}`, [['visual_prompt', pl.visual_prompt, 'image']], pl.name);
-        if (box) dettagli.append(box);
+        if (box) corpo.append(box);
       }
+      dettagli.append(root);
     }
 
     // Gli elenchi documentali: non fanno niente in gioco, ma dicono cosa
     // l'autore si aspettava che la storia usasse — e il linter li confronta.
     const list = (title: string, values?: string[]) => {
       if (!values?.length) return;
-      dettagli.append(el('h3', undefined, `${title} (${values.length})`));
+      const { root, corpo } = piega(title, values.length);
       const box = el('div', 'chips');
       for (const v of values) box.append(el('span', 'chip', v));
-      dettagli.append(box);
+      corpo.append(box);
+      dettagli.append(root);
     };
     list('state_flags_schema', st.state_flags_schema);
     list(
@@ -879,6 +888,22 @@ export class WebUI implements PlayerUI {
        */
       const soloUscita = cutscene && p.available.length === 1;
 
+      // L'elenco delle azioni sotto il debug sta dentro un blocco chiuso.
+      // Acceso il debug, quello che si guarda e' quasi sempre il transcript —
+      // cosa ha capito il resolver, quale fallback e' uscito — e una scena con
+      // otto azioni piu' le filtrate copriva mezzo schermo di bottoni sopra la
+      // riga in cui si scrive. Chiuso, il conto nel titolo dice gia' quello
+      // che si controlla al volo («quante ne ha questa scena?») e l'elenco e'
+      // a un tocco. Nasce solo se c'e' qualcosa da metterci dentro.
+      let debug: ReturnType<typeof piega> | undefined;
+      const inDebug = (b: HTMLElement) => {
+        if (!debug) {
+          debug = piega('azioni', 0);
+          debug.root.classList.add('solo-debug');
+        }
+        debug.corpo.append(b);
+      };
+
       p.available.forEach((a, i) => {
         // Un'uscita mostrata (`p.uscite`) non e' una chip di debug: la scena
         // non ha piu' niente da dare, e continuare a chiedere di indovinare la
@@ -906,7 +931,8 @@ export class WebUI implements PlayerUI {
           resolve({ actionId: a.id });
         };
         b.onclick = vai;
-        this.dock.append(b);
+        if (cutscene || uscita) this.dock.append(b);
+        else inDebug(b);
 
         if (soloUscita && this.ascolto.attiva && this.ascolto.impostazioni.avanzamento) {
           this.ascolto.voce.quandoFinisce(() => {
@@ -923,7 +949,16 @@ export class WebUI implements PlayerUI {
         b.disabled = true;
         b.append(document.createTextNode(`× ${h.action.label}`));
         b.append(el('span', 'why', `[${h.action.id}] ${h.reason} · effetto: ${describeEffect(h.action.effect)}`));
-        this.dock.append(b);
+        inDebug(b);
+      }
+
+      if (debug) {
+        // Il conto si scrive alla fine: prima non si sa quante ne entrano,
+        // fra disponibili non mostrate e filtrate da una condizione.
+        const d: ReturnType<typeof piega> = debug;
+        const quanti = d.corpo.childElementCount;
+        d.root.querySelector('.piega-quanti')!.textContent = String(quanti);
+        this.dock.append(d.root);
       }
 
       if (p.terminal) {
@@ -1170,12 +1205,20 @@ export class WebUI implements PlayerUI {
         };
         this.dock.append(b);
       });
-      for (const h of p.hidden) {
-        const b = el('button', 'choice hidden-act');
-        b.disabled = true;
-        b.append(document.createTextNode(`× ${h.choice.text}`));
-        b.append(el('span', 'why', `→ ${h.choice.goto} · ${h.reason}`));
-        this.dock.append(b);
+      // Le battute filtrate: stesso trattamento delle azioni, per la stessa
+      // ragione. Qui l'elenco vero — le scelte — e' l'interfaccia e resta
+      // aperto; quello che si vede solo col debug sta ripiegato sotto.
+      if (p.hidden.length) {
+        const { root, corpo } = piega('battute filtrate', p.hidden.length);
+        root.classList.add('solo-debug');
+        for (const h of p.hidden) {
+          const b = el('button', 'choice hidden-act');
+          b.disabled = true;
+          b.append(document.createTextNode(`× ${h.choice.text}`));
+          b.append(el('span', 'why', `→ ${h.choice.goto} · ${h.reason}`));
+          corpo.append(b);
+        }
+        this.dock.append(root);
       }
     });
   }

@@ -37,9 +37,11 @@
  * Le **inquadrature** — la scena e i suoi beat — non stanno qui dentro: vanno
  * sul palco (`palco.ts`), ferme in cima allo schermo, perche' dicono *dove si
  * e'* e non *cosa e' successo un momento fa*. Qui restano le immagini che sono
- * riferimenti dentro un discorso: il ritratto di un personaggio e l'icona di
- * un oggetto che si sta guardando. Quelle nel flusso ci stanno bene, perche'
- * appartengono alla riga accanto a cui compaiono.
+ * riferimenti dentro un discorso: l'icona di un oggetto che si sta guardando,
+ * e la locandina in testa alla copertina. Quelle nel flusso ci stanno bene,
+ * perche' appartengono alla riga accanto a cui compaiono. Il ritratto di un
+ * personaggio invece e' salito sul palco, dove risponde alla domanda mentre la
+ * si ha, invece che una volta sola all'ingresso in scena.
  *
  * ## A schermo intero
  *
@@ -290,8 +292,8 @@ export class Immagini {
 }
 
 export interface OpzioniFigura {
-  /** La classe della cornice: `ritratto` per l'ancora di un personaggio,
-   * `oggetto` per l'icona di una cosa che si sta guardando. Obbligatoria: da
+  /** La classe della figura: `figura-oggetto` per l'icona di una cosa che si
+   * sta guardando, `locandina` per la copertina della storia. Obbligatoria: da
    * quando le inquadrature vivono sul palco non esiste piu' una figura
    * "normale" a cui ricadere, e un default silenzioso sarebbe una classe che
    * il CSS non conosce. */
