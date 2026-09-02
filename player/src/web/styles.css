@@ -1127,17 +1127,21 @@ body.debug .assets.only-debug {
 
   /* La barra in testa respira. Su telefono ogni pixel che prende lo toglie
      alla storia; qui l'altezza non e' contesa, e una testata schiacciata
-     contro il bordo dello schermo sembra solo stretta. */
+     contro il bordo dello schermo sembra solo stretta.
+
+     Il nome della scena in particolare: e' l'unica cosa che la barra dice a
+     chi gioca, e a dodici pixel sotto un titolo di sedici sembrava una nota
+     sul titolo invece che l'informazione. Adesso e' quasi grande quanto lui. */
   .topbar {
-    padding: 12px 16px;
+    padding: 16px 18px;
   }
 
   .topbar .titles strong {
-    font-size: 16px;
+    font-size: 17px;
   }
 
   .topbar .titles span {
-    font-size: 12px;
+    font-size: 15px;
   }
 }
 
@@ -1908,8 +1912,10 @@ body.palco-ridotto .volto .nome {
 .palco-riga {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 4px 14px;
   padding: 6px 12px;
+  text-align: center;
   border-bottom: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.02);
   font-size: 12px;
@@ -2050,7 +2056,10 @@ body:not(.debug) .palco-riga .tono::first-letter {
   /* In colonna l'altezza non e' contesa: la riga delle coordinate puo'
      respirare invece di stare dentro un quinto della fascia. */
   /* Il tono e' la frase che si legge per prima entrando in una scena, e su
-     schermo largo a dodici pixel era la riga piu' piccola della pagina. */
+     schermo largo a dodici pixel era la riga piu' piccola della pagina. La
+     centratura sta nella regola di base: vale ovunque, perche' ovunque quella
+     riga sta sopra una figura centrata e appoggiata a sinistra sembrava
+     allineata a qualcosa che non c'e'. */
   .palco-riga {
     max-height: calc(6 * 1.4em + 16px);
     padding: 10px 14px;
@@ -2060,16 +2069,17 @@ body:not(.debug) .palco-riga .tono::first-letter {
   /* Le facce crescono: in colonna sul bordo di un telefono ogni pixel di
      larghezza lo toglievano all'inquadratura, qui stanno in una fila sotto la
      figura e la larghezza c'e'. A quarantaquattro pixel una faccia si
-     riconosce solo se la si sa gia'; a centoventotto si guarda in faccia. */
+     riconosce solo se la si sa gia'; a un centinaio si guarda in faccia senza
+     che la fila diventi il soggetto della pagina. */
   .volto {
-    width: 140px;
+    width: 112px;
   }
 
   .volto img,
   .volto .iniziali {
-    width: 128px;
-    height: 128px;
-    font-size: 34px;
+    width: 102px;
+    height: 102px;
+    font-size: 27px;
   }
 
   .volto .nome {
@@ -2079,14 +2089,14 @@ body:not(.debug) .palco-riga .tono::first-letter {
   /* Da ridotto la colonna si stringe, non si abbassa: le facce restano
      leggibili, solo un po' meno ingombranti. */
   body.palco-ridotto .volto {
-    width: 100px;
+    width: 80px;
   }
 
   body.palco-ridotto .volto img,
   body.palco-ridotto .volto .iniziali {
-    width: 88px;
-    height: 88px;
-    font-size: 26px;
+    width: 70px;
+    height: 70px;
+    font-size: 21px;
   }
 
   body.palco-ridotto .volto .nome {
