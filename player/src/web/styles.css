@@ -1811,10 +1811,23 @@ body.tastiera .palco-maniglia {
   color: var(--fg-dim);
 }
 
-/* Chi c'e' nella scena ma non in *questa* inquadratura: spento, non tolto.
-   Una fila che si accorcia e si allunga a ogni beat e' un movimento che chiede
-   attenzione senza dire niente; una faccia che si spegne dice esattamente
-   quello che characters_in_frame dichiara. */
+/* Chi c'e' nella scena ma non in *questa* inquadratura.
+   A chi gioca non si mostra affatto: `scene.characters` elenca chiunque sia
+   presente, anche chi deve ancora entrare, e una faccia spenta in fila annuncia
+   che sta per arrivare qualcuno — nel magazzino di "Metal Head" e' il
+   Cane-robot mentre e' ancora una sagoma nel buio. E' lo stesso spoiler che
+   tiene i `target` dell'aiuto legati alle azioni disponibili invece che alla
+   roster di scena.
+
+   Col debug invece si vede, spenta: li' la domanda e' «cosa dichiara
+   l'inquadratura», e la risposta e' piu' utile se comprende chi ha lasciato
+   fuori. Costa il movimento che una fila di lunghezza fissa evitava — se ne
+   era discusso scegliendo di marcarli invece di toglierli — ma fra un
+   movimento in piu' e un'anticipazione di trama vince il movimento. */
+body:not(.debug) .volto.fuori {
+  display: none;
+}
+
 .volto.fuori {
   opacity: 0.34;
 }

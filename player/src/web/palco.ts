@@ -333,10 +333,16 @@ export class Palco {
   /**
    * Le facce del cast, di lato all'inquadratura.
    *
-   * Tutto il cast della scena e non solo chi e' in campo adesso: chi c'e' in
-   * questa stanza non cambia da un beat all'altro, e una fila che si accorcia
-   * e si allunga a ogni passaggio e' un movimento che chiede attenzione senza
-   * dire niente. Chi e' in campo *adesso* si marca invece di comparire.
+   * Ci sono tutti quelli del cast, marcati: chi l'inquadratura dichiara in
+   * `characters_in_frame` e' acceso, gli altri portano `fuori`. A deciderne la
+   * sorte e' poi il CSS, e non questo codice: a chi gioca i `fuori` non si
+   * mostrano affatto — `scene.characters` elenca anche chi deve ancora
+   * entrare, e una faccia spenta in fila lo annuncia — mentre col debug si
+   * vedono spenti, perche' li' la domanda e' cosa dichiara l'inquadratura.
+   *
+   * Che sia il CSS a scegliere e non il codice non e' un dettaglio: accendere
+   * il debug a partita in corso non ricostruisce il palco, come per tutta
+   * l'altra diagnostica.
    */
   private disegnaCast(): void {
     this.facce.replaceChildren();

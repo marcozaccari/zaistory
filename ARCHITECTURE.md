@@ -831,12 +831,21 @@ locandina invece che su una pagina di testo.
   piccole sul bordo dell'inquadratura: di lato perché non devono rubare altezza
   alla figura, sempre in vista perché «chi c'è in questa stanza» è una domanda
   che ci si fa in continuazione. Ci sono **tutti** i personaggi di
-  `scene.characters` e non solo quelli in campo adesso: una fila che si
-  accorcia e si allunga a ogni beat è un movimento che chiede attenzione senza
-  dire niente. Chi l'inquadratura dichiara in `characters_in_frame` si **marca**
-  invece di comparire — gli altri restano spenti, e un'inquadratura che non
-  dichiara nessuno non spegne nessuno, perché «non dichiarato» non vuol dire
-  «non c'è». Quando le facce lo dicono già, la riga `characters_in_frame`
+  `scene.characters`, marcati: chi l'inquadratura dichiara in
+  `characters_in_frame` è acceso, e un'inquadratura che non dichiara nessuno non
+  spegne nessuno, perché «non dichiarato» non vuol dire «non c'è».
+
+  **Che fine facciano i marcati lo decide il debug.** A chi gioca non si
+  mostrano affatto: `scene.characters` elenca chiunque sia presente, anche chi
+  deve ancora entrare, e una faccia spenta in fila annuncia che sta per
+  arrivare qualcuno — nel magazzino di "Metal Head" è il Cane-robot mentre è
+  ancora una sagoma nel buio. È lo stesso spoiler per cui i `target` dell'aiuto
+  vengono dalle azioni disponibili e non dalla roster di scena. Col debug
+  invece si vedono spenti, perché lì la domanda è cosa *dichiara*
+  l'inquadratura, e la risposta è più utile se comprende chi ha lasciato fuori.
+  Il prezzo è una fila che si accorcia e si allunga — la prima versione li
+  marcava proprio per evitarlo — ma fra un movimento in più e
+  un'anticipazione di trama vince il movimento. Quando le facce lo dicono già, la riga `characters_in_frame`
   sparisce dalla striscia: è la stessa cosa scritta due volte, e la seconda
   occupa lo spazio che serve al tono. Resta invece se qualcuno in campo **non**
   ha una faccia — nominato dall'inquadratura ma assente da `scene.characters`:
