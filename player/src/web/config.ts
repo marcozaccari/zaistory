@@ -26,21 +26,25 @@ import { CONFIG_DEFAULT, type ConfigEmbedder } from './embedder.js';
 export const RESOLVER_VALIDI = ['lessicale', 'ibrido', 'embedding'] as const;
 
 /**
- * I temi di lettura in prova.
+ * Il carattere della prosa.
  *
- * Non e' una preferenza di stile e non e' l'inizio di un tema chiaro: la
- * palette resta una, scura, per la ragione scritta in ARCHITECTURE.md. Sono
- * cinque varianti dello stesso buio piu' il punto di partenza, e servono a
- * capire *perche'* il testo del player si legge come un blocco unico —
- * l'ipotesi che ciascuno isola sta scritta accanto al suo nome in
- * `styles.css` e nella scheda «lettura» del pannello.
+ * Non e' un tema e non e' una palette: quelle sono decise — una sola, scura, e
+ * una gerarchia di voci uscita da una prova a sei varianti di cui in
+ * `styles.css` resta la vincitrice. Questa e' l'unica scelta ancora aperta, e
+ * riguarda due cose sole: la prosa d'autore e il resoconto di quello che il
+ * giocatore ha fatto.
  *
- * E' un elenco provvisorio per costruzione: quando uno vince, i suoi valori
- * salgono nel `:root` e questo campo sparisce insieme agli altri quattro.
+ * Cosa **non** tocca, e non e' una svista: le battute stanno al monospazio
+ * perche' fanno il paio con il graziato della narrazione, e i prompt e
+ * l'interfaccia stanno nel bastoni e nel monospazio dei dati perche' non sono
+ * una scelta di lettura ma il modo in cui il player dice «questo non e' la
+ * storia».
+ *
+ * Nessun font esterno: sono pile di caratteri che i sistemi hanno gia'.
  */
-export const TEMI_VALIDI = ['attuale', 'voce', 'carta', 'copione', 'scena', 'sottotitoli'] as const;
+export const FONT_VALIDI = ['charter', 'pagella', 'schoolbook', 'sistema', 'macchina'] as const;
 
-export type Tema = (typeof TEMI_VALIDI)[number];
+export type Font = (typeof FONT_VALIDI)[number];
 
 export interface ConfigPlayer {
   ascolto: ImpostazioniAscolto;
@@ -48,8 +52,8 @@ export interface ConfigPlayer {
   resolver: string;
   /** Se mostrare le immagini pubblicate della storia, quando ci sono. */
   immagini: boolean;
-  /** Come si distinguono le voci del testo. In prova: vedi `TEMI_VALIDI`. */
-  tema: Tema;
+  /** Il carattere della prosa e del resoconto. Vedi `FONT_VALIDI`. */
+  font: Font;
   debug: boolean;
 }
 
@@ -59,9 +63,7 @@ export function configPlayerDefault(): ConfigPlayer {
     embedder: { ...CONFIG_DEFAULT },
     resolver: 'lessicale',
     immagini: true,
-    // Il default e' il punto di partenza, non il candidato: finche' la prova
-    // non ha un esito, chi apre il player deve vedere quello che vedeva ieri.
-    tema: 'attuale',
+    font: 'charter',
     debug: false,
   };
 }
@@ -103,11 +105,11 @@ export function leggiConfigPlayer(raw: Record<string, unknown> | undefined, base
       ? String(raw.resolver)
       : base.resolver,
     immagini: bool(raw.immagini, base.immagini),
-    // Un tema che non esiste piu' torna a quello corrente in silenzio: e'
-    // esattamente il caso che questo elenco produrra' — cinque di questi sei
-    // nomi sono destinati a sparire, e un codice salvato oggi non deve
-    // rompersi domani.
-    tema: (TEMI_VALIDI as readonly string[]).includes(String(raw.tema)) ? (String(raw.tema) as Tema) : base.tema,
+    // Un carattere che non esiste piu' torna a quello corrente in silenzio.
+    // E' il caso di ogni codice salvato prima che questo elenco cambiasse — e
+    // di tutti quelli salvati mentre al suo posto c'era un campo `tema`, che
+    // qui non si riconosce e quindi non fa danno.
+    font: (FONT_VALIDI as readonly string[]).includes(String(raw.font)) ? (String(raw.font) as Font) : base.font,
     debug: bool(raw.debug, base.debug),
   };
 }
@@ -143,7 +145,7 @@ export function configPlayerSerializzabile(c: ConfigPlayer): Record<string, unkn
     embedder: { ...c.embedder },
     resolver: c.resolver,
     immagini: c.immagini,
-    tema: c.tema,
+    font: c.font,
     debug: c.debug,
   };
 }

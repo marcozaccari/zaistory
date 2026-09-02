@@ -31,6 +31,7 @@ import {
   type DialogueNode,
   type EsitoTurno,
   type NarrationBeat,
+  type DialogueChoice,
   type Outcome,
   type PlayerUI,
   type Resolver,
@@ -790,13 +791,24 @@ export class WebUI implements PlayerUI {
     this.scene = scene;
     this.assets([['voice_override.style_prompt', n.voice_override?.style_prompt, 'voice']]);
 
+    // La battuta che la scelta ha gia' messo in pagina non si stampa una
+    // seconda volta. Si legge e si azzera comunque: se la storia e' andata a un
+    // altro nodo, il segno non deve sopravvivere al turno.
+    const gia = this.gia === nodeId;
+    this.gia = undefined;
+
     // Una didascalia e' prosa: quello che nella sceneggiatura sta fra due
     // battute. Mettergli davanti «Narratore» inventa una voce fuori campo che
     // non c'e' — e in ascolto la fa pure recitare a ogni riga.
-    const p = el('p', isDidascalia(n) ? 'entry line didascalia' : 'entry line');
-    if (!isDidascalia(n)) p.append(el('span', 'speaker', speakerName(this.story, n.speaker)));
-    p.append(document.createTextNode(n.text));
-    this.push(p);
+    if (!gia) {
+      const p = el('p', isDidascalia(n) ? 'entry line didascalia' : 'entry line');
+      if (!isDidascalia(n)) p.append(el('span', 'speaker', speakerName(this.story, n.speaker)));
+      p.append(document.createTextNode(n.text));
+      this.push(p);
+    }
+    // La voce recita comunque: la riga soppressa e' un doppione sulla pagina,
+    // non nella storia, e in ascolto non c'e' nessun doppione da togliere —
+    // quella scelta non si e' sentita, si e' toccata.
     this.ascolto.battuta(n);
 
     const meta = [`nodo ${nodeId}`];
@@ -1226,6 +1238,89 @@ export class WebUI implements PlayerUI {
     this.push(p);
   }
 
+  /**
+   * La battuta che ha scelto il giocatore.
+   *
+   * Ha la forma di tutte le altre — il nome sopra, la riga a passo fisso sotto
+   * — perche' e' la stessa cosa: qualcuno che parla dentro la scena. Prima era
+   * una riga di resoconto con un triangolo davanti, e in mezzo a un dialogo
+   * quella forma diceva «questo l'ha registrato il player» invece di «questo
+   * l'hai detto tu»: chi rileggeva il transcript vedeva il dialogo interrompersi
+   * a ogni sua mossa e ricominciare dopo.
+   *
+   * Una sola differenza, ed e' il nome: azzurro invece che oro. Nella regola
+   * del player l'oro e' quello che ha scritto l'autore e l'azzurro quello che
+   * ha fatto il giocatore, e una battuta scelta e' l'unica riga della storia
+   * che sia tutte e due — parole d'autore, dette perche' qualcuno le ha volute.
+   * Il nome dice chi la dice e il colore dice che e' stata scelta.
+   *
+   * Il nome e' `story.protagonist`, che e' facoltativo nell'IR: dove non c'e',
+   * si torna alla riga di resoconto di prima invece di inventare un nome — il
+   * player non scrive testo che nell'IR non ci sia, e un nome e' testo.
+   *
+   * Quando la scelta porta **dritto al protagonista che dice esattamente quelle
+   * parole**, la battuta del nodo di destinazione non si stampa: sarebbe la
+   * stessa riga due volte a due righe di distanza. A restare e' questa, che
+   * dice una cosa in piu' — non solo che Laura l'ha detto, ma che l'hai scelto
+   * tu. Il nodo continua a fare tutto il resto: applica i suoi effetti, si fa
+   * recitare in ascolto, tiene il suo posto nella traccia. Non sparisce dalla
+   * storia, sparisce dalla pagina, ed e' impaginazione — la stessa specie di
+   * decisione per cui una didascalia non porta «Narratore» davanti.
+   *
+   * Vale **solo** per le battute. Una scelta che e' un gesto o un'intenzione
+   * («Tenere il palmo chiuso e non rispondere») non ha un nodo che la ripeta,
+   * ed e' gia' a posto com'e'.
+   *
+   * **A decidere la forma sono le virgolette, e non e' un'euristica**: sono un
+   * segno d'autore, e lo dice il compilatore («in `choices[].text` il parlato va
+   * sempre tra virgolette basse»). Nel dock una scelta e' un bottone senza
+   * nessuno davanti, e li' le virgolette sono l'unica cosa che distingua le
+   * parole che usciranno di bocca da un gesto («Restare immobile e lasciarsi
+   * avvicinare») o da un'intenzione riassunta («Parlare del cielo»).
+   *
+   * Nel transcript quel lavoro lo fa il nome. Una scelta virgolettata per
+   * intero diventa una battuta col nome sopra, **e le virgolette si tolgono**:
+   * dicevano «queste parole le dirai davvero», e il nome adesso lo dice meglio;
+   * tenerle vorrebbe dire dirlo due volte, per giunta in una forma che nessuna
+   * delle altre battute ha. Non e' il player che riscrive l'autore — non toglie
+   * nessuna parola e non ne aggiunge, cambia il segno di posto: da punteggiatura
+   * a impaginazione. Tutto il resto — gesti, intenzioni, e le scelte miste dove
+   * la battuta e' introdotta da una didascalia — non e' parlato puro e resta la
+   * riga di resoconto di prima, col triangolo: quella forma non pretende di
+   * essere una battuta, ed e' giusto che non lo diventi.
+   */
+  private scelta(scene: Scene, c: DialogueChoice): void {
+    const chi = this.story.protagonist;
+    // Virgolettata **per intero**, e senza altre virgolette dentro: una scelta
+    // mista — didascalia piu' battuta, o due battute — non e' una riga sola
+    // detta da qualcuno, e stamparla come tale sarebbe la stessa bugia che
+    // stampare un gesto sotto un nome.
+    const parlato = /^«([^«»]+)»$/.exec(c.text.trim());
+    if (!chi || !parlato) {
+      this.entry('picked', `▸ ${c.text}`);
+      return;
+    }
+
+    const detto = parlato[1];
+    const p = el('p', 'entry line giocatore');
+    p.append(el('span', 'speaker', speakerName(this.story, chi)));
+    p.append(document.createTextNode(detto));
+    this.push(p);
+
+    // Il nodo dove si va: se e' il protagonista che dice queste stesse parole,
+    // la sua riga e' gia' in pagina. Il confronto e' sul testo esatto — non su
+    // «si somigliano» — perche' due battute vicine e diverse sono due battute,
+    // e sopprimerne una perche' comincia uguale sarebbe perdere della storia.
+    const dest = scene.dialogue_tree?.nodes[c.goto];
+    this.gia = dest && dest.speaker === chi && dest.text.trim() === detto ? c.goto : undefined;
+  }
+
+  /** Il nodo la cui battuta e' gia' in pagina, messa li' dalla scelta che ci
+   * porta. Vale per un nodo solo e per il turno appena cominciato: lo legge il
+   * prossimo `line`, che lo azzera comunque — se la storia va altrove, resta
+   * una variabile spenta e nient'altro. */
+  private gia?: string;
+
   chooseChoice(p: ChoicePrompt): Promise<Command> {
     this.state = p.state;
     this.scene = p.scene;
@@ -1235,7 +1330,8 @@ export class WebUI implements PlayerUI {
       const cmd = this.consumaScript(() => this.script!.chooseChoice(p));
       if (cmd) {
         this.nuovoTurno();
-        this.entry('picked', `▸ ${p.available[cmd.choiceIndex ?? 0]?.text ?? ''}`);
+        const scelta = p.available[cmd.choiceIndex ?? 0];
+        if (scelta) this.scelta(p.scene, scelta);
         return Promise.resolve(cmd);
       }
     }
@@ -1249,7 +1345,7 @@ export class WebUI implements PlayerUI {
         );
         b.onclick = async () => {
           if (!(await this.press(b))) return;
-          this.entry('picked', `▸ ${c.text}`);
+          this.scelta(p.scene, c);
           resolve({ choiceIndex: i });
         };
         this.dock.append(b);

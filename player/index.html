@@ -45,6 +45,13 @@
              cambia guardando quello che cambia, e nasce nascosto — compare
              solo quando c'e' davvero qualcosa da scegliere. -->
         <button class="icon toggle immagini" id="btn-immagini" aria-pressed="true" hidden></button>
+        <!-- Il carattere della prosa: accanto all'interruttore delle immagini
+             perche' e' la stessa specie di scelta — come si guarda la storia —
+             e si prende guardando quello che cambia. Non e' un interruttore ma
+             un giro: a ogni tocco passa al carattere dopo, e la scritta accanto
+             al segno dice sempre a quale si e' arrivati. Il contenuto lo mette
+             `main.ts`: il segno e' un disegno, non un carattere da stampare. -->
+        <button class="icon carattere" id="btn-font"></button>
         <button class="icon toggle" id="btn-debug" aria-pressed="false" title="Modalita' debug">debug</button>
       </header>
 
@@ -89,9 +96,6 @@
           <button data-tab="disco">disco</button>
           <button data-tab="interprete">interprete</button>
           <button data-tab="ascolto">ascolto</button>
-          <!-- Provvisoria: i temi di lettura sono in prova, e questa scheda se
-               ne va insieme ai cinque che perdono. -->
-          <button data-tab="lettura">lettura</button>
           <!-- Le schede di ispezione compaiono solo a debug acceso: chi gioca
                non ha niente da farci, e un elenco di azioni o di flag risolve
                gli enigmi al posto suo. -->

@@ -41,25 +41,69 @@
      parla: chi legge non ha modo di sapere che cosa e' prosa d'autore e che
      cosa e' il segnaposto di un'immagine che non esiste ancora.
 
-     Da qui in giu' ogni registro ha un nome, e le regole citano il nome. Un
-     tema si scrive ridefinendo queste dieci righe, non riscrivendo le regole:
-     e' l'unico modo di provarne cinque senza che il quinto contraddica quello
-     che il secondo aveva sistemato.
+     Da qui in giu' ogni registro ha un nome, e le regole citano il nome.
 
-     I valori qui sotto sono quelli di sempre. Il tema «attuale» non e' un tema
-     — e' questo blocco, cioe' il punto di partenza a cui il confronto deve
-     poter tornare esatto. */
-  --voce-narrazione: var(--fg-dim);
-  --voce-look: var(--fg-dim);
-  --voce-tono: var(--fg-dim);
-  --voce-player: var(--fg-dim);
-  --voce-macchina: var(--fg-dim);
-  --voce-barra: var(--fg-dim);
+     I valori sono usciti da una prova a sei varianti — una per ipotesi: solo il
+     colore, solo il carattere, solo lo spazio, le tre leve insieme, l'opposto di
+     tutte — giocate una contro l'altra sulle stesse scene. Ha vinto quella che
+     le usava tutte e tre, e questo blocco e' lei; le altre cinque non ci sono
+     piu', perche' tenerle vive avrebbe voluto dire riprovarle tutte a ogni
+     modifica. Se un giorno servisse rifare la prova, il modo e' questo: dieci
+     righe ridefinite sotto un attributo del `body`, mai le regole riscritte.
+
+     Il carattere della prosa non e' qui ma piu' in basso, sotto `[data-font]`:
+     e' l'unica di queste scelte ancora aperta. */
+
+  /* --- Chi scrive: caldo. Chi serve la pagina: freddo. ---
+     L'avorio della narrazione non e' il bianco azzurrato dell'interfaccia, e
+     non e' un caso: la prosa non deve confondersi con i bottoni nemmeno con la
+     coda dell'occhio. La macchina — prompt, id, nomi di campo — sta due gradini
+     sotto e vira al freddo, che e' la stessa distinzione detta in tinta. */
+  --voce-narrazione: #b1ac9e;
+  --voce-look: #c4bfb3;
+  --voce-player: #7d8593;
+  --voce-macchina: #828b9b;
+  --voce-barra: #b7b2a7;
+
+  /* Il tono: un oro spento, appena piu' chiaro della prosa — 9,5:1 contro 8:1.
+     E' l'unica riga della pagina che vada letta *prima* delle altre, ed e' la
+     chiave con cui si legge tutto il resto; il margine e' sottile apposta,
+     perche' in una striscia di coordinate grigie basta poco a farla vincere e
+     un giallo pieno la faceva gridare sopra la scena che deve solo introdurre.
+     Piu' giallo e meno saturo di `--amber`, che qui e' il colore degli avvisi
+     del linter e di un'immagine che manca: una chiave di lettura non deve
+     leggersi come un'avvertenza. */
+  --voce-tono: #d1b86a;
+
+  /* Lo stesso oro, spento: i nomi d'autore che il player scrive — chi parla,
+     chi c'e' in campo, cosa si ha in mano. Sotto la prosa, e va bene cosi': un
+     nome sopra una battuta si riconosce con la coda dell'occhio, e piu' e'
+     acceso piu' obbliga a guardarlo a ogni riga di dialogo. */
+  --voce-nome: #bd9d52;
+
+  /* L'azzurro di cio' che ha fatto il giocatore: la frase scritta, l'azione
+     scelta, il nome sopra una battuta che ha scelto lui. Piu' chiaro
+     dell'accento dei bottoni — quello e' un colore da toccare, questo da
+     leggere in mezzo a del testo. */
+  --voce-giocatore: #8bb8fc;
+
+  /* Il corsivo resta. Se ne va solo dove la prosa e' grigia e senza grazie —
+     li' e' il secondo modo di dire «sono una nota a margine» dopo il colore —
+     ma qui la prosa e' a pieno contrasto e ha un graziato con un corsivo vero
+     disegnato, non l'inclinazione meccanica di ripiego di un bastoni. Torna a
+     fare quello che fa in un libro: dire chi sta parlando. */
   --corsivo-narrazione: italic;
-  --prosa-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-  --prosa-corpo: 1em;
-  --prosa-interlinea: 1.55;
-  --prosa-misura: 62ch;
+  --prosa-interlinea: 1.62;
+  --prosa-misura: 56ch;
+
+  /* Il default vale finche' `main.ts` non scrive `data-font` sul body — cioe'
+     per il primo istante di ogni caricamento. Senza, `var(--prosa-font)` non
+     risolverebbe e la prosa comparirebbe nel carattere ereditato per poi
+     cambiare sotto gli occhi. Sono gli stessi valori di `[data-font="charter"]`,
+     ripetuti apposta: un default che rimanda a un altro blocco e' un default che
+     prima o poi non c'e'. */
+  --prosa-font: Charter, "Bitstream Charter", "Iowan Old Style", Georgia, ui-serif, serif;
+  --prosa-corpo: 1.1em;
 }
 
 * {
@@ -390,6 +434,31 @@ body.con-palco .dock {
   color: var(--accent);
 }
 
+/* Il carattere della prosa: un segno e, accanto, il nome di quello corrente.
+   E' l'unico bottone della barra che porti tutti e due, ed e' perche' e' anche
+   l'unico che non sia a due stati — «acceso o spento» si legge da un colore,
+   «quale dei cinque» no. Il nome sta in bastoni e piccolo: e' un'etichetta
+   dell'interfaccia, e scriverlo nel carattere che nomina sarebbe una piccola
+   anteprima che a undici pixel non si vede e che confonderebbe il bottone con
+   la cosa su cui agisce. */
+.icon.carattere {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+  font-size: 11px;
+  color: var(--fg-dim);
+  white-space: nowrap;
+}
+
+.icon.carattere .icona {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  vertical-align: 0;
+  flex: 0 0 auto;
+}
+
 /* Un bottone che porta solo un segno: quadrato, non una pastiglia con dentro
    uno spazio vuoto dove starebbe il testo. */
 .icon.toggle.immagini {
@@ -462,17 +531,25 @@ body.con-palco .dock {
   line-height: var(--prosa-interlinea);
 }
 
+/* Il nome di chi parla: monospazio come la battuta che intesta, e nell'oro dei
+   nomi d'autore. In bastoni sarebbe il terzo carattere della stessa colonna; in
+   azzurro sarebbe dello stesso colore dei bottoni, cioe' dalla parte sbagliata
+   della regola qui sotto. */
 .entry.line .speaker {
   display: block;
-  font-weight: 650;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+  font-weight: 500;
   font-size: 13px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--voce-nome);
 }
 
+/* L'azione appena scelta, nell'azzurro dove sta gia' l'eco di quello che si e'
+   scritto: sono la stessa cosa detta in due modi — cio' che il giocatore ha
+   fatto — e prima erano di due colori diversi senza ragione. */
 .entry.picked {
-  color: var(--green);
+  color: var(--voce-giocatore);
   font-size: 14px;
 }
 
@@ -1884,13 +1961,23 @@ body.tastiera .palco-maniglia {
   letter-spacing: 0.02em;
 }
 
+/* Il nome sotto la faccia e' lo stesso oro del nome sopra la battuta: e' la
+   stessa cosa scritta due volte — chi c'e' — e che una stia nella colonna del
+   palco e l'altra nel transcript e' una questione di dove serve leggerla.
+   Finche' erano di due colori diversi, la fila delle facce sembrava un pezzo di
+   interfaccia con dentro dei ritratti invece del cast della scena.
+
+   Un gradino piu' smorzato dell'altro, pero', e la ragione e' dove sta: qui il
+   fondo e' quello del palco, e a due centimetri c'e' un'inquadratura. Una fila
+   di etichette sature accanto a una figura la sposta — l'occhio le legge come
+   parte della composizione, e sono la didascalia. */
 .volto .nome {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 10px;
-  color: var(--fg-dim);
+  color: #af9760;
 }
 
 /* Chi c'e' nella scena ma non in *questa* inquadratura.
@@ -1940,9 +2027,12 @@ body.palco-ridotto .volto .nome {
   filter: grayscale(1);
 }
 
+/* Toccando una faccia il nome sale al giallo del tono: e' il gesto che ne apre
+   i prompt, e la risposta resta dentro la famiglia della storia invece di
+   virare all'azzurro dei bottoni come faceva prima. */
 .volto:hover .nome,
 .volto:focus-visible .nome {
-  color: var(--fg);
+  color: var(--voce-tono);
 }
 
 /* --- La riga delle coordinate --------------------------------------------- */
@@ -2508,377 +2598,164 @@ body.debug .kv > dd.only-debug {
   display: block;
 }
 
-/* =========================================================== i temi di lettura
-   Cinque modi di distinguere le voci del testo, piu' il punto di partenza.
+/* ============================================================ il carattere
+   Cinque caratteri fra cui scegliere, e si applicano a due cose sole: la prosa
+   d'autore e il resoconto di quello che il giocatore ha fatto.
 
-   Non sono cinque gusti fra cui scegliere e nemmeno l'inizio di un tema chiaro:
-   la palette resta una, scura, per la ragione scritta in ARCHITECTURE.md — un
-   fondo bianco intorno a un'inquadratura cel-shaded cambia come si legge
-   l'immagine. Questi sono **varianti dello stesso buio**, e servono a rispondere
-   a una domanda a cui non si risponde a tavolino: perche' il testo del player si
-   legge come un blocco unico? Perche' e' tutto dello stesso grigio, perche' e'
-   tutto dello stesso carattere, o perche' e' tutto nella stessa colonna senza
-   segni?
+   Tutto il resto resta fermo, e non e' una svista. Le battute stanno al
+   monospazio perche' fanno il paio con il graziato della narrazione — graziato
+   contro passo fisso e' il salto piu' netto della pagina, ed e' quello fra chi
+   racconta e chi parla; cambiarlo insieme alla prosa toglierebbe la coppia. I
+   prompt e l'interfaccia stanno nel bastoni e nel monospazio dei dati: quelli
+   non sono una scelta di lettura ma il modo in cui il player dice «questo non
+   e' la storia», e su di loro non c'e' niente da provare.
 
-   Sono tre ipotesi diverse e ognuna ha un tema che la isola. Provandole
-   mescolate non si impara niente: se «scena» funziona non si sa quale delle tre
-   leve stesse funzionando, ed e' per questo che «voce» non tocca la tipografia
-   e «carta» non tocca i colori.
+   Ogni carattere porta la sua taglia. Un graziato umanista e un monospazio alla
+   stessa misura in `em` non hanno la stessa altezza dell'occhio, e confrontarli
+   cosi' vorrebbe dire confrontare due corpi diversi credendo di confrontare due
+   disegni: la scelta e' fra caratteri, non fra dimensioni.
 
-   Questo blocco e' provvisorio per costruzione. Quando uno vince, i suoi valori
-   salgono nel `:root` e gli altri quattro spariscono da qui insieme alla scheda
-   che li sceglie: tenere cinque temi vivi significa provarli tutti e cinque a
-   ogni modifica, che e' esattamente la ragione per cui di palette ce n'e' una.
+   Le pile nominano prima la migliore versione che ogni sistema ha davvero —
+   quello che c'e' su un Mac, quello che c'e' su Linux, quello che c'e' su un
+   telefono — e finiscono sul generico. Nessun font esterno: la regola del file
+   non cambia per un menu di prova. */
 
-   L'ordine delle sezioni segue quello della scheda «lettura». */
-
-/* --- voce: il colore, piu' una macchina da scrivere per chi parla -----------
-   Ipotesi: il problema e' che cinque registri hanno lo stesso grigio.
-
-   Nato per isolare quell'ipotesi e basta — solo tinte, nessun carattere — e non
-   la isola piu': le battute sono passate al monospazio. Il controllo pulito sul
-   colore adesso non ce l'ha piu' nessuno, e se questo tema vince non si sapra'
-   se ha vinto il caldo/freddo o la macchina da scrivere. Resta comunque l'unico
-   che tiene il bastoni sulla narrazione, che e' cio' che lo distingue da
-   «scena»; e «carta» continua a isolare la tipografia dal lato opposto, con i
-   grigi di sempre.
-
-   Per il resto niente cambia se non le tinte, il corsivo e nessuna misura. Il criterio e'
-   uno solo, e non e' «piu' contrasto»: **l'autore scrive caldo, la macchina
-   scrive freddo**. La narrazione va su un avorio che non e' il bianco azzurrato
-   dell'interfaccia — cosi' la prosa non si confonde con i bottoni nemmeno con la
-   coda dell'occhio — e i prompt scendono sotto il grigio di oggi, perche' fin
-   qui erano alla stessa altezza della storia mentre sono il suo segnaposto.
-
-   Il corsivo se ne va. Sopra una battuta si legge come un'inflessione; su
-   quattro capoversi di fila e' solo piu' faticoso da leggere, ed era il secondo
-   modo in cui la narrazione diceva «sono una nota a margine» dopo il grigio. */
-body[data-tema="voce"] {
-  --voce-narrazione: #e3ded1;
-  --voce-look: #c2bdb2;
-  --voce-tono: #d9a86a;
-  --voce-player: #7d8593;
-  --voce-macchina: #5f6674;
-  --voce-barra: #b7b2a7;
-  --corsivo-narrazione: normal;
+/* Bastoni di sistema: la prosa scritta con lo stesso carattere dei bottoni.
+   E' il termine di paragone — se leggendo non manca niente, il graziato non
+   stava facendo il lavoro che gli si attribuisce. */
+body[data-font="sistema"] {
+  --prosa-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Liberation Sans", sans-serif;
+  --prosa-corpo: 1em;
 }
 
-/* Le battute restano sul bianco freddo di `--fg` — chi parla contro chi
-   racconta — e prendono il monospazio.
-
-   Non e' il monospazio della macchina, che qui e' sceso a `--voce-macchina` e
-   sta due gradini piu' in basso: e' quello di una trascrizione, dove ogni
-   battuta occupa la sua riga a passo fisso e il nome sopra e' un'intestazione.
-   La differenza con i prompt la fanno il contrasto e la taglia, non la
-   famiglia, ed e' l'unico punto del player in cui il monospazio non vuol dire
-   «questo e' un dato».
-
-   Una misura sotto il tondo: un monospazio alla stessa taglia di un bastoni
-   sembra sempre un corpo piu' grosso, e la battuta finirebbe per gridare sopra
-   la narrazione invece di starle accanto. */
-body[data-tema="voce"] .entry.line:not(.didascalia) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.93em;
-  line-height: 1.62;
-}
-
-/* La didascalia dentro un dialogo resta fuori: e' prosa, non battuta — non c'e'
-   nessuno a dirla — e il file lo dice gia' dandole la voce della narrazione.
-   Portarla al monospazio sarebbe metterle in bocca un parlante che non ha. */
-
-body[data-tema="voce"] .entry.line .speaker {
-  color: var(--accent);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-weight: 500;
-}
-
-/* --- carta: solo il carattere ----------------------------------------------
-   Ipotesi: il problema e' che tutto e' scritto con lo stesso carattere.
-
-   I colori sono quelli di oggi, grigi compresi: se leggendo questo tema la
-   pagina si scioglie lo stesso, la leva era la tipografia e non il contrasto.
-
-   Un graziato di sistema per tutto cio' che ha scritto l'autore — narrazione,
-   battute, `look`, descrizioni — e il bastoni resta all'interfaccia, il
-   monospazio alla macchina. Nessun font esterno: sono le tre famiglie che ogni
-   sistema ha gia', e la regola del file non cambia per un esperimento.
-
-   Corpo e interlinea salgono insieme al carattere: un graziato a sedici pixel e
-   interlinea 1.55 e' un graziato compresso, cioe' il peggio dei due mondi. */
-body[data-tema="carta"] {
-  --prosa-font: ui-serif, Georgia, "Times New Roman", "Liberation Serif", serif;
-  --prosa-corpo: 1.13em;
-  --prosa-interlinea: 1.68;
-  --prosa-misura: 58ch;
-}
-
-/* --- copione: solo lo spazio -----------------------------------------------
-   Ipotesi: il problema e' che i registri stanno tutti nella stessa colonna,
-   senza un segno che dica dove comincia l'uno e finisce l'altro.
-
-   Colori e caratteri sono quelli di oggi — grigi compresi — e cambia solo dove
-   le cose stanno. Nessun marcatore porta parole: il player non scrive testo che
-   non sia nell'IR, e vale anche per una `content` di CSS. Solo filetti,
-   rientri e segni di punteggiatura, che e' quello che il file gia' fa per le
-   parentesi degli id e per il trattino dei nomi.
-
-   La narrazione prende il filetto pieno: e' il corpo della storia. Il `look` ne
-   prende uno punteggiato — stessa materia, ma richiesta e senza conseguenze. I
-   prompt rientrano di un altro passo e si appoggiano a un fondo appena diverso:
-   restano leggibili, ma smettono di stare sulla stessa verticale della prosa. */
-body[data-tema="copione"] .entry.narration,
-body[data-tema="copione"] .entry.beat {
-  padding-left: 12px;
-  border-left: 2px solid color-mix(in srgb, var(--fg-dim) 45%, transparent);
-}
-
-body[data-tema="copione"] .entry.look {
-  padding-left: 12px;
-  border-left: 2px dotted color-mix(in srgb, var(--fg-dim) 45%, transparent);
-}
-
-/* Le battute non prendono filetto: ce l'hanno gia', ed e' il nome di chi parla
-   sopra la riga. Rientrano e basta, cosi' stanno sulla stessa verticale della
-   narrazione invece che un passo piu' a sinistra. */
-body[data-tema="copione"] .entry.line {
-  padding-left: 14px;
-}
-
-/* Il player quando commenta: rientrato al contrario, perche' non e' la storia
-   che continua ma qualcuno che la interrompe. */
-body[data-tema="copione"] .entry.notice,
-body[data-tema="copione"] .entry.picked {
-  padding-left: 12px;
-  border-left: 2px solid transparent;
-}
-
-/* I prompt: un fondo appena staccato e un rientro in piu'. E' la fascia della
-   macchina, e si vede che e' una fascia. */
-body[data-tema="copione"] .scene .prompt,
-body[data-tema="copione"] .cover .prompt,
-body[data-tema="copione"] .assets .prompt {
-  padding-left: 26px;
-  background: rgba(255, 255, 255, 0.018);
-}
-
-/* Il tono si stacca dalla striscia con un fondo, non con un filetto: la riga e'
-   centrata e larga quanto lo schermo, e un filetto a sinistra finirebbe contro
-   il bordo del telefono — dove sembra un errore di margine e non un segno. */
-body[data-tema="copione"] .palco-riga .tono {
-  padding: 3px 12px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.035);
-}
-
-/* --- scena: le tre leve insieme --------------------------------------------
-   Non e' «tutti e tre i temi accesi»: e' quello che resta di ciascuno dopo
-   avergli tolto quello che l'altro faceva meglio.
-
-   Dal colore prende la separazione caldo/freddo, ma non piu' la discesa della
-   macchina: i due estremi si sono avvicinati, e la scala qui non e' aperta come
-   in «voce» — 8:1 la prosa, 5,4:1 i prompt, dove prima erano 14:1 e 3:1. Il
-   caldo contro il freddo resta a distinguerli, il contrasto quasi no, e sono il
-   carattere e il filetto a portare il peso. Nemmeno lo spegnimento del corsivo
-   arriva da «voce»: quello serviva a un bastoni grigio, e qui non c'e' ne' l'uno
-   ne' l'altro. Dalla tipografia il graziato per la prosa —
-   che e' anche cio' che rende di nuovo sensato il corsivo, perche' un graziato
-   ne ha uno disegnato — e da «voce» il monospazio per le battute, che qui pero'
-   non e' una variazione ma un secondo carattere pieno: graziato contro passo
-   fisso e' il salto piu' netto che il tema faccia, ed e' quello fra chi racconta
-   e chi parla. Dallo spazio i due filetti della prosa d'autore, pieno
-   alla narrazione e punteggiato al `look`; gli altri restano fuori, perche' sui
-   prompt e sulle diagnostiche il colore e il carattere dicono gia' tutto, e
-   quattro filetti in colonna sono una gabbia.
-
-   E' il candidato: gli altri cinque esistono per dire se e' meglio di ognuno
-   di loro preso da solo. */
-body[data-tema="scena"] {
-  --voce-narrazione: #b1ac9e;
-  --voce-look: #c4bfb3;
-  /* Un oro spento, non un giallo: appena piu' chiaro della prosa che gli sta
-     sotto — 9,5:1 contro 8:1 — perche' e' l'unica riga della pagina che vada
-     letta *prima* delle altre, ed e' la chiave con cui si legge tutto il resto.
-     Il margine e' sottile apposta: in una striscia di coordinate grigie basta
-     poco a farla vincere, e un giallo pieno la faceva gridare sopra la scena
-     che deve solo introdurre. Piu' giallo e meno saturo di `--amber`, che qui
-     e' il colore degli avvisi del linter e di un'immagine che manca: una chiave
-     di lettura non deve leggersi come un'avvertenza. */
-  --voce-tono: #d1b86a;
-  --voce-player: #7d8593;
-  --voce-macchina: #828b9b;
-  --voce-barra: #b7b2a7;
-  /* Il corsivo resta, al contrario di «voce». Li' se ne andava perche' su
-     quattro capoversi di bastoni era solo piu' faticoso da leggere, e perche'
-     era il secondo modo in cui la narrazione diceva «sono una nota a margine»
-     dopo il grigio. Qui il grigio non c'e' piu' — la prosa e' a pieno contrasto
-     — e il corsivo smette di essere una scusa per farsi leggere di meno: torna
-     a fare quello che fa in un libro, cioe' dire chi sta parlando. Un graziato
-     poi ha un vero corsivo disegnato, non l'inclinazione meccanica che il
-     bastoni prende per ripiego: e' la differenza fra le due voci che si stanno
-     separando, ed e' l'unico tema in cui c'e' il carattere per portarla. */
-  --corsivo-narrazione: italic;
-  --prosa-font: ui-serif, Georgia, "Times New Roman", "Liberation Serif", serif;
+/* Charter: graziato da schermo, contrasto basso e forme larghe. Disegnato per
+   essere letto male — su carta scadente, a corpo piccolo — che e' la stessa
+   condizione di un telefono in mano di sera. */
+body[data-font="charter"] {
+  --prosa-font: Charter, "Bitstream Charter", "Iowan Old Style", Georgia, ui-serif, serif;
   --prosa-corpo: 1.1em;
-  --prosa-interlinea: 1.62;
-  --prosa-misura: 56ch;
 }
 
-body[data-tema="scena"] .entry.narration,
-body[data-tema="scena"] .entry.beat {
-  padding-left: 14px;
-  border-left: 2px solid color-mix(in srgb, var(--voce-tono) 30%, transparent);
+/* Palatino: graziato umanista, nato dalla penna larga. Le curve non sono
+   simmetriche e il corsivo e' calligrafico — la voce piu' «raccontata» delle
+   cinque, ed e' anche quella che regge peggio i testi molto lunghi. */
+body[data-font="pagella"] {
+  --prosa-font: Palatino, "Palatino Linotype", "URW Palladio L", "TeX Gyre Pagella", "Book Antiqua", ui-serif, serif;
+  --prosa-corpo: 1.12em;
 }
 
-/* Il `look` prende lo stesso filetto, punteggiato. E' la stessa materia della
-   narrazione — prosa d'autore — ma richiesta e senza conseguenze sulla partita,
-   e qui quella differenza la dicono due cose insieme: il filetto punteggiato
-   invece che pieno, e il tondo invece del corsivo. La seconda non e' di questo
-   tema — `.entry.look` sta in tondo da sempre, e la ragione e' scritta li':
-   nel transcript il corsivo segnala «e' successo qualcosa», e guardarsi intorno
-   non fa succedere niente. Col corsivo tornato ai beat quella regola si vede,
-   invece di restare una riga di CSS senza effetto.
-   Stesso colore e stesso rientro dei beat, cosi' la risposta si incolonna con la
-   narrazione invece di sembrare un blocco di un'altra specie. */
-body[data-tema="scena"] .entry.look {
-  padding-left: 14px;
-  border-left: 2px dotted color-mix(in srgb, var(--voce-tono) 30%, transparent);
+/* Century Schoolbook: graziato da libro di lettura, aperto e senza carattere
+   proprio. Fatto per non farsi notare mentre si legge, che secondo chi l'ha
+   disegnato e' la sola cosa che un testo lungo chieda. */
+body[data-font="schoolbook"] {
+  --prosa-font: "Century Schoolbook", "Century Schoolbook L", "TeX Gyre Schola", "New Century Schoolbook", "Noto Serif", ui-serif, serif;
+  --prosa-corpo: 1.06em;
 }
 
-/* Le battute al monospazio, come in «voce» — ma qui la differenza si sente di
-   piu': la narrazione e' in graziato, e fra chi racconta e chi parla ci sono
-   due caratteri che non si somigliano per niente invece di due tinte vicine.
-   E' la coppia di un copione battuto a macchina con le didascalie composte, e
-   nel transcript vuol dire che si riconosce chi sta parlando senza leggere il
-   nome.
+/* Monospazio: tutto il transcript a passo fisso, battute comprese. Qui la
+   coppia graziato/monospazio sparisce e la pagina torna a una voce sola —
+   e' l'unica di queste cinque che cambi la struttura e non solo il disegno,
+   e sta nell'elenco per questo. */
+body[data-font="macchina"] {
+  --prosa-font: ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+  --prosa-corpo: 0.92em;
+}
 
-   Il nome sopra segue la battuta: finche' la battuta era in graziato, tenerlo
-   in bastoni lo distingueva come etichetta; adesso sarebbe il terzo carattere
-   della stessa colonna, e a passo fisso fa quello che fa in una trascrizione —
-   intestare la riga. */
-body[data-tema="scena"] .entry.line:not(.didascalia) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+/* --- Cio' che il carattere non tocca --------------------------------------
+
+   Le battute e il nome di chi le dice: monospazio, sempre. Una misura sotto il
+   tondo, perche' un passo fisso alla stessa taglia sembra un corpo piu' grosso
+   e la battuta finirebbe per gridare sopra la narrazione invece di starle
+   accanto. La didascalia dentro un dialogo resta fuori: e' prosa e non battuta
+   — non c'e' nessuno a dirla — e segue il carattere scelto insieme al resto
+   della prosa. */
+.entry.line:not(.didascalia) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
   font-size: 0.9em;
   line-height: 1.6;
 }
 
-/* Da qui in giu' vale una regola sola, ed e' la cosa piu' importante che questo
-   tema abbia trovato: **l'azzurro e' l'interfaccia, il giallo e' la storia.**
-
-   Fin qui i due si mescolavano senza un criterio — il nome di chi parla era
-   nell'azzurro dell'accento, cioe' dello stesso colore dei bottoni e del testo
-   che si scrive nel dock, mentre l'azione appena scelta era verde, un terzo
-   colore che non voleva dire niente in particolare. Un giocatore che scorre il
-   transcript non ha modo di sapere quali colori appartengono al racconto e
-   quali alla macchina che glielo serve.
-
-   Adesso: chi parla e il tono della scena sono in giallo, che e' anche la
-   tinta calda delle inquadrature — il colore della storia e' lo stesso nel
-   testo e nell'immagine. Tutto cio' che invece e' interfaccia sta nell'azzurro:
-   la frase che si e' scritta, l'azione che si e' scelta, i bottoni del dock.
-   Il verde sparisce dal transcript: era il residuo di una terza famiglia. */
-
-/* Il nome di chi parla: dello stesso oro del tono, ma spento — e sotto tutti e
-   due i registri che accompagna. Nella colonna adesso si scende in ordine: il
-   tono per primo (9,5:1), la prosa (8:1), e il nome per ultimo (7,1:1), che e'
-   giusto perche' e' l'unica delle tre cose che non si legge davvero. Un nome
-   sopra una battuta si riconosce con la coda dell'occhio — sono due sillabe in
-   maiuscolo, sempre nello stesso posto — e piu' e' acceso piu' obbliga a
-   guardarlo ogni volta che ricompare, cioe' a ogni riga di dialogo. */
-body[data-tema="scena"] .entry.line .speaker {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-weight: 500;
-  color: #bd9d52;
+/* Col monospazio scelto per la prosa la distinzione fra chi racconta e chi
+   parla non puo' piu' stare nel carattere, e passa tutta al corsivo e al
+   filetto: la battuta e' l'unica cosa in tondo e senza filetto della colonna.
+   Torna anche la stessa taglia — due monospazi di misura diversa nella stessa
+   pagina si leggono come un errore, non come due registri. */
+body[data-font="macchina"] .entry.line:not(.didascalia) {
+  font-size: var(--prosa-corpo);
 }
 
-/* L'azione appena scelta passa dal verde all'azzurro, dov'e' gia' l'eco di
-   quello che si e' scritto: sono la stessa cosa detta in due modi — cio' che il
-   giocatore ha fatto — e prima erano di due colori diversi senza ragione. */
-body[data-tema="scena"] .entry.picked {
-  color: #8bb8fc;
+/* --- I due filetti della prosa d'autore -----------------------------------
+   Pieno alla narrazione, punteggiato al `look`: e' la stessa materia — prosa
+   d'autore — ma la seconda e' richiesta e non fa succedere niente. La stessa
+   differenza la dice anche il tondo contro il corsivo, e due segni per una
+   distinzione sola non sono uno di troppo: il filetto si vede scorrendo, il
+   corsivo leggendo. */
+.entry.narration,
+.entry.beat {
+  padding-left: 14px;
+  border-left: 2px solid color-mix(in srgb, var(--voce-tono) 30%, transparent);
 }
 
-/* I nomi sotto le facce sono lo stesso oro dei nomi sopra le battute, ed e' la
-   stessa cosa scritta due volte: chi c'e'. Che uno stia nella colonna del palco
-   e l'altro nel transcript e' una questione di dove serve leggerlo, non di che
-   cosa sia — e finche' erano di due colori diversi, la fila delle facce sembrava
-   un pezzo di interfaccia con dentro dei ritratti invece del cast della scena.
-
-   Un gradino piu' smorzato dell'altro, pero', e la ragione e' dove stanno: qui
-   il fondo e' quello del palco, e a due centimetri c'e' un'inquadratura. Una
-   fila di etichette sature accanto a una figura la sposta — l'occhio le legge
-   come parte della composizione, e sono la didascalia. Il tono, che sta sopra
-   la figura e non di fianco, puo' permettersi il giallo pieno. */
-body[data-tema="scena"] .volto .nome {
-  color: #af9760;
+.entry.look {
+  padding-left: 14px;
+  border-left: 2px dotted color-mix(in srgb, var(--voce-tono) 30%, transparent);
 }
 
-body[data-tema="scena"] .volto:hover .nome,
-body[data-tema="scena"] .volto:focus-visible .nome {
-  color: var(--voce-tono);
+/* --- L'azzurro e' l'interfaccia, il giallo e' la storia --------------------
+   La regola piu' importante uscita dalla prova, e vale ovunque il player
+   scriva qualcosa.
+
+   Prima i due si mescolavano senza criterio: il nome di chi parla stava
+   nell'azzurro dell'accento, cioe' dello stesso colore dei bottoni e di quello
+   che si scrive nel dock, mentre l'azione appena scelta era verde — una terza
+   famiglia che non voleva dire niente. Chi scorreva il transcript non aveva
+   modo di sapere quali colori appartenessero al racconto e quali alla macchina
+   che glielo serve.
+
+   Adesso: in giallo tutto cio' che ha scritto l'autore — il tono, chi parla,
+   chi c'e' in campo, cosa si ha in mano — che e' anche la tinta calda delle
+   inquadrature, cosi' il colore della storia e' lo stesso nel testo e
+   nell'immagine. In azzurro tutto cio' che ha fatto il giocatore e tutto cio'
+   che si tocca: la frase scritta, l'azione scelta, i bottoni. Il verde e'
+   sparito dal transcript; resta nel pannello, dove segna una condizione vera. */
+
+/* La prosa e il resoconto di quello che si e' fatto seguono il carattere
+   scelto: sono le due cose su cui c'e' ancora qualcosa da decidere.
+
+   La battuta scelta no: quella e' una battuta, e le battute stanno a passo
+   fisso. Che sia stata scelta lo dice il nome sopra, non il carattere. */
+.entry.picked,
+.entry.echo {
+  font-family: var(--prosa-font);
 }
 
-/* I nomi degli oggetti in mano: giallo pieno, quello del tono. E' il terzo posto
-   in cui il player scrive un nome d'autore — dopo chi parla e chi c'e' in campo
-   — e adesso i tre si somigliano invece di essere tre colori diversi in tre
-   schermate diverse.
-
-   Solo il testo, pero'. Il bordo e il fondo che si accende sotto il dito
-   restano nell'azzurro: quelli non dicono *che cosa* e' scritto nella pastiglia
-   ma che si puo' toccare, ed e' esattamente cio' che la regola chiama
-   interfaccia. Il nome appartiene alla storia, il bersaglio intorno al player.
-   La pastiglia senza `description` prende lo stesso giallo pur non essendo
-   toccabile: e' lo stesso oggetto, e a distinguerli e' gia' il bordo spento. */
-body[data-tema="scena"] .chips.inventario .chip {
-  color: var(--voce-tono);
+/* La battuta del giocatore: identica a tutte le altre — nome sopra, riga
+   bianca a passo fisso sotto — tranne il nome, che e' azzurro invece che oro.
+   E' l'unica riga della storia che stia da tutte e due le parti della regola:
+   parole d'autore, dette perche' qualcuno le ha volute. Il nome dice chi
+   parla, il colore dice che e' stata scelta. */
+.entry.line.giocatore .speaker {
+  color: var(--voce-giocatore);
 }
 
 /* Il tono prende il peso di un titolo: e' la prima cosa che si legge entrando
-   in una scena, ed e' l'unica riga del palco che sia insieme in graziato, in
-   corsivo e colorata. Le altre due sono coordinate — dove siamo, chi c'e' — e
-   restano nel grigio della macchina, che e' esattamente il loro registro. */
-body[data-tema="scena"] .palco-riga .tono {
+   in una scena, ed e' l'unica riga del palco che sia insieme nel carattere
+   della prosa, in corsivo e colorata. Le altre due sono coordinate — dove
+   siamo, chi c'e' — e restano nel grigio della macchina, che e' il loro
+   registro. */
+.palco-riga .tono {
   font-family: var(--prosa-font);
   font-size: 1.08em;
   font-style: italic;
 }
 
-/* --- sottotitoli: l'immagine e' il soggetto --------------------------------
-   L'ipotesi opposta a tutte le altre: il problema non e' distinguere i
-   registri, e' che ce ne sono troppi in vista mentre si guarda un'inquadratura.
-
-   Qui la prosa e' grossa, chiara e su misura corta come una didascalia di film,
-   e tutto quello che non e' la storia scende fino al limite della leggibilita'.
-   Serve a rispondere a una domanda che gli altri quattro non fanno: con le
-   immagini accese, quanto testo si sta davvero leggendo? Se questo tema non fa
-   perdere niente, allora il player mostra piu' cose di quante ne servano. */
-body[data-tema="sottotitoli"] {
-  --voce-narrazione: #f0f1f5;
-  --voce-look: #d5d8e0;
-  --voce-tono: #cf9d63;
-  --voce-player: #6b7280;
-  --voce-macchina: #4a505c;
-  --voce-barra: #8d95a3;
-  --corsivo-narrazione: normal;
-  --prosa-corpo: 1.2em;
-  --prosa-interlinea: 1.5;
-  --prosa-misura: 46ch;
-}
-
-/* Lo spazio fra un blocco e l'altro cresce: con poche parole per riga, il vuoto
-   e' l'unico modo che resta per dire dove finisce una cosa e comincia l'altra. */
-body[data-tema="sottotitoli"] .entry {
-  margin-bottom: 22px;
-}
-
-/* La macchina si ritira anche di taglia, non solo di tinta: qui non e' materiale
-   da leggere, e' una cosa che si va a cercare. */
-body[data-tema="sottotitoli"] .scene .prompt,
-body[data-tema="sottotitoli"] .cover .prompt,
-body[data-tema="sottotitoli"] .assets .prompt,
-body[data-tema="sottotitoli"] .palco-tavola {
-  font-size: 12px;
-}
-
-body[data-tema="sottotitoli"] .prompt .label {
-  font-size: 10px;
+/* I nomi degli oggetti in mano: giallo pieno, quello del tono. Solo il testo,
+   pero'. Il bordo e il fondo che si accende sotto il dito restano nell'azzurro:
+   quelli non dicono *che cosa* e' scritto nella pastiglia ma che si puo'
+   toccare, ed e' esattamente cio' che la regola chiama interfaccia. Il nome
+   appartiene alla storia, il bersaglio intorno al player. La pastiglia senza
+   `description` prende lo stesso giallo pur non essendo toccabile: e' lo stesso
+   oggetto, e a distinguerli basta il bordo spento. */
+.chips.inventario .chip {
+  color: var(--voce-tono);
 }

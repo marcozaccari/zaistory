@@ -43,6 +43,12 @@ const SEGNI: Record<string, string[]> = {
   place: ['M12 21c4.7-4.6 7-8.1 7-10.5a7 7 0 10-14 0C5 12.9 7.3 16.4 12 21z', 'M12 12.5a2.2 2.2 0 100-4.4 2.2 2.2 0 000 4.4z'],
   // Tre cursori: lo stile globale, cioe' le regolazioni che valgono ovunque.
   style: ['M4 7h10', 'M18 7h2', 'M4 17h4', 'M12 17h8', 'M16 5v4', 'M8 15v4'],
+  // Una A con la sua traversa e la riga di base: il carattere. E' l'unico segno
+  // di questo repertorio che non stia accanto a un'etichetta ma dentro un
+  // bottone, e per questo e' anche l'unico che debba reggersi da solo — una A
+  // e' la lettera con cui si mostra un carattere da sempre, e non ha bisogno
+  // di essere spiegata.
+  font: ['M4 17L11 4l7 13', 'M7 13h8', 'M4 21h16'],
 };
 
 export type NomeIcona = keyof typeof SEGNI;

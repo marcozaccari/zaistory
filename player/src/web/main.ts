@@ -29,7 +29,8 @@ import {
 import {
   configPlayerSerializzabile,
   leggiConfigPlayer,
-  type Tema,
+  FONT_VALIDI,
+  type Font,
   type ConfigPlayer,
 } from './config.js';
 import { CONFIG_DEFAULT, caricaEmbedder, type ConfigEmbedder } from './embedder.js';
@@ -67,24 +68,52 @@ let session: Session | undefined;
 let tab: Tab = 'principale';
 
 /**
- * Il tema di lettura in prova.
+ * Il carattere della prosa.
  *
  * Vive qui e non in `webui.ts` per la stessa ragione delle immagini: non e'
- * stato di gioco, e ricominciare non deve costringere a riscegliere come si
- * legge. Chi lo applica e' il CSS, da un attributo sul `body` — cosi' vale
- * anche per il transcript gia' scorso, come per il debug.
+ * stato di gioco, e ricominciare non deve costringere a risceglierlo. Chi lo
+ * applica e' il CSS, da un attributo sul `body` — cosi' vale anche per il
+ * transcript gia' scorso, come per il debug.
  */
-let tema: Tema = 'attuale';
+let font: Font = 'charter';
 
-function impostaTema(t: Tema): void {
-  tema = t;
-  document.body.dataset.tema = t;
+function impostaFont(f: Font): void {
+  font = f;
+  document.body.dataset.font = f;
+  aggiornaFontUI();
 }
 
-// Scritto subito, prima di qualsiasi partita: senza, l'attributo comparirebbe
-// solo alla prima scelta, e un tema ripreso dal deposito arriverebbe dopo che
-// la copertina si e' gia' disegnata.
-impostaTema(tema);
+/**
+ * Il bottone del carattere: un segno e, accanto, il nome di quello corrente.
+ *
+ * Il nome sta scritto sul bottone e non dietro un menu perche' e' meta' di cio'
+ * che serve sapere — l'altra meta' e' come si legge, e quella e' sotto, nella
+ * pagina. Cinque nomi in un giro sono pochi abbastanza da non aver bisogno di
+ * un elenco: si tocca finche' non si e' contenti, e a ogni tocco cambia sotto
+ * gli occhi la stessa scena che si stava leggendo. Un elenco avrebbe chiesto un
+ * pannello, e un pannello su telefono copre esattamente cio' su cui si sta
+ * decidendo.
+ */
+function aggiornaFontUI(): void {
+  clear(btnFont);
+  const segno = icona('font');
+  if (segno) btnFont.append(segno);
+  btnFont.append(el('span', 'nome', font));
+  const etichetta = `carattere: ${font}`;
+  btnFont.setAttribute('aria-label', etichetta);
+  btnFont.title = etichetta;
+}
+
+// L'attributo si scrive subito, prima di qualsiasi partita: senza, comparirebbe
+// solo alla prima scelta, e un carattere ripreso dal deposito arriverebbe dopo
+// che la copertina si e' gia' disegnata. Il `:root` porta comunque lo stesso
+// default, cosi' nemmeno il primo istante resta senza.
+//
+// Qui **solo** l'attributo, e non `impostaFont`: quella disegna anche il
+// bottone, che a questo punto del file non esiste ancora — e' un `const` piu'
+// in basso, quindi leggerlo da qui non darebbe `undefined` ma un errore secco
+// che ferma il modulo. Il bottone si disegna da se' appena e' dichiarato.
+document.body.dataset.font = font;
 
 /**
  * Il backend attivo. Parte dal lessicale: deterministico, nessuna rete,
@@ -243,17 +272,6 @@ function panelContext(s: Session): PanelContext {
       }
     },
     immagini,
-    tema,
-    // Come l'interruttore delle immagini, e per la stessa ragione: un tema di
-    // lettura si giudica sul testo della storia, e dentro un pannello che su
-    // telefono copre tutto lo schermo si sceglieva alla cieca. Il menu si
-    // chiude, la scena di prima torna in vista, e li' si vede se si legge
-    // meglio. La partita non si tocca: e' una scelta su come si guarda.
-    onTema: (t) => {
-      impostaTema(t);
-      closePanel();
-      refresh();
-    },
     ascolto,
     onAscolto: (imp) => {
       impAscolto = imp;
@@ -295,7 +313,7 @@ function configCorrente(): ConfigPlayer {
     embedder: configEmbedder,
     resolver: nomeResolver,
     immagini: immagini.accese,
-    tema,
+    font,
     debug: document.body.classList.contains('debug'),
   };
 }
@@ -304,7 +322,7 @@ function applicaConfig(c: ConfigPlayer): void {
   impAscolto = c.ascolto;
   ascolto.configura(impAscolto);
   immagini.imposta(c.immagini);
-  impostaTema(c.tema);
+  impostaFont(c.font);
   palco.rileggi();
   aggiornaImmaginiUI();
   configEmbedder = c.embedder;
@@ -489,6 +507,20 @@ function selezionaTab(nome: Tab): void {
 for (const b of document.querySelectorAll<HTMLButtonElement>('#tabs button')) {
   b.addEventListener('click', () => selezionaTab(b.dataset.tab as Tab));
 }
+
+// Il carattere della prosa: non un interruttore ma un giro. Non ha una copia
+// nel piede del menu come gli altri due, ed e' voluto — quelli sono a due stati
+// e da chiusi non si sa in quale siano, questo il suo stato ce l'ha scritto
+// sopra, e in barra si legge senza aprire niente.
+const btnFont = $<HTMLButtonElement>('#btn-font');
+btnFont.addEventListener('click', () => {
+  const i = FONT_VALIDI.indexOf(font);
+  impostaFont(FONT_VALIDI[(i + 1) % FONT_VALIDI.length]);
+  // La partita non si tocca: e' una scelta su come si guarda, e finisce nelle
+  // impostazioni insieme alle immagini e alla voce.
+  refresh();
+});
+aggiornaFontUI();
 
 // Due bottoni per lo stesso interruttore: quello in barra, sempre a portata di
 // pollice mentre si gioca, e quello in fondo al menu accanto alla versione —
