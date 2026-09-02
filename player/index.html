@@ -44,11 +44,18 @@
         <button class="icon toggle" id="btn-debug" aria-pressed="false" title="Modalita' debug">debug</button>
       </header>
 
-      <!-- Il palco: l'inquadratura corrente, ferma. Il testo le scorre sotto,
-           e la maniglia la riduce quando serve piu' spazio per leggere. Nasce
-           chiuso: senza immagini pubblicate non compare mai. -->
+      <!-- Il palco: l'inquadratura corrente e cio' che la descrive, fermi in
+           alto. La figura (o, senza immagini, il suo prompt), le facce del
+           cast di lato, e sotto la riga che dice sempre il tono, dove siamo e
+           chi e' in campo. Il testo scorre sotto, e la maniglia riduce la
+           figura quando serve piu' spazio per leggere. Nasce chiuso: sulla
+           copertina non c'e' ancora nessuna scena. -->
       <section id="palco" class="palco" hidden aria-label="l'inquadratura corrente">
-        <div class="palco-tela" id="palco-tela"></div>
+        <div class="palco-corpo">
+          <div class="palco-tela" id="palco-tela"></div>
+          <div class="palco-cast" id="palco-cast" aria-label="chi c'e' in questa scena"></div>
+        </div>
+        <div class="palco-riga" id="palco-riga"></div>
         <button
           class="palco-maniglia"
           id="palco-maniglia"

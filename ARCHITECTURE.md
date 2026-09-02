@@ -750,42 +750,82 @@ che la storia ha già pubblicato, quando ci sono.
   un'inquadratura e la sua descrizione l'occhio sceglie l'immagine, il testo
   diventa mezzo schermo di rumore e la scena si legge peggio che senza. È la
   stessa forma della modalità ascolto: la storia ha tre uscite e si scelgono.
-- **L'inquadratura corrente sta ferma, il racconto le scorre sotto.** È il
-  *palco* (`player/src/web/palco.ts`): un pannello solo, in cima allo schermo
-  su telefono e a sinistra su schermo largo, dove **ogni immagine nuova prende
-  il posto della precedente**. Finché le figure scorrevano dentro il transcript
-  come il testo, quella di adesso usciva dallo schermo appena si scorreva per
-  leggere la riga che la commenta, e chi gioca faceva avanti e indietro fra il
-  testo e la sua illustrazione: due movimenti per una cosa sola. Un
-  nodo **senza `image` non svuota il palco** — resta l'ultima inquadratura, che
-  è esattamente ciò che succede quando la macchina non si è spostata.
+- **Lo schermo è diviso per senso: in alto ciò che si guarda, in basso ciò che
+  si ascolta e si legge.** È la regola da cui discende tutto il resto del
+  layout. In cima sta il *palco* (`player/src/web/palco.ts`) con l'inquadratura,
+  il tono della scena, dove siamo, chi è in campo e le facce del cast; sotto
+  scorre il transcript con la narrazione, il parlato, l'ambiente sonoro, gli
+  effetti e i timbri di narrazione. Prima i due gruppi erano mescolati nel
+  flusso, e la conseguenza si vedeva al sesto beat di una cutscene: le
+  coordinate dell'inquadratura — dove sono, chi ho davanti, con che tono si
+  legge questa scena — erano scorse via da un pezzo, proprio mentre si stava
+  guardando la figura che le illustra.
+- **L'inquadratura corrente sta ferma, il racconto le scorre sotto.** Il palco
+  è un pannello solo, in cima allo schermo su telefono e a sinistra su schermo
+  largo, dove **ogni immagine nuova prende il posto della precedente**. Finché
+  le figure scorrevano dentro il transcript come il testo, quella di adesso
+  usciva dallo schermo appena si scorreva per leggere la riga che la commenta,
+  e chi gioca faceva avanti e indietro fra il testo e la sua illustrazione: due
+  movimenti per una cosa sola. Un nodo **senza `image` non svuota il palco** —
+  resta l'ultima inquadratura, che è esattamente ciò che succede quando la
+  macchina non si è spostata.
+- **Il tono non si nasconde mai.** È l'unico campo del palco che non descrive
+  un'immagine: è la chiave con cui si legge tutto quello che scorre sotto, vale
+  per la scena intera, e sta in chiaro nella riga sotto la figura anche quando
+  il palco è ridotto. Dietro un tocco, nove volte su dieci non lo si
+  guarderebbe.
+- **I prompt stanno dentro la cosa che descrivono.** Non su una riga a parte
+  del transcript, dove scorrerebbero via: si aprono **allargando** ciò a cui
+  appartengono — l'inquadratura si tocca e si apre grande con `image_prompt` e
+  l'aspetto del luogo per didascalia, una faccia si tocca e si apre con il
+  `visual_prompt` e il timbro di *quel* personaggio. È il collegamento più
+  corto possibile fra un asset e il testo che lo produce, ed è anche il momento
+  in cui serve: guardandolo grande si decide se va bene. Nel transcript i campi
+  visivi restano nel documento sotto `only-debug`, perché quello resta il
+  registro di ciò che l'IR dichiara e chi ispeziona deve poter tornare sul beat
+  di sei tocchi fa; chi gioca li ha già davanti, e leggerli due volte sarebbe
+  mezzo schermo di rumore.
+- **Il cast di scena sta di lato, tutto, per tutta la scena.** Miniature
+  piccole sul bordo dell'inquadratura: di lato perché non devono rubare altezza
+  alla figura, sempre in vista perché «chi c'è in questa stanza» è una domanda
+  che ci si fa in continuazione. Ci sono **tutti** i personaggi di
+  `scene.characters` e non solo quelli in campo adesso: una fila che si
+  accorcia e si allunga a ogni beat è un movimento che chiede attenzione senza
+  dire niente. Chi l'inquadratura dichiara in `characters_in_frame` si **marca**
+  invece di comparire — gli altri restano spenti, e un'inquadratura che non
+  dichiara nessuno non spegne nessuno, perché «non dichiarato» non vuol dire
+  «non c'è».
+- **Il palco c'è sempre, anche senza immagini.** In solo testo — immagini spente
+  o storia non ancora illustrata — al posto della figura c'è l'`image_prompt` e
+  al posto delle facce le iniziali, e allargarle porta comunque ai prompt. Un
+  posto solo dove guardare in tutte e due le modalità: la testa dello schermo
+  dice sempre dove siamo, cambia solo se lo dica con un'immagine o con le
+  parole che la produrranno.
 - **Il palco si riduce, non si chiude.** Una maniglia sotto l'immagine (a
   fianco, in due colonne) alterna fra due sole misure: grande e ridotta. Tre
   stati o un trascinamento ad altezza libera sono un'altra cosa da imparare per
   una decisione che ha due risposte — «voglio vederla» e «adesso no». Chiuderla
   del tutto è già possibile e si chiama spegnere le immagini: è una scelta
-  sulla storia, e sta nel pannello.
-- **Nel flusso restano solo le immagini che non sono inquadrature**: il
-  ritratto di un personaggio e l'icona di un oggetto che si sta guardando.
-  Quelle sono riferimenti dentro un discorso, e il posto di un riferimento è
-  accanto alla riga di cui parla.
-- **I prompt restano nel transcript, collassati.** Il palco non se li porta
-  dietro: sparirebbero con l'immagine al beat successivo, e il transcript è il
-  resoconto di ciò che l'IR dichiara — l'unico posto dove si torna a vedere con
-  che prompt è stato costruito il beat di sei tocchi fa. Le righe che
-  l'immagine mostra già — l'`image_prompt`, il `visual_prompt` del luogo, dove
-  siamo e chi è in campo — si mostrano quindi su una riga sola che si apre
-  toccandola, lo stesso trattamento del luogo ereditato da un beat e per la
-  stessa ragione: ci sono, ma non sono la notizia. L'ambiente sonoro, gli
-  effetti e i timbri restano in chiaro, perché un'immagine non li mostra e
-  quelli sono l'unico modo di sapere che esistono.
-- **Toccare un'immagine la apre a schermo intero**, con il suo prompt come
-  didascalia — ed è lì, e non nel transcript, che si legge il prompt di ciò che
-  si sta guardando adesso. Le due misure servono a due cose diverse: sul palco
-  l'immagine accompagna la lettura, a schermo intero si guarda, ed è
-  guardandola che si decide se quell'asset va bene. Si chiude con un tocco
-  ovunque, non solo con la ✕: su un telefono un popup che si chiude in un
-  punto solo è il modo più rapido di far uscire qualcuno dalla partita.
+  sulla storia, e sta nel pannello. Il collasso stringe la figura e le facce,
+  **non** la riga del tono.
+- **Nel flusso restano solo le immagini che non sono inquadrature**: l'icona di
+  un oggetto che si sta guardando. È un riferimento dentro un discorso, e il
+  posto di un riferimento è accanto alla riga di cui parla. Il ritratto di un
+  personaggio non è più nel flusso: è salito sul palco, dove risponde alla
+  domanda mentre la si ha, invece che una volta sola all'ingresso in scena.
+- **Toccare un'immagine la apre a schermo intero**, con i suoi prompt come
+  didascalia. Le due misure servono a due cose diverse: sul palco l'immagine
+  accompagna la lettura, a schermo intero si guarda, ed è guardandola che si
+  decide se quell'asset va bene. Si chiude con un tocco ovunque, non solo con
+  la ✕: su un telefono un popup che si chiude in un punto solo è il modo più
+  rapido di far uscire qualcuno dalla partita.
+- **Ogni fascia dell'app dichiara la sua riga di griglia** (`grid-template-areas`),
+  invece di lasciarlo decidere all'ordine dei figli. Non è pedanteria: il palco
+  nasce `hidden`, un figlio nascosto non occupa la sua riga, e le tre fasce
+  rimaste scalavano di una — il dock finiva nella riga elastica, cioè sotto il
+  bordo dello schermo. Si vedeva dove faceva più male: sulla copertina, dove il
+  dock contiene il **solo bottone che fa cominciare la storia**, e su un
+  telefono in verticale bastava un riepilogo lungo a spingerlo fuori.
 - **L'icona di un oggetto compare quando lo si guarda**, per entrambe le
   strade che portano alla stessa risposta d'autore — «guarda il walkie» scritto
   e il tocco sulla chip dell'inventario. Non nell'elenco delle chip: lì
@@ -796,11 +836,13 @@ che la storia ha già pubblicato, quando ci sono.
   resolver, con la possibilità di arrivare a una risposta diversa da quella che
   si sta mostrando.
 - **Due layout, non due prodotti.** Su telefono in verticale il palco è una
-  fascia in alto (42dvh, 19 da ridotto) e sotto scorrono testo e azioni; da 900
+  fascia in alto (46dvh, 25 da ridotto) con le facce in colonna sul bordo, e
+  sotto scorrono testo e azioni; da 900
   px di larghezza — o su uno schermo basso e largo, cioè un telefono coricato —
   la stessa fascia diventa la colonna di sinistra a tutta altezza e la storia
-  si legge a destra. Cambia solo se il collasso restituisca altezza o
-  larghezza: il palco resta uno e la maniglia resta una. L'immagine non viene
+  si legge a destra, e le facce passano in fila sotto la figura invece che di
+  lato — lì la larghezza è contesa e l'altezza no. Cambia solo se il collasso
+  restituisca altezza o larghezza: il palco resta uno e la maniglia resta una. L'immagine non viene
   **mai ritagliata** per riempire il palco (`contain`, bande sul fondo del
   pannello): ritagliare butterebbe via proprio la parte che nello studio si è
   scelta guardando.
@@ -813,8 +855,10 @@ che la storia ha già pubblicato, quando ci sono.
   niente è peggio della sua assenza — chi lo trova lo prova, non vede succedere
   nulla e conclude che il player è rotto.
 - **Il ritratto di un personaggio è la sua ancora**, la stessa immagine che il
-  generatore allega alle inquadrature. Mostrarla accanto ai suoi prompt è il
-  modo di accorgersi che due scene stanno usando due Laura diverse.
+  generatore allega alle inquadrature. È la faccia che sta di lato
+  all'inquadratura, e allargarla mostra l'aspetto e il timbro con cui è stata
+  costruita: è il modo di accorgersi che due scene stanno usando due Laura
+  diverse.
 - **In terminale l'id si stampa come gli altri campi.** Non si vede
   l'immagine, ma si vede se c'è: un beat con `image_prompt` e senza `image` è
   un beat che nel player web resterebbe senza inquadratura, e il playthrough di

@@ -226,11 +226,12 @@ function panelContext(s: Session): PanelContext {
       // cio' che e' successo, non una vista che si ridisegna. L'interruttore
       // vale da qui in avanti, come tutto il resto.
       //
-      // Il palco no: quello non e' un resoconto ma una vista, ed e' l'unica
-      // cosa che l'interruttore deve poter spegnere subito — un pannello di
-      // immagini che resta acceso dopo aver detto "niente immagini" e' un
-      // interruttore che non fa niente.
-      if (!v) palco.svuota();
+      // Il palco no: quello non e' un resoconto ma una vista, e obbedisce
+      // subito — un pannello che resta come prima dopo aver detto "niente
+      // immagini" e' un interruttore che sembra rotto. Non sparisce pero': in
+      // solo testo la testa dello schermo continua a dire dove siamo, con i
+      // prompt al posto della figura e le iniziali al posto delle facce.
+      palco.rileggi();
     },
     ascolto,
     onAscolto: (imp) => {
@@ -281,7 +282,7 @@ function applicaConfig(c: ConfigPlayer): void {
   impAscolto = c.ascolto;
   ascolto.configura(impAscolto);
   immagini.imposta(c.immagini);
-  if (!c.immagini) palco.svuota();
+  palco.rileggi();
   configEmbedder = c.embedder;
   impostaDebug(c.debug);
   // Il backend si riaccende solo se cambia davvero: `scegliResolver` esce

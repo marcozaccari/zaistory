@@ -2,10 +2,26 @@
  * La faccia web dell'engine: transcript scorrevole + chip da toccare.
  *
  * Come il terminale, non contiene logica narrativa: mostra quello che l'engine
- * gli passa e raccoglie tocchi. I campi destinati alla generazione asset non
- * vengono ne' generati ne' riprodotti, ma si vedono sempre come testo: sono il
- * segnaposto dell'immagine, del suono e della voce che un giorno ci saranno.
- * Il debug aggiunge la diagnostica intorno.
+ * gli passa e raccoglie tocchi. Il debug aggiunge la diagnostica intorno.
+ *
+ * ## Cosa sta in alto e cosa sta in basso
+ *
+ * Lo schermo e' diviso per **senso**, non per tipo di dato. In cima sta il
+ * palco (`palco.ts`) con tutto cio' che si guarda: l'inquadratura, il tono
+ * della scena, dove siamo, chi e' in campo, le facce del cast. I prompt visivi
+ * non lo accompagnano su una riga a parte — si aprono allargando la cosa che
+ * descrivono, l'immagine o la faccia.
+ *
+ * Qui sotto, nel transcript, resta cio' che si ascolta e si legge: la
+ * narrazione, il parlato, l'ambiente sonoro, gli effetti, i timbri di
+ * narrazione. Un'immagine non li mostra, e quelli sono l'unico modo di sapere
+ * che esistono.
+ *
+ * I campi visivi non spariscono dal resoconto: restano nel documento dentro un
+ * blocco `only-debug`, perche' il transcript e' anche il registro di cio' che
+ * l'IR dichiara e chi ispeziona deve poter tornare sul beat di sei tocchi fa.
+ * Chi gioca invece li ha gia' davanti, in cima, e leggerli due volte sarebbe
+ * mezzo schermo di rumore.
  */
 
 import {
@@ -39,16 +55,13 @@ import {
   toneOf,
 } from '../core/index.js';
 import { clear, el, premi, staScrivendo } from './dom.js';
-import { icona, iconaGruppo } from './icone.js';
 import { doppio, nomeCampo, nomeTipoScena, type Doppio } from './nomi.js';
+import { promptGroup, promptNudi, promptRow, valore, type Media, type PromptRow } from './prompt.js';
 import type { Immagini } from './immagini.js';
-import type { Palco } from './palco.js';
+import type { Inquadratura, Palco, Volto } from './palco.js';
 import type { Ascolto } from './ascolto.js';
 
-/** Il tipo di risorsa che un prompt descrive: da' il colore all'etichetta, e
- * basta scorrere il transcript per vedere dove mancano le immagini o i suoni.
- * `none` e' per i parametri che non sono prompt di generazione (il tono). */
-export type Media = 'image' | 'sound' | 'voice' | 'music' | 'none';
+export type { Media };
 
 /** Il riferimento a un luogo, con il suo nome quando ne ha uno: l'id serve a
  * ritrovarlo nel JSON, il nome a sapere di cosa si parla. */
@@ -66,143 +79,6 @@ function luogoDoppio(id: string | undefined, nome?: string): Doppio | undefined 
 function inFrameDoppio(story: Story, ids?: string[]): Doppio | undefined {
   if (!ids?.length) return undefined;
   return doppio(ids.map((id) => findCharacter(story, id)?.name ?? id).join(', '), ids.join(', '));
-}
-
-/**
- * [nome del campo nell'IR, valore, tipo di media, ereditato?]
- *
- * `ereditato` marca un valore gia' scritto per intero piu' su nel transcript —
- * perche' l'inquadratura lo riceve dalla scena, o perche' e' la stessa
- * descrizione gia' letta a una comparsa precedente: si mostra su una riga sola,
- * troncata, e si apre toccandola.
- */
-type PromptRow = [string, string | Doppio | undefined, Media, boolean?];
-
-/**
- * L'etichetta del campo: il segno del suo tipo di media, poi il nome — quello
- * per chi legge e quello che il campo ha nell'IR, tutti e due nel documento.
- * Quale dei due si veda lo decide il debug, dal CSS.
- */
-function etichetta(label: string, media: Media): HTMLElement {
-  const span = el('span', 'label');
-  const segno = icona(media);
-  if (segno) span.append(segno);
-  span.append(el('span', 'umano', nomeCampo(label)), el('span', 'ir', label));
-  return span;
-}
-
-/** Un valore che porta un id dentro: il nome a chi legge, l'id a chi ispeziona. */
-function valore(v: string | Doppio): Node {
-  if (typeof v === 'string') return document.createTextNode(v);
-  const span = el('span');
-  span.append(el('span', 'umano', v.umano), el('span', 'ir', v.ir));
-  return span;
-}
-
-function promptRow([label, value, media, ereditato]: [string, string | Doppio, Media, boolean?]): HTMLElement {
-  if (!ereditato) {
-    const row = el('span', `prompt m-${media}`);
-    row.append(etichetta(label, media), valore(value));
-    return row;
-  }
-
-  // Ereditato: il testo per intero e' gia' passato piu' su, ma un blocco che non
-  // contiene tutti i suoi ingredienti costringe a risalire per sapere cosa
-  // verra' generato. Una riga sola lo ricorda senza allagare la pagina — il
-  // paragrafo di un luogo tornerebbe fino a cinque volte nella stessa scena, e
-  // quello di un protagonista una volta per ogni scena in cui compare.
-  const row = el('button', `prompt m-${media} ereditato`);
-  row.type = 'button';
-  row.setAttribute('aria-expanded', 'false');
-  // Il triangolino sta prima del testo: in coda se lo mangerebbe il
-  // troncamento, cioe' sparirebbe esattamente quando serve a dire "c'e'
-  // dell'altro, toccami".
-  const caret = el('span', 'caret', '▸');
-  row.append(etichetta(label, media), caret, valore(value));
-  row.onclick = () => {
-    const aperto = row.classList.toggle('aperto');
-    row.setAttribute('aria-expanded', String(aperto));
-    caret.textContent = aperto ? '▾' : '▸';
-  };
-  return row;
-}
-
-/**
- * Un gruppo di prompt che parlano della stessa entita' — `background`,
- * `characters.<id>`, `global_style`.
- *
- * Il prefisso comune sale nell'intestazione e sparisce dalle righe: si legge
- * "background: immagine, ambiente" invece di ripetere `background.` due volte,
- * e a colpo d'occhio si vede quali risorse ha *quella* entita' e quali le
- * mancano. `who` e' il nome umano, quando l'entita' ne ha uno.
- */
-/**
- * La riga dice qualcosa che l'immagine, se c'e', mostra gia'.
- *
- * Sono i prompt di immagine e i due riferimenti che dicono *cosa* c'e' dentro
- * l'inquadratura — dove siamo e chi si vede. Il suono e la voce no, perche'
- * quelli un'immagine non li mostra e restano l'unico modo di sapere che ci
- * sono.
- */
-function mostrataDallImmagine([label, , media]: PromptRow): boolean {
-  return media === 'image' || label === 'characters_in_frame' || label === 'place';
-}
-
-/**
- * La stessa riga, ridotta a un capo che si apre.
- *
- * Quando l'inquadratura e' finita sul palco il suo testo non sparisce dal
- * transcript: sparirebbe con lei alla figura dopo, e il transcript e' il
- * resoconto di cio' che l'IR dichiara — l'unico posto dove si torna a vedere
- * con che prompt e' stato costruito il beat di sei tocchi fa. Si mostra pero'
- * su una riga sola, con il triangolino, perche' *adesso* quello che dice si
- * sta gia' guardando in cima allo schermo. E' lo stesso trattamento del luogo
- * ereditato da un beat, per la stessa ragione: c'e', ma non e' la notizia.
- */
-function collassaSeMostrata(r: PromptRow): PromptRow {
-  return mostrataDallImmagine(r) ? [r[0], r[1], r[2], true] : r;
-}
-
-/**
- * Le righe di prompt senza intestazione, pronte a stare dentro una figura.
- *
- * Niente nome del gruppo qui: il gruppo e' l'immagine che le contiene, e
- * ripetere «ambientazione» sopra a un'inquadratura che si sta guardando non
- * aggiunge niente.
- */
-function promptNudi(rows: PromptRow[]): HTMLElement | undefined {
-  const present = rows.filter((r): r is [string, string | Doppio, Media, boolean?] => !!r[1]);
-  if (present.length === 0) return undefined;
-  const box = el('div');
-  for (const row of present) box.append(promptRow(row));
-  return box;
-}
-
-function promptGroup(
-  name: string,
-  rows: PromptRow[],
-  who?: string,
-  /** Un elemento da tenere nel gruppo anche quando non c'e' nessuna riga: il
-   * ritratto di un personaggio senza altri campi resterebbe altrimenti senza
-   * il nome di chi e'. */
-  extra?: HTMLElement,
-): HTMLElement | undefined {
-  const present = rows.filter((r): r is [string, string | Doppio, Media, boolean?] => !!r[1]);
-  if (present.length === 0 && !extra) return undefined;
-  const box = el('div', 'group');
-  const head = el('span', 'gname');
-  const segno = iconaGruppo(name);
-  if (segno) head.append(segno);
-  // A chi legge, un gruppo che ha un nome proprio si chiama con quello: il
-  // personaggio e' «Mark», non `characters.mark` seguito da Mark.
-  head.append(el('span', 'umano', who ?? nomeCampo(name)));
-  const ir = el('span', 'ir', name);
-  if (who) ir.append(el('span', 'who', who));
-  head.append(ir);
-  box.append(head);
-  for (const row of present) box.append(promptRow(row));
-  if (extra) box.append(extra);
-  return box;
 }
 
 export interface WebUIOptions {
@@ -294,15 +170,6 @@ export class WebUI implements PlayerUI {
    * tutti", che e' esattamente quello che si vuole sapere restando fermi. */
   beatCorrente?: number;
   beatTotali?: number;
-  /** I prompt di personaggio gia' letti per intero in una scena precedente,
-   * per chiave `id NUL campo NUL testo` — un separatore che non puo'
-   * comparire dentro nessuno dei tre pezzi. Serve a collassarli dalla comparsa
-   * successiva in poi, come si fa con il luogo ereditato da un beat. Il testo
-   * sta nella chiave apposta: un override locale e' un valore diverso da quello
-   * della roster, quindi torna a mostrarsi per intero la prima volta che compare
-   * — che e' esattamente quando va letto. Vive quanto la partita: `main.start`
-   * costruisce una WebUI nuova a ogni ricominciata. */
-  private personaggiVisti = new Set<string>();
 
   constructor(o: WebUIOptions) {
     this.story = o.story;
@@ -456,10 +323,27 @@ export class WebUI implements PlayerUI {
    * nome vorrebbe dire sbagliare il giorno che lo schema cambia.
    */
   private assets(rows: PromptRow[]): void {
-    const present = rows.filter((r): r is [string, string | Doppio, Media, boolean?] => !!r[1]);
-    if (present.length === 0) return;
-    const box = el('div', 'assets');
-    for (const row of present) box.append(promptRow(row));
+    const box = promptNudi(rows);
+    if (!box) return;
+    box.className = 'assets';
+    this.push(box);
+  }
+
+  /**
+   * Gli stessi prompt, ma solo per chi ispeziona.
+   *
+   * E' dove finiscono i campi visivi di un'inquadratura — dove siamo, chi e'
+   * in campo, l'`image_prompt`, l'aspetto del luogo. Chi gioca li ha gia'
+   * davanti sul palco, in cima allo schermo, e ripeterli qui sotto sarebbe
+   * mezzo schermo di rumore fra una riga di narrazione e l'altra; ma il
+   * transcript resta il registro di cio' che l'IR dichiara, ed e' l'unico
+   * posto dove si torna a vedere con che prompt e' stato costruito il beat di
+   * sei tocchi fa. Nel documento ci sono sempre, si vedono col debug.
+   */
+  private assetsIspezione(rows: PromptRow[]): void {
+    const box = promptNudi(rows);
+    if (!box) return;
+    box.className = 'assets only-debug';
     this.push(box);
   }
 
@@ -595,9 +479,13 @@ export class WebUI implements PlayerUI {
     this.beatTotali = scene.narration?.length || undefined;
     this.beatCorrente = undefined;
 
-    // La scheda porta i parametri descrittivi della scena con il nome che
-    // hanno nell'IR: sono quelli che si guardano leggendo, senza dover aprire
-    // il pannello. Struttura, id e conteggi restano invece nel blocco di debug.
+    // Tutto cio' che si guarda sale in cima: l'inquadratura, il tono, dove
+    // siamo, chi e' in campo, e le facce del cast di lato. Restano li' fermi
+    // mentre il racconto scorre sotto, che e' l'unico modo perche' rispondano
+    // ancora a «dove sono e chi ho davanti» al sesto beat di una cutscene.
+    this.palco.scena(this.inquadratura(scene), this.cast(scene));
+
+    // Qui sotto resta la scheda della scena: il titolo, e cio' che si ascolta.
     // Titolo e id sono due cose diverse e devono sembrarlo: il titolo e' per
     // chi legge, l'id e' per chi cerca nel JSON. Tenerli in due elementi
     // separati e' anche l'unico modo perche' l'id non erediti il maiuscoletto
@@ -615,74 +503,33 @@ export class WebUI implements PlayerUI {
     head.append(name, tipo);
     card.append(head);
 
-    const param = (label: string, value: string | undefined, media: Media) => {
-      if (!value) return;
-      card.append(promptRow([label, value, media, false]));
-    };
-    // L'ordine e' quello con cui si costruisce l'immagine mentale scendendo:
-    // il tono della scena, poi l'inquadratura — dove siamo, chi ci sta dentro,
-    // cosa si vede — e infine chi c'e', con il suo aspetto e la sua voce.
-    // Dentro l'inquadratura vale la stessa regola: il luogo e il cast sono
-    // riferimenti ereditati, l'image_prompt e' l'unica cosa che vale solo qui.
-    // E' anche l'impaginazione dei beat, che sono inquadrature come questa.
-    param('scene_tone', scene.scene_tone || toneOf(this.story, scene), 'none');
-
-    const luogo = scene.background?.place ? findPlace(this.story, scene.background.place) : undefined;
-    const righeBg: PromptRow[] = [
-      ['place', luogoDoppio(scene.background?.place, luogo?.name), 'none'],
-      [`places.${scene.background?.place}.visual_prompt`, luogo?.visual_prompt, 'image'],
-      ['characters_in_frame', inFrameDoppio(this.story, scene.background?.characters_in_frame), 'none'],
-      ['image_prompt', scene.background?.image_prompt, 'image'],
-      ['ambient_sound_prompt', scene.background?.ambient_sound_prompt, 'sound'],
-    ];
-    // L'inquadratura sale sul palco: entrando in una stanza la prima cosa e'
-    // vedere dove si e', e da li' non si muove piu' mentre si legge. Quando ci
-    // arriva davvero, le righe che descrivono cio' che si sta guardando
-    // restano nella scheda ma chiuse; il suono e i timbri no, perche'
-    // un'immagine non li mostra.
-    const inScena = this.palco.mostra(scene.background?.image, scene.background?.image_prompt);
-    const bg = promptGroup('background', inScena ? righeBg.map(collassaSeMostrata) : righeBg);
-    if (bg) card.append(bg);
-
-    // Aspetto e voce di chi e' in scena: l'override locale se c'e', altrimenti
-    // quello della roster globale. Marcare quale dei due si sta guardando conta
-    // — una scena che sovrascrive la voce di un personaggio e' una scelta, e
-    // una svista si vede solo se si distingue dall'ereditata.
-    for (const c of scene.characters ?? []) {
-      const g = findCharacter(this.story, c.id);
-      const aspetto = c.visual_prompt ?? g?.visual_prompt;
-      const voce = c.voice?.style_prompt ?? g?.voice?.style_prompt;
-      const rigaAspetto: PromptRow = [
-        `visual_prompt${c.visual_prompt ? ' (override)' : ''}`,
-        aspetto,
-        'image',
-        this.giaLetto(c.id, 'visual_prompt', aspetto),
-      ];
-      const rigaVoce: PromptRow = [
-        `voice.style_prompt${c.voice?.style_prompt ? ' (override)' : ''}`,
-        voce,
-        'voice',
-        this.giaLetto(c.id, 'voice.style_prompt', voce),
-      ];
-      // Il ritratto e' l'ancora: la stessa immagine che il generatore allega
-      // alle inquadrature per tenere la faccia uguale. Vederla qui e' il modo
-      // di accorgersi che due scene stanno usando due Laura diverse — e quando
-      // c'e', l'aspetto scritto sta dentro di lei.
-      const ritratto = this.immagini.figura(c.image ?? g?.image, aspetto, {
-        classe: 'ritratto',
-        prompt: promptNudi([rigaAspetto]),
-      });
-      const box = promptGroup(
-        `characters.${c.id}`,
-        ritratto ? [rigaVoce] : [rigaAspetto, rigaVoce],
-        g?.name,
-        ritratto,
-      );
-      if (box) card.append(box);
+    // L'ambiente sonoro sta con la scena e non sul palco: un'immagine non lo
+    // mostra, e questa riga e' l'unico modo di sapere che quella stanza ha un
+    // suono di fondo.
+    // Riga nuda e non gruppo: `background` conteneva anche i campi visivi, che
+    // adesso stanno in cima — un'intestazione «ambientazione» sopra un campo
+    // solo nomina un gruppo che non c'e' piu'.
+    if (scene.background?.ambient_sound_prompt) {
+      card.append(promptRow(['ambient_sound_prompt', scene.background.ambient_sound_prompt, 'sound']));
     }
 
     this.push(card);
     this.ascolto.scena(scene);
+
+    // I campi visivi restano nel registro, per chi ispeziona: chi gioca li ha
+    // gia' davanti in cima allo schermo.
+    const luogo = scene.background?.place ? findPlace(this.story, scene.background.place) : undefined;
+    this.assetsIspezione([
+      ['scene_tone', scene.scene_tone || toneOf(this.story, scene), 'none'],
+      ['place', luogoDoppio(scene.background?.place, luogo?.name), 'none'],
+      [`places.${scene.background?.place}.visual_prompt`, luogo?.visual_prompt, 'image'],
+      ['characters_in_frame', inFrameDoppio(this.story, scene.background?.characters_in_frame), 'none'],
+      ['image_prompt', scene.background?.image_prompt, 'image'],
+      ...this.cast(scene).flatMap((v): PromptRow[] => [
+        [`characters.${v.id}.visual_prompt${v.aspettoOverride ? ' (override)' : ''}`, v.aspetto, 'image'],
+        [`characters.${v.id}.voice.style_prompt${v.voceOverride ? ' (override)' : ''}`, v.voce, 'voice'],
+      ]),
+    ]);
 
     const meta = [
       `narrazione: ${(scene.narration ?? []).length} beat`,
@@ -699,47 +546,92 @@ export class WebUI implements PlayerUI {
   }
 
   /**
-   * true se questo prompt di personaggio e' gia' stato mostrato per intero in
-   * una scena precedente, e da qui in poi va collassato.
+   * L'inquadratura di base di una scena, come la vede il palco.
    *
-   * La copertina non conta, di proposito: li' la roster si legge per capire
-   * *quale* IR si sta giocando, non per guardare in faccia qualcuno. Il momento
-   * in cui serve leggere com'e' fatto un personaggio e' quando entra in scena
-   * la prima volta, ed e' quello che resta aperto.
-   *
-   * Registra al primo passaggio: va chiamata una volta sola per riga.
+   * Il tono e' quello della scena o, se non ne dichiara uno, quello globale:
+   * e' l'unico campo del palco che non descrive un'immagine ma il modo di
+   * leggere tutto il resto, e per questo non sparisce mai dietro un tocco.
    */
-  private giaLetto(id: string, campo: string, valore?: string): boolean {
-    if (!valore) return false;
-    const chiave = `${id}\u0000${campo}\u0000${valore}`;
-    if (this.personaggiVisti.has(chiave)) return true;
-    this.personaggiVisti.add(chiave);
-    return false;
+  private inquadratura(scene: Scene): Inquadratura {
+    const luogo = scene.background?.place ? findPlace(this.story, scene.background.place) : undefined;
+    return {
+      image: scene.background?.image,
+      image_prompt: scene.background?.image_prompt,
+      tono: scene.scene_tone || toneOf(this.story, scene),
+      luogo: scene.background?.place
+        ? {
+            id: scene.background.place,
+            nome: luogo?.name ?? scene.background.place,
+            aspetto: luogo?.visual_prompt,
+          }
+        : undefined,
+      inCampo: scene.background?.characters_in_frame,
+      titolo: scene.title,
+    };
+  }
+
+  /**
+   * Il cast di una scena: aspetto e voce di chi c'e', con l'override locale
+   * quando la scena ne dichiara uno.
+   *
+   * Marcare quale dei due si sta guardando conta: una scena che sovrascrive la
+   * voce di un personaggio e' una scelta, e una svista si vede solo se si
+   * distingue dall'ereditata.
+   */
+  private cast(scene: Scene): Volto[] {
+    return (scene.characters ?? []).map((c) => {
+      const g = findCharacter(this.story, c.id);
+      return {
+        id: c.id,
+        nome: g?.name ?? c.id,
+        image: c.image ?? g?.image,
+        aspetto: c.visual_prompt ?? g?.visual_prompt,
+        aspettoOverride: !!c.visual_prompt,
+        voce: c.voice?.style_prompt ?? g?.voice?.style_prompt,
+        voceOverride: !!c.voice?.style_prompt,
+      };
+    });
   }
 
   async beat(scene: Scene, b: NarrationBeat, index: number, total: number): Promise<void> {
     this.scene = scene;
-    // Il luogo si mostra sempre: per intero quando il beat si sposta altrove
-    // rispetto all'inquadratura di base, in una riga sola apribile quando lo
-    // eredita dalla scena.
+
+    // Il beat cambia inquadratura: la nuova prende il posto della precedente
+    // sul palco, e il testo che arriva sotto la commenta. Un beat senza
+    // `image` non lo svuota — resta quella di prima, che e' esattamente cio'
+    // che succede quando la macchina non si e' spostata. Quello che invece
+    // cambia sempre e' chi e' in campo: le facce del cast restano tutte, e si
+    // marca chi di loro l'inquadratura dichiara.
     const luogo = b.place ? findPlace(this.story, b.place) : undefined;
+    const base = this.inquadratura(scene);
+    this.palco.inquadratura({
+      ...base,
+      image: b.image,
+      image_prompt: b.image_prompt ?? base.image_prompt,
+      luogo: b.place
+        ? { id: b.place, nome: luogo?.name ?? b.place, aspetto: luogo?.visual_prompt }
+        : base.luogo,
+      inCampo: b.characters_in_frame ?? base.inCampo,
+    });
+
+    // Qui sotto solo cio' che si ascolta: l'effetto sonoro di questo passaggio
+    // e il timbro con cui va narrato. Sono i due campi che un'immagine non puo'
+    // mostrare, e per questo non salgono sul palco.
+    this.assets([
+      ['sound_effect_prompt', b.sound_effect_prompt, 'sound'],
+      ['voice.style_prompt', b.voice?.style_prompt, 'voice'],
+    ]);
+    // I campi visivi restano nel registro, per chi ispeziona. Il luogo
+    // ereditato dalla scena sta su una riga sola che si apre: c'e', ma non e'
+    // la notizia.
     const ereditato = !!b.place && b.place === scene.background?.place;
-    // Stesso ordine della scheda di scena: prima i riferimenti che questa
-    // inquadratura eredita (dove, chi), poi cio' che vale solo per lei.
-    const righe: PromptRow[] = [
+    this.assetsIspezione([
       ['place', luogoDoppio(b.place, luogo?.name), 'none'],
       [`places.${b.place}.visual_prompt`, luogo?.visual_prompt, 'image', ereditato],
       ['characters_in_frame', inFrameDoppio(this.story, b.characters_in_frame), 'none'],
       ['image_prompt', b.image_prompt, 'image'],
-      ['sound_effect_prompt', b.sound_effect_prompt, 'sound'],
-      ['voice.style_prompt', b.voice?.style_prompt, 'voice'],
-    ];
-    // Il beat cambia inquadratura: la nuova prende il posto della precedente
-    // sul palco, e il testo che arriva sotto la commenta. Un beat senza
-    // `image` non lo svuota — resta quella di prima, che e' esattamente cio'
-    // che succede quando la macchina non si e' spostata.
-    const inScena = this.palco.mostra(b.image, b.image_prompt);
-    this.assets(inScena ? righe.map(collassaSeMostrata) : righe);
+    ]);
+
     this.entry('beat', b.text);
     this.ascolto.beat(scene, b, index);
     this.dbg(`beat ${index + 1}/${total}`);
@@ -1117,9 +1009,12 @@ export class WebUI implements PlayerUI {
   private mostraOggetto(id: string): void {
     const item = this.story.items?.find((i) => i.id === id);
     if (!item) return;
+    const righe: PromptRow[] = [[`items.${id}.visual_prompt`, item.visual_prompt, 'image']];
     const fig = this.immagini.figura(item.image, item.visual_prompt, {
       classe: 'oggetto',
-      prompt: promptNudi([[`items.${id}.visual_prompt`, item.visual_prompt, 'image']]),
+      prompt: promptNudi(righe),
+      titolo: item.name,
+      righe,
     });
     if (fig) this.push(fig);
   }

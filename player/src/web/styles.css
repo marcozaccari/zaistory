@@ -207,14 +207,43 @@ button {
 .app {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "barra"
+    "palco"
+    "transcript"
+    "dock";
   height: 100dvh;
+}
+
+/* Ogni fascia dice in quale riga sta, invece di lasciarlo decidere all'ordine
+   dei figli. Non e' pedanteria: il palco nasce `hidden`, e un figlio nascosto
+   non occupa la sua riga — le tre fasce rimaste scalavano di uno e il dock
+   finiva nella riga elastica, cioe' fuori dallo schermo. Si vedeva esattamente
+   dove faceva piu' male: sulla copertina, dove il dock contiene il solo
+   bottone che fa cominciare la storia, e un riepilogo lungo bastava a
+   spingerlo sotto il bordo del telefono. Con le aree dichiarate la riga del
+   palco vale zero quando lui non c'e', e nient'altro si sposta. */
+.topbar {
+  grid-area: barra;
+}
+
+.palco {
+  grid-area: palco;
+}
+
+.transcript {
+  grid-area: transcript;
+}
+
+.dock {
+  grid-area: dock;
 }
 
 /* Con il palco acceso il dock cede qualcosa: alle sue misure di prima —
    fino a mezzo schermo di chip — piu' un'inquadratura sopra, il transcript
    fra i due si sarebbe ridotto a due righe. */
 body.con-palco .dock {
-  max-height: 38dvh;
+  max-height: 34dvh;
 }
 
 /* Schermo largo, o basso e largo (un telefono coricato): l'inquadratura passa
@@ -248,22 +277,6 @@ body.con-palco .dock {
       "barra"
       "transcript"
       "dock";
-  }
-
-  .topbar {
-    grid-area: barra;
-  }
-
-  .palco {
-    grid-area: palco;
-  }
-
-  .transcript {
-    grid-area: transcript;
-  }
-
-  .dock {
-    grid-area: dock;
   }
 
   /* Qui il dock non toglie niente al palco: sono in due colonne diverse. */
@@ -780,6 +793,12 @@ body.debug .dbg {
 body.debug .only-debug {
   display: grid;
   gap: 10px;
+}
+
+/* I campi visivi nel registro: stessa spaziatura degli altri prompt appesi a
+   un beat, non quella dei blocchi di copertina. */
+body.debug .assets.only-debug {
+  gap: 6px;
 }
 
 /* ------------------------------------------------------------------ dock */
@@ -1447,15 +1466,29 @@ body:not(.debug) #tabs button[data-debug] {
 .palco {
   position: relative;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  height: 42dvh;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  height: 46dvh;
   background: #0a0c11;
   border-bottom: 1px solid var(--line);
   transition: height 200ms ease;
 }
 
+/* Ridotto: si stringe la figura, non la riga sotto. Il tono e le coordinate
+   dell'inquadratura restano leggibili in tutte e due le misure — sono la
+   chiave con cui si legge il testo che scorre, e il collasso serve a leggere
+   meglio, non a leggere alla cieca. */
 body.palco-ridotto .palco {
-  height: 19dvh;
+  height: 25dvh;
+}
+
+/* La figura e le facce, fianco a fianco. Le facce sono una colonna stretta
+   sul bordo: di lato perche' non devono rubare altezza all'inquadratura, e
+   sempre in vista perche' «chi c'e' in questa stanza» e' una domanda che ci
+   si fa in continuazione. */
+.palco-corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 0;
 }
 
 .palco-tela {
@@ -1464,6 +1497,158 @@ body.palco-ridotto .palco {
   justify-content: center;
   min-height: 0;
   padding: 8px;
+}
+
+/* --- Le facce del cast ---------------------------------------------------- */
+
+.palco-cast {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  min-height: 0;
+  padding: 8px 8px 8px 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.palco-cast::-webkit-scrollbar {
+  display: none;
+}
+
+/* Un volto e' un bottone: si tocca e si apre grande, con l'aspetto e la voce
+   di quel personaggio per didascalia. E' li' che vivono adesso i suoi prompt —
+   attaccati alla faccia invece che in fondo a una scheda. */
+.volto {
+  flex: 0 0 auto;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 56px;
+  padding: 0;
+  border: 0;
+  background: none;
+  line-height: 1;
+  opacity: 1;
+  transition: opacity 160ms ease;
+}
+
+.volto img,
+.volto .iniziali {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  object-fit: cover;
+  background: var(--bg-soft);
+  color: var(--fg-dim);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.volto .nome {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  color: var(--fg-dim);
+}
+
+/* Chi c'e' nella scena ma non in *questa* inquadratura: spento, non tolto.
+   Una fila che si accorcia e si allunga a ogni beat e' un movimento che chiede
+   attenzione senza dire niente; una faccia che si spegne dice esattamente
+   quello che characters_in_frame dichiara. */
+.volto.fuori {
+  opacity: 0.34;
+}
+
+/* Da ridotto la fascia e' alta un quarto di schermo, e una fila di facce a
+   grandezza piena ci sta solo in parte: la terza restava tagliata a meta', che
+   e' il modo peggiore di dire «ce n'e' un'altra». Si rimpiccioliscono e
+   perdono il nome — restano riconoscibili, e il nome torna con un tocco, che
+   e' quello che si fa comunque per leggerne i prompt. */
+body.palco-ridotto .volto {
+  width: 40px;
+}
+
+body.palco-ridotto .volto img,
+body.palco-ridotto .volto .iniziali {
+  width: 34px;
+  height: 34px;
+  font-size: 12px;
+}
+
+body.palco-ridotto .volto .nome {
+  display: none;
+}
+
+.volto.fuori img,
+.volto.fuori .iniziali {
+  border-color: var(--line);
+  filter: grayscale(1);
+}
+
+.volto:hover .nome,
+.volto:focus-visible .nome {
+  color: var(--fg);
+}
+
+/* --- La riga delle coordinate --------------------------------------------- */
+
+/* Tono, luogo, chi e' in campo: sotto la figura, sempre visibili. Il tono
+   soprattutto — non e' un prompt di generazione ma il modo di leggere tutto
+   quello che sta sotto, e dietro un tocco nove volte su dieci non lo si
+   guarderebbe. */
+.palco-riga {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 6px 12px;
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--fg-dim);
+  /* In `em` e non in percentuale: la percentuale si misura su una riga di
+     griglia alta `auto`, cioe' su niente, e il risultato era il tono tagliato
+     a meta' della sua prima riga — esattamente il campo che questa striscia
+     esiste per non far sparire. Quattro righe bastano a un tono lungo; oltre,
+     si scorre, e la figura sopra non si rimpicciolisce piu'. */
+  max-height: 6em;
+  overflow-y: auto;
+}
+
+/* --- La tela senza immagine ----------------------------------------------- */
+
+/* Solo testo: al posto della figura ci sono i prompt che la produrranno. Non
+   e' un segnaposto muto — e' esattamente cio' che il generatore riceverebbe, e
+   leggerlo qui e' il motivo per cui la modalita' testo esiste. */
+.palco-tavola {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+  width: 100%;
+  max-height: 100%;
+  padding: 4px 6px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg-dim);
+}
+
+.palco-tavola .prompt {
+  display: block;
+}
+
+.palco-vuoto {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--fg-dim);
 }
 
 /* `contain` e non `cover`: ritagliare butterebbe via proprio la parte che
@@ -1532,7 +1717,7 @@ body.palco-ridotto .palco {
    testo: e' quel bordo che si sposta, ed e' li' che si va a prenderlo. */
 @media (min-width: 900px), (min-width: 640px) and (max-height: 560px) {
   .palco {
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
     height: auto;
     padding-right: 18px;
     border-bottom: 0;
@@ -1542,6 +1727,29 @@ body.palco-ridotto .palco {
 
   body.palco-ridotto .palco {
     height: auto;
+  }
+
+  /* In colonna l'altezza non e' contesa: la riga delle coordinate puo'
+     respirare invece di stare dentro un quinto della fascia. */
+  .palco-riga {
+    max-height: 9em;
+    padding: 8px 12px;
+  }
+
+  /* Le facce tornano una fila orizzontale sotto la figura: di lato
+     mangerebbero larghezza a una colonna che gia' non ne ha da regalare, e
+     l'immagine e' cio' che quella colonna esiste per mostrare. */
+  .palco-corpo {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .palco-cast {
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 0 8px 8px;
+    overflow-y: visible;
   }
 
   .palco-maniglia {
@@ -1766,13 +1974,34 @@ body.palco-ridotto .palco {
   /* Lo spazio della didascalia resta fuori: un'immagine che ci finisce sotto
      e' un'immagine che non si vede intera, che e' l'unica cosa che questa
      modalita' deve garantire. */
-  max-height: calc(100vh - 96px);
+  max-height: calc(100vh - 150px);
   object-fit: contain;
   border-radius: 6px;
 }
 
+/* Di chi o di cosa si sta guardando: senza immagine — solo testo, o asset non
+   ancora generato — e' l'unica cosa che dice a cosa appartengono i prompt qui
+   sotto. */
+.lightbox-titolo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: max(14px, env(safe-area-inset-top));
+  margin: 0;
+  padding: 0 60px;
+  /* Il titolo attraversa tutta la larghezza e passerebbe sopra alla ✕: e' una
+     riga da leggere, non da toccare, e i tocchi devono cadere su cio' che ci
+     sta sotto. */
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+
 .lightbox-close {
   position: absolute;
+  z-index: 1;
   top: max(10px, env(safe-area-inset-top));
   right: 10px;
   width: 40px;
@@ -1792,23 +2021,52 @@ body.palco-ridotto .palco {
   background: rgba(255, 255, 255, 0.24);
 }
 
-/* Il prompt che ha prodotto l'immagine, sotto l'immagine: a schermo intero lo
-   spazio c'e', ed e' la sola descrizione d'autore di cio' che si sta
-   guardando. */
+/* I prompt che hanno prodotto — o che produrranno — cio' che si sta guardando.
+   E' qui che vivono adesso: non su una riga del transcript che scorre via, ma
+   dentro la cosa che descrivono, e nel momento in cui servono davvero, cioe'
+   guardandola grande per decidere se va bene. */
 .lightbox-cap {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  max-height: 84px;
+  max-height: 42vh;
   overflow: auto;
   margin: 0;
-  padding: 10px 16px max(10px, env(safe-area-inset-bottom));
-  background: linear-gradient(transparent, rgba(8, 9, 12, 0.85) 40%);
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 12px;
+  padding: 14px 16px max(12px, env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, rgba(8, 9, 12, 0.92) 30%);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 13px;
   line-height: 1.5;
-  text-align: center;
+  /* Una colonna di lettura centrata: i prompt sono prosa, e a tutta larghezza
+     di uno schermo grande diventerebbero righe da centoventi caratteri. */
+  text-align: left;
+}
+
+.lightbox-cap > div {
+  display: grid;
+  gap: 8px;
+  max-width: 76ch;
+  margin: 0 auto;
+}
+
+.lightbox-cap .prompt {
+  display: block;
+}
+
+/* Nella lente il fondo e' nero: le tinte dei tipi di risorsa restano, il
+   grigio delle etichette no. */
+.lightbox-cap .label {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Senza immagine la lente e' solo testo: si legge dall'alto invece di stare
+   incollata al fondo dello schermo. */
+.lightbox-img[hidden] ~ .lightbox-cap {
+  position: static;
+  max-height: 78vh;
+  padding-top: 56px;
+  background: none;
 }
 
 /* Un'immagine dichiarata nell'IR e non arrivata: si dice, come ogni altro

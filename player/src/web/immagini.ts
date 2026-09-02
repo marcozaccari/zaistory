@@ -52,6 +52,7 @@
  */
 
 import { el } from './dom.js';
+import { promptNudi, type PromptRow } from './prompt.js';
 
 /** Dove stanno gli asset di questa storia, se si sa. */
 export function baseDegliAsset(irUrl?: string): string | undefined {
@@ -74,7 +75,9 @@ export type ModoImmagini = 'testo' | 'immagini';
  * interfaccia della pagina, e ce n'e' uno anche se un giorno le `Immagini`
  * diventassero due.
  */
-let popup: { root: HTMLElement; img: HTMLImageElement; didascalia: HTMLElement } | undefined;
+let popup:
+  | { root: HTMLElement; img: HTMLImageElement; titolo: HTMLElement; didascalia: HTMLElement }
+  | undefined;
 /** Chi aveva il fuoco prima: dopo la chiusura ci torna, altrimenti da tastiera
  * si riparte dall'inizio del documento a ogni immagine guardata. */
 let fuocoPrecedente: HTMLElement | undefined;
@@ -94,9 +97,10 @@ function creaPopup(): NonNullable<typeof popup> {
   chiudi.type = 'button';
   chiudi.setAttribute('aria-label', 'chiudi');
 
-  const didascalia = el('p', 'lightbox-cap');
+  const titolo = el('p', 'lightbox-titolo');
+  const didascalia = el('div', 'lightbox-cap');
 
-  root.append(img, chiudi, didascalia);
+  root.append(img, chiudi, titolo, didascalia);
   document.body.append(root);
 
   // Un tocco in qualunque punto chiude: a schermo intero non c'e' nient'altro
@@ -106,7 +110,7 @@ function creaPopup(): NonNullable<typeof popup> {
   // Anche la storia sotto continua a esistere: la rotellina non deve scorrerla
   // mentre si guarda un'immagine.
   root.onwheel = (e) => e.preventDefault();
-  return { root, img, didascalia };
+  return { root, img, titolo, didascalia };
 }
 
 function chiudiPopup(): void {
@@ -118,16 +122,58 @@ function chiudiPopup(): void {
   fuocoPrecedente = undefined;
 }
 
-/** Apre un'immagine a schermo intero. `alt` diventa la didascalia: e' il
- * prompt che l'ha prodotta, cioe' l'unica descrizione d'autore di cio' che si
- * sta guardando. */
-export function apriGrande(src: string, alt?: string): void {
+/**
+ * Cosa si guarda quando si allarga qualcosa.
+ *
+ * `src` puo' mancare, e non e' un caso limite: in solo testo — o prima che le
+ * immagini siano state generate — allargare un'inquadratura o un personaggio
+ * deve comunque portare ai suoi prompt, perche' e' li' che adesso vivono. Con
+ * l'immagine si guarda il risultato, senza si legge cosa lo produrra'.
+ */
+export interface Lente {
+  src?: string;
+  /** Di chi o di cosa si sta guardando: il nome del personaggio, il titolo
+   * della scena. */
+  titolo?: string;
+  /** I prompt che descrivono cio' che si sta guardando, col nome che hanno
+   * nell'IR. */
+  righe?: PromptRow[];
+}
+
+/**
+ * Apre a schermo intero.
+ *
+ * La didascalia non e' cerimonia: sono i prompt che hanno prodotto — o che
+ * produrranno — cio' che si sta guardando, ed e' guardandoli accanto
+ * all'immagine grande che si decide se l'asset va bene. Nel transcript non ci
+ * sono piu': li' resterebbero a scorrere via, qui stanno attaccati alla cosa
+ * di cui parlano.
+ */
+export function apriGrande(lente: Lente): void {
   popup = popup ?? creaPopup();
   fuocoPrecedente = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
-  popup.img.src = src;
-  popup.img.alt = alt ?? '';
-  popup.didascalia.textContent = alt ?? '';
-  popup.didascalia.hidden = !alt;
+
+  const righe = lente.righe ?? [];
+  // L'`alt` dell'immagine grande resta il primo prompt: e' la descrizione
+  // d'autore di cio' che si vede, e per chi non vede e' l'unica.
+  const primo = righe.find((r) => typeof r[1] === 'string')?.[1];
+
+  if (lente.src) {
+    popup.img.src = lente.src;
+    popup.img.alt = typeof primo === 'string' ? primo : (lente.titolo ?? '');
+    popup.img.hidden = false;
+  } else {
+    popup.img.removeAttribute('src');
+    popup.img.hidden = true;
+  }
+
+  popup.titolo.textContent = lente.titolo ?? '';
+  popup.titolo.hidden = !lente.titolo;
+
+  const box = promptNudi(righe);
+  popup.didascalia.replaceChildren(...(box ? [box] : []));
+  popup.didascalia.hidden = !box;
+
   popup.root.hidden = false;
   document.body.classList.add('con-lightbox');
   popup.root.querySelector<HTMLElement>('.lightbox-close')?.focus({ preventScroll: true });
@@ -215,11 +261,12 @@ export class Immagini {
     img.tabIndex = 0;
     img.setAttribute('role', 'button');
     img.title = 'guardala a schermo intero';
-    img.onclick = () => apriGrande(src, alt);
+    const guarda = () => apriGrande({ src, titolo: opzioni.titolo, righe: opzioni.righe });
+    img.onclick = guarda;
     img.onkeydown = (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        apriGrande(src, alt);
+        guarda();
       }
     };
     // Un id dichiarato nell'IR e un file che non arriva sono due cose
@@ -269,4 +316,9 @@ export interface OpzioniFigura {
   /** Le righe di prompt che questa immagine sostituisce, da tenere a
    * disposizione dietro un bottone. */
   prompt?: HTMLElement;
+  /** Di cosa e' l'immagine: diventa il titolo della lente a schermo intero. */
+  titolo?: string;
+  /** Gli stessi prompt, dentro la lente: allargare un'immagine e' il modo di
+   * guardarla per decidere se va bene, e li' il prompt serve accanto. */
+  righe?: PromptRow[];
 }

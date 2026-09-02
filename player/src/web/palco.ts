@@ -1,13 +1,11 @@
 /**
- * Il palco: l'inquadratura corrente, ferma in alto.
+ * Il palco: l'inquadratura corrente e cio' che la descrive, fermi in alto.
  *
  * Fino a ieri le immagini scorrevano dentro il transcript come il testo, ed
  * era la scelta giusta finche' il player era un resoconto da leggere. Con le
  * immagini pubblicate non lo e' piu': l'inquadratura e' *dove si e'*, non una
  * cosa detta un momento fa, e in una cutscene di nove beat quella di adesso
- * usciva dallo schermo appena si scorreva per leggere la riga sotto. Chi gioca
- * si trovava a fare avanti e indietro fra il testo e la figura che lo
- * illustra: due movimenti per una cosa sola.
+ * usciva dallo schermo appena si scorreva per leggere la riga sotto.
  *
  * Da qui in avanti l'inquadratura sta ferma in cima e il testo le scorre
  * sotto. **Ogni immagine nuova prende il posto della precedente**: il palco e'
@@ -15,34 +13,92 @@
  * non lo svuota — si resta dove si era, che e' esattamente cio' che succede in
  * una stanza dove non e' cambiata l'inquadratura.
  *
- * ## Perche' si collassa, e in due stati soltanto
+ * ## Cosa il palco porta, e perche' non e' solo l'immagine
+ *
+ * Porta tutto cio' che *si guarda*: la figura, il **tono** della scena, dove
+ * siamo, chi e' in campo, e le facce del cast di scena di lato. La ragione e'
+ * la stessa per cui l'immagine e' salita quassu': sono le coordinate
+ * dell'inquadratura, cioe' la risposta a «dove sono e chi ho davanti», e una
+ * risposta che scorre via col transcript costringe a risalire proprio mentre
+ * si sta guardando la figura che la illustra.
+ *
+ * In basso, nel transcript, resta cio' che *si ascolta e si legge*: la
+ * narrazione, il parlato, l'ambiente sonoro, gli effetti, i timbri di
+ * narrazione. Un'immagine non li mostra, e sono l'unico modo di sapere che
+ * esistono.
+ *
+ * ## I prompt stanno dentro la cosa che descrivono
+ *
+ * Non su una riga a parte: si aprono allargando cio' a cui appartengono —
+ * l'inquadratura si tocca e si apre grande con `image_prompt` e l'aspetto del
+ * luogo per didascalia, una faccia si tocca e si apre con `visual_prompt` e il
+ * timbro di quel personaggio. E' il collegamento piu' corto possibile fra un
+ * asset e il testo che lo produce, ed e' anche il momento in cui serve: quando
+ * si sta decidendo se quell'asset va bene.
+ *
+ * Il tono invece **non** si nasconde dietro un tocco, mai: non e' un prompt di
+ * generazione ma la chiave di lettura di tutto quello che c'e' sotto, e vale
+ * per la scena intera.
+ *
+ * ## Il palco c'e' sempre, anche senza immagini
+ *
+ * In solo testo — immagini spente, o storia non ancora illustrata — al posto
+ * della figura c'e' il prompt dell'inquadratura, e al posto delle facce le
+ * iniziali. Un posto solo dove guardare in tutte e due le modalita': la testa
+ * dello schermo dice sempre dove siamo, cambia solo se lo dica con un'immagine
+ * o con le parole che la produrranno.
+ *
+ * ## Perche' si riduce, e in due stati soltanto
  *
  * Un'immagine ferma in alto costa altezza al testo, e quanta ne costa dipende
  * da cosa si sta facendo: in un dialogo lungo serve leggere, davanti a una
  * scena nuova serve guardare. La maniglia sotto il palco alterna fra le due
- * misure e basta — grande e ridotta. Tre stati (o un trascinamento ad altezza
- * libera) sembravano piu' ricchi e sono un'altra cosa da imparare per una
- * decisione che ha due risposte: "voglio vederla" e "adesso no".
- *
- * Ridotto e non chiuso, di proposito: chiuderla del tutto e' gia' possibile e
- * si chiama spegnere le immagini, che e' una scelta sulla storia e sta nel
- * pannello. La maniglia e' una scelta sul momento.
- *
- * ## Cosa il palco non fa
- *
- * Non porta i prompt. Restano nel transcript, dove sono il resoconto di cio'
- * che l'IR dichiara — collassati su una riga, perche' l'immagine li mostra
- * gia'. Il prompt di *questa* inquadratura si legge dove si guarda
- * l'inquadratura: a schermo intero, come didascalia, che e' il posto dove si
- * decide se l'asset va bene.
+ * misure e basta — grande e ridotta. Ridotto e non chiuso, di proposito:
+ * chiuderlo del tutto e' gia' possibile e si chiama spegnere le immagini, che
+ * e' una scelta sulla storia e sta nel pannello. La riga del tono resta
+ * visibile anche da ridotto: e' cio' che il collasso non deve poter togliere.
  */
 
 import { el } from './dom.js';
 import { apriGrande, type Immagini } from './immagini.js';
+import { doppio } from './nomi.js';
+import { promptRow, type PromptRow } from './prompt.js';
+
+/** Un personaggio del cast di scena, come il palco lo mostra. */
+export interface Volto {
+  id: string;
+  nome: string;
+  /** L'ancora gia' pubblicata, se c'e'. */
+  image?: string;
+  aspetto?: string;
+  /** Vero se l'aspetto e' un override locale della scena e non quello della
+   * roster: e' una scelta d'autore, e una svista si vede solo se si distingue
+   * dall'ereditata. */
+  aspettoOverride?: boolean;
+  voce?: string;
+  voceOverride?: boolean;
+}
+
+/** Tutto cio' che il palco mostra di un'inquadratura. */
+export interface Inquadratura {
+  /** L'immagine gia' pubblicata per questo nodo. */
+  image?: string;
+  image_prompt?: string;
+  /** Il tono che vale adesso. Sempre visibile, mai dietro un tocco. */
+  tono?: string;
+  luogo?: { id: string; nome: string; aspetto?: string };
+  /** Gli id di chi e' in campo in questa inquadratura. */
+  inCampo?: string[];
+  /** Come chiamare cio' che si sta guardando nella lente: il titolo della
+   * scena. */
+  titolo?: string;
+}
 
 export class Palco {
   private root: HTMLElement;
   private tela: HTMLElement;
+  private facce: HTMLElement;
+  private riga: HTMLElement;
   private maniglia: HTMLButtonElement;
   private immagini: Immagini;
   private ridotto = false;
@@ -54,11 +110,18 @@ export class Palco {
    * per un fotogramma su una figura che non e' cambiata.
    */
   private corrente?: string;
+  /** L'ultima inquadratura ricevuta e il cast della scena in corso: servono a
+   * ridisegnare il palco quando cambia il *modo* di mostrarlo (immagini
+   * accese o spente) senza aspettare il beat successivo. */
+  private ultima?: Inquadratura;
+  private cast: Volto[] = [];
 
   constructor(root: HTMLElement, immagini: Immagini) {
     this.root = root;
     this.immagini = immagini;
     this.tela = dentro(root, '.palco-tela');
+    this.facce = dentro(root, '.palco-cast');
+    this.riga = dentro(root, '.palco-riga');
     this.maniglia = dentro<HTMLButtonElement>(root, '.palco-maniglia');
     this.maniglia.onclick = () => {
       this.ridotto = !this.ridotto;
@@ -67,67 +130,226 @@ export class Palco {
     this.applica();
   }
 
+  /** Si entra in una scena: cast nuovo e inquadratura di base. */
+  scena(inq: Inquadratura, cast: Volto[]): void {
+    this.cast = cast;
+    this.disegnaCast();
+    this.mostra(inq);
+  }
+
+  /** Un beat: stessa scena, inquadratura nuova. Il cast non cambia — cambia
+   * chi di loro e' in campo. */
+  inquadratura(inq: Inquadratura): void {
+    this.mostra(inq);
+  }
+
   /**
-   * Porta un'inquadratura sul palco. Vero se c'e' finita davvero: `false`
-   * quando non c'e' un id, quando le immagini sono spente o quando non si sa
-   * dove cercarle — e in quel caso chi chiama sa che i prompt vanno mostrati
-   * per intero, perche' non c'e' nessuna immagine a mostrarli al posto loro.
+   * Ridisegna con l'inquadratura che c'e' gia'.
+   *
+   * Serve quando si accendono o spengono le immagini a partita in corso: il
+   * palco non e' un resoconto ma una vista, e una vista che aspetta il beat
+   * successivo per obbedire e' un interruttore che sembra rotto.
    */
-  mostra(id: string | undefined, alt?: string): boolean {
-    if (!id || !this.immagini.accese) return false;
-    const src = this.immagini.url(id);
-    if (!src) return false;
+  rileggi(): void {
+    if (!this.ultima) return;
+    this.corrente = undefined;
+    this.disegnaCast();
+    this.mostra(this.ultima);
+  }
+
+  /**
+   * Il palco torna vuoto e sparisce.
+   *
+   * Un momento solo: una partita nuova. La precedente e' finita, e la sua
+   * ultima inquadratura non e' la prima di questa — sulla copertina non c'e'
+   * ancora nessuna scena, quindi non c'e' niente da dire in cima allo schermo.
+   */
+  svuota(): void {
+    this.corrente = undefined;
+    this.ultima = undefined;
+    this.cast = [];
+    this.tela.replaceChildren();
+    this.facce.replaceChildren();
+    this.riga.replaceChildren();
+    this.root.hidden = true;
+    document.body.classList.remove('con-palco');
+  }
+
+  // ------------------------------------------------------------- interni
+
+  private mostra(inq: Inquadratura): void {
+    this.ultima = inq;
     this.root.hidden = false;
     document.body.classList.add('con-palco');
-    if (id === this.corrente) return true;
-    this.corrente = id;
+    this.disegnaRiga(inq);
+    this.marcaInCampo(inq.inCampo);
+    this.disegnaTela(inq);
+  }
+
+  private disegnaTela(inq: Inquadratura): void {
+    const src = inq.image && this.immagini.accese ? this.immagini.url(inq.image) : undefined;
+
+    if (!src) {
+      // Nessuna immagine per questo nodo. Se una c'e' gia' sul palco resta
+      // dov'e': la macchina non si e' spostata. Se non c'e' — solo testo, o
+      // storia non ancora illustrata — al suo posto va il prompt, che e'
+      // l'unica descrizione d'autore di cio' che si vedrebbe.
+      if (this.corrente) return;
+      this.tela.replaceChildren(this.tavola(inq));
+      return;
+    }
+
+    if (inq.image === this.corrente) return;
+    this.corrente = inq.image;
 
     const img = new Image();
     img.src = src;
     // `alt` e' l'image_prompt: l'unica descrizione d'autore di cio' che si
     // vede, e in ascolto l'unica cosa che rende udibile un'inquadratura.
-    img.alt = alt ?? '';
+    img.alt = inq.image_prompt ?? '';
     img.decoding = 'async';
-    // Toccarla la apre grande, con il prompt per didascalia. Resta
+    // Toccarla la apre grande, con i suoi prompt per didascalia. Resta
     // un'immagine e non un bottone intorno a un'immagine, che i lettori di
     // schermo annunciano due volte.
     img.tabIndex = 0;
     img.setAttribute('role', 'button');
-    img.title = 'guardala a schermo intero';
-    img.onclick = () => apriGrande(src, alt);
+    img.title = "guardala a schermo intero, con i prompt che l'hanno prodotta";
+    const guarda = () => apriGrande({ src, titolo: inq.titolo, righe: this.righeInquadratura(inq) });
+    img.onclick = guarda;
     img.onkeydown = (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        apriGrande(src, alt);
+        guarda();
       }
     };
     // Un id dichiarato nell'IR e un file che non arriva sono due cose diverse,
     // e la seconda va detta: senza, una pubblicazione parziale sembra una
     // scena senza immagine.
     img.onerror = () => {
-      this.tela.replaceChildren(el('p', 'manca', `(immagine «${id}» dichiarata nell'IR ma non trovata)`));
+      this.corrente = undefined;
+      this.tela.replaceChildren(
+        el('p', 'manca', `(immagine «${inq.image}» dichiarata nell'IR ma non trovata)`),
+        this.tavola(inq),
+      );
     };
 
     // L'id sotto l'immagine, come sotto le figure del transcript: si vede solo
     // a debug acceso, e li' e' il modo di sapere quale file si sta guardando
     // senza aprire il pannello.
-    this.tela.replaceChildren(img, el('p', 'ir palco-id', id));
-    return true;
+    this.tela.replaceChildren(img, el('p', 'ir palco-id', inq.image));
   }
 
   /**
-   * Il palco torna vuoto e sparisce.
+   * La tela quando non c'e' un'immagine: i prompt al posto della figura.
    *
-   * Due momenti soli: una partita nuova — la precedente e' finita, e l'ultima
-   * inquadratura di quella non e' la prima di questa — e le immagini spente,
-   * dove un pannello che resta acceso sarebbe l'interruttore che non fa
-   * niente.
+   * Non e' un segnaposto muto ne' un errore — e' la modalita' testo, dove
+   * quello che si legge qui e' esattamente cio' che il generatore produrra'.
    */
-  svuota(): void {
-    this.corrente = undefined;
-    this.tela.replaceChildren();
-    this.root.hidden = true;
-    document.body.classList.remove('con-palco');
+  private tavola(inq: Inquadratura): HTMLElement {
+    const box = el('div', 'palco-tavola');
+    const righe = this.righeInquadratura(inq);
+    if (righe.length === 0) {
+      box.append(el('p', 'palco-vuoto', '(nessuna inquadratura dichiarata per questo nodo)'));
+      return box;
+    }
+    for (const r of righe) {
+      if (r[1]) box.append(promptRow(r as [string, string, PromptRow[2], boolean?]));
+    }
+    return box;
+  }
+
+  /** I prompt visivi di un'inquadratura: quello che la lente mostra e quello
+   * che, senza immagini, sta al posto della figura. */
+  private righeInquadratura(inq: Inquadratura): PromptRow[] {
+    return [
+      ['image_prompt', inq.image_prompt, 'image'],
+      [
+        inq.luogo ? `places.${inq.luogo.id}.visual_prompt` : 'place',
+        inq.luogo?.aspetto,
+        'image',
+      ],
+    ].filter((r) => !!r[1]) as PromptRow[];
+  }
+
+  /**
+   * La riga sotto l'immagine: il tono, dove siamo, chi e' in campo.
+   *
+   * Sempre visibile, anche da ridotto. Il tono soprattutto: e' la chiave con
+   * cui si legge tutto quello che scorre sotto, e nasconderlo dietro un tocco
+   * significherebbe che nove volte su dieci non lo si guarda.
+   */
+  private disegnaRiga(inq: Inquadratura): void {
+    const righe: PromptRow[] = [
+      ['scene_tone', inq.tono, 'none'],
+      ['place', inq.luogo ? doppio(inq.luogo.nome, `${inq.luogo.id} — ${inq.luogo.nome}`) : undefined, 'none'],
+      ['characters_in_frame', this.nomiInCampo(inq.inCampo), 'none'],
+    ];
+    this.riga.replaceChildren();
+    for (const r of righe) {
+      if (r[1]) this.riga.append(promptRow(r as [string, string, PromptRow[2], boolean?]));
+    }
+    this.riga.hidden = this.riga.childElementCount === 0;
+  }
+
+  /** Chi e' in campo, coi nomi del cast quando li si conosce. */
+  private nomiInCampo(ids?: string[]) {
+    if (!ids?.length) return undefined;
+    const nome = (id: string) => this.cast.find((v) => v.id === id)?.nome ?? id;
+    return doppio(ids.map(nome).join(', '), ids.join(', '));
+  }
+
+  /**
+   * Le facce del cast, di lato all'inquadratura.
+   *
+   * Tutto il cast della scena e non solo chi e' in campo adesso: chi c'e' in
+   * questa stanza non cambia da un beat all'altro, e una fila che si accorcia
+   * e si allunga a ogni passaggio e' un movimento che chiede attenzione senza
+   * dire niente. Chi e' in campo *adesso* si marca invece di comparire.
+   */
+  private disegnaCast(): void {
+    this.facce.replaceChildren();
+    this.facce.hidden = this.cast.length === 0;
+    for (const v of this.cast) {
+      const b = el('button', 'volto');
+      b.type = 'button';
+      b.dataset.id = v.id;
+      const src = v.image && this.immagini.accese ? this.immagini.url(v.image) : undefined;
+      if (src) {
+        const img = new Image();
+        img.src = src;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        b.append(img);
+      } else {
+        // Senza ancora, le iniziali: un posto riconoscibile nella fila, che
+        // resta toccabile per arrivare ai prompt di quel personaggio.
+        b.append(el('span', 'iniziali', iniziali(v.nome)));
+      }
+      b.append(el('span', 'nome', v.nome));
+      b.title = `${v.nome} — aspetto e voce`;
+      b.onclick = () =>
+        apriGrande({
+          src,
+          titolo: v.nome,
+          righe: [
+            [`visual_prompt${v.aspettoOverride ? ' (override)' : ''}`, v.aspetto, 'image'],
+            [`voice.style_prompt${v.voceOverride ? ' (override)' : ''}`, v.voce, 'voice'],
+          ],
+        });
+      this.facce.append(b);
+    }
+  }
+
+  private marcaInCampo(ids?: string[]): void {
+    const set = new Set(ids ?? []);
+    // Un'inquadratura che non dichiara nessuno non spegne nessuno: "non
+    // dichiarato" non vuol dire "non c'e'", e spegnere tutta la fila
+    // direbbe una cosa che l'IR non dice.
+    const nessuno = set.size === 0;
+    for (const b of this.facce.querySelectorAll<HTMLElement>('.volto')) {
+      b.classList.toggle('fuori', !nessuno && !set.has(b.dataset.id ?? ''));
+    }
   }
 
   private applica(): void {
@@ -140,6 +362,16 @@ export class Palco {
     this.maniglia.setAttribute('aria-label', etichetta);
     this.maniglia.title = etichetta;
   }
+}
+
+/** Le iniziali di un nome: al massimo due, che a 44 pixel e' quanto ci sta. */
+function iniziali(nome: string): string {
+  return nome
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? '')
+    .join('');
 }
 
 function dentro<T extends Element = HTMLElement>(root: HTMLElement, sel: string): T {
