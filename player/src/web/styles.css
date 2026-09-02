@@ -923,6 +923,17 @@ body.debug .only-debug {
   gap: 10px;
 }
 
+/* Dentro una `<dl>` la griglia e' quella della lista: una riga che si
+   ridichiara `display: grid` esce dalle sue due colonne e si mette per conto
+   suo. */
+body.debug .kv > dt.only-debug {
+  display: block;
+}
+
+body.debug .kv > dd.only-debug {
+  display: block;
+}
+
 /* I campi visivi nel registro: stessa spaziatura degli altri prompt appesi a
    un beat, non quella dei blocchi di copertina. */
 body.debug .assets.only-debug {
@@ -2172,6 +2183,22 @@ figcaption.ir {
   color: var(--amber);
   background: var(--bg-soft);
   border-radius: 10px;
+}
+
+/* Su schermo largo la locandina si stringe e si mette in mezzo. A tutta
+   colonna diventava un manifesto a grandezza naturale sopra un titolo di
+   ventotto pixel, e a guardarla per prima non era piu' la storia ma la figura.
+   Il blocco sta **dopo** le regole che corregge: a parita' di specificita'
+   vince l'ultima scritta. */
+@media (min-width: 900px), (min-width: 640px) and (max-height: 560px) {
+  .locandina {
+    text-align: center;
+  }
+
+  .locandina img {
+    max-width: 300px;
+    margin: 0 auto;
+  }
 }
 
 /* L'icona d'inventario di un oggetto che si sta guardando: piu' piccola di

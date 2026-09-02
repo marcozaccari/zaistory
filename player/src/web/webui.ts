@@ -176,6 +176,13 @@ export class WebUI implements PlayerUI {
    * tutti", che e' esattamente quello che si vuole sapere restando fermi. */
   beatCorrente?: number;
   beatTotali?: number;
+  /** Le due caselle della copertina: la figura sopra il titolo e i prompt che
+   * la sostituiscono sotto la descrizione. Restano in mano alla `WebUI` perche'
+   * la copertina non e' resoconto ma **schermata** — ci si sta sopra — e
+   * l'interruttore delle immagini deve poterla ridisegnare mentre la si
+   * guarda, esattamente come fa col palco. */
+  private slotFigura?: HTMLElement;
+  private slotPrompt?: HTMLElement;
 
   constructor(o: WebUIOptions) {
     this.story = o.story;
@@ -424,34 +431,27 @@ export class WebUI implements PlayerUI {
     // paragrafo la da' altrettanto in fretta. Con le immagini spente, o prima
     // che sia stata generata, al suo posto restano i prompt: e' la stessa
     // regola del palco, e per la stessa ragione.
-    const righeCover: PromptRow[] = [
-      ['image_prompt', st.cover?.image_prompt, 'image'],
-      ['place', luogoDoppio(st.cover?.place, findPlace(this.story, st.cover?.place ?? '')?.name), 'none'],
-      ['characters_in_frame', inFrameDoppio(this.story, st.cover?.characters_in_frame), 'none'],
-    ];
-    const locandina = this.immagini.figura(st.cover?.image, st.cover?.image_prompt, {
-      classe: 'locandina',
-      titolo: st.title,
-      righe: righeCover,
-    });
-    if (locandina) cover.append(locandina);
-
+    //
+    // Due caselle vuote invece di un blocco solo: la figura sta sopra il
+    // titolo, dove una locandina sta; i prompt che la sostituiscono stanno
+    // sotto la descrizione, perche' un muro di testo sopra il titolo lo
+    // seppellirebbe. `rileggiCopertina` riempie l'una o l'altra, ed e' la
+    // stessa funzione che gira quando si accendono o si spengono le immagini
+    // mentre la copertina e' ancora a schermo.
+    this.slotFigura = el('div', 'locandina-slot');
+    this.slotPrompt = el('div');
+    cover.append(this.slotFigura);
     cover.append(el('h1', undefined, st.title));
     if (st.description) cover.append(el('p', 'desc', st.description));
-    if (!locandina) {
-      const box = promptNudi(righeCover);
-      if (box) {
-        box.className = 'assets';
-        cover.append(box);
-      }
-    }
+    cover.append(this.slotPrompt);
+    this.rileggiCopertina();
 
     const dl = el('dl', 'kv');
-    const meta = (k: string, v?: string | Doppio) => {
+    const meta = (k: string, v?: string | Doppio, soloDebug = false) => {
       if (!v) return;
-      const dt = el('dt');
+      const dt = el('dt', soloDebug ? 'only-debug' : undefined);
       dt.append(el('span', 'umano', nomeCampo(k)), el('span', 'ir', k));
-      const dd = el('dd');
+      const dd = el('dd', soloDebug ? 'only-debug' : undefined);
       dd.append(valore(v));
       dl.append(dt, dd);
     };
@@ -465,7 +465,10 @@ export class WebUI implements PlayerUI {
     }
     meta('id', st.id);
     meta('language', st.language);
-    meta('scenes', `${st.scenes.length}`);
+    // Quante scene ha la storia e' una misura del file, non della storia: a chi
+    // gioca dice solo quanto manca alla fine, che e' un anticipo che nessuno ha
+    // chiesto — la stessa ragione per cui non sta piu' nemmeno in barra.
+    meta('scenes', `${st.scenes.length}`, true);
     // La prima scena si chiama col suo titolo: l'id dice dove trovarla nel
     // JSON, e quello e' un servizio per chi ispeziona.
     const prima = st.scenes.find((s) => s.id === st.start_scene);
@@ -552,6 +555,37 @@ export class WebUI implements PlayerUI {
     } finally {
       this.anchor = 'end';
     }
+  }
+
+  /**
+   * Ridisegna la locandina con il modo immagini che vale adesso.
+   *
+   * La regola del transcript — «cio' che e' stampato resta, l'interruttore
+   * vale da qui in avanti» — qui non si applica, ed e' la differenza fra un
+   * resoconto e una schermata: la copertina non e' una cosa successa un
+   * momento fa, e' dove si sta. Spegnere le immagini mentre la si guarda e
+   * vederla restare com'era sarebbe l'interruttore che non fa niente.
+   */
+  rileggiCopertina(): void {
+    const fig = this.slotFigura;
+    const box = this.slotPrompt;
+    if (!fig || !box) return;
+    const st = this.story;
+    const righe: PromptRow[] = [
+      ['image_prompt', st.cover?.image_prompt, 'image'],
+      ['place', luogoDoppio(st.cover?.place, findPlace(this.story, st.cover?.place ?? '')?.name), 'none'],
+      ['characters_in_frame', inFrameDoppio(this.story, st.cover?.characters_in_frame), 'none'],
+    ];
+    const locandina = this.immagini.figura(st.cover?.image, st.cover?.image_prompt, {
+      classe: 'locandina',
+      titolo: st.title,
+      righe,
+    });
+    fig.replaceChildren(...(locandina ? [locandina] : []));
+
+    const prompt = locandina ? undefined : promptNudi(righe);
+    if (prompt) prompt.className = 'assets';
+    box.replaceChildren(...(prompt ? [prompt] : []));
   }
 
   // ------------------------------------------------------------ PlayerUI

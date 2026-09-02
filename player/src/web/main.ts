@@ -322,6 +322,9 @@ function impostaImmagini(on: boolean): void {
   // dello schermo continua a dire dove siamo, con i prompt al posto della
   // figura e le iniziali al posto delle facce.
   palco.rileggi();
+  // La copertina e' una schermata come il palco, non resoconto: se ci si sta
+  // sopra deve obbedire subito. Sotto, il transcript gia' stampato resta.
+  session?.ui.rileggiCopertina();
   aggiornaImmaginiUI();
 }
 
@@ -381,8 +384,12 @@ function refreshHeader(): void {
   // interessa a che punto e' — e, se sta rigiocando una traccia, che la sta
   // rigiocando. La versione dell'IR e il conto del linter sono informazioni
   // sul *file*, non sulla storia: stanno col debug.
-  const umano = [dove];
-  if (ui.beatCorrente && ui.beatTotali) umano.push(`passaggio ${ui.beatCorrente}/${ui.beatTotali}`);
+  // A chi gioca la barra non dice ne' quante scene ha la storia ne' di quanti
+  // passaggi e' fatta quella corrente. Sono due misure del *file*, e sapere
+  // che mancano due beat alla fine di una scena, o che si e' alla 41esima di
+  // 43, e' un anticipo su come andra' a finire che nessuno ha chiesto. Restano
+  // col debug, dove servono per sapere dove si e' mentre si collauda.
+  const umano: string[] = [];
 
   const ir = [`IR ${story.ir_version}`, dove];
   if (ui.beatCorrente && ui.beatTotali) ir.push(`beat ${ui.beatCorrente}/${ui.beatTotali}`);
