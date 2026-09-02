@@ -1100,7 +1100,7 @@ export class WebUI implements PlayerUI {
     if (!item) return;
     const righe: PromptRow[] = [[`items.${id}.visual_prompt`, item.visual_prompt, 'image']];
     const fig = this.immagini.figura(item.image, item.visual_prompt, {
-      classe: 'oggetto',
+      classe: 'figura-oggetto',
       prompt: promptNudi(righe),
       titolo: item.name,
       righe,

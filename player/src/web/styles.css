@@ -301,17 +301,6 @@ body.con-palco .dock {
     max-height: 52dvh;
   }
 
-  /* Con l'altezza che non e' piu' contesa, le chip tornano comode e il segno
-     torna grande: la misura ridotta serve al telefono, non e' un ripensamento
-     sull'aspetto. */
-  .choice {
-    padding: 13px 14px;
-  }
-
-  .choice .segno {
-    width: 18px;
-    font-size: 32px;
-  }
 }
 
 .topbar {
@@ -990,6 +979,32 @@ body.debug .assets.only-debug {
   line-height: 0;
 }
 
+/* Schermo largo: il puntatore e' preciso e il bersaglio non deve essere grande.
+   La riga in cui si scrive e il segno dei bottoni tornano di una misura da
+   mouse — quella da pollice, qui, e' solo ingombrante. I sedici pixel del campo
+   esistono per iOS, che sotto quella soglia ingrandisce la pagina appena il
+   campo prende il fuoco: su schermo largo quel vincolo non c'e'.
+
+   Questo blocco sta **dopo** le regole che corregge, e non insieme alle altre
+   media query in testa al foglio: a parita' di specificita' vince l'ultima
+   scritta, e li' non vinceva nessuna. */
+@media (min-width: 900px), (min-width: 640px) and (max-height: 560px) {
+  .choice .segno {
+    width: 15px;
+    font-size: 22px;
+  }
+
+  .riga-input .campo {
+    padding: 9px 12px;
+    font-size: 15px;
+  }
+
+  .riga-input .invia {
+    padding: 0 14px;
+    font-size: 22px;
+  }
+}
+
 /* Le chip delle azioni con un resolver a input libero: restano nel DOM ma si
    vedono solo ispezionando. Un elenco che mostra le azioni utili risolve gli
    enigmi al posto del giocatore, quindi acceso non si puo' giudicare quanto
@@ -1059,12 +1074,27 @@ body.debug .choice.solo-debug {
    mano. Quelli senza `description` restano `.chip` e basta: niente da leggere,
    niente da toccare. */
 .chip.oggetto {
-  padding: 5px 11px;
   border-color: var(--accent-soft);
   color: var(--accent);
+  cursor: pointer;
+}
+
+/* L'inventario non e' un elenco di dati: sono cose che si hanno in mano, e si
+   toccano. Squadrate e con il respiro dei bottoni invece della pastiglia
+   stretta delle etichette — quella e' la forma di un dato, e a cinque pixel di
+   padding era anche un bersaglio che con il pollice si manca. La misura sta
+   sul contenitore perche' un oggetto senza `description` non e' toccabile ma
+   resta della stessa famiglia: una fila mezza tonda e mezza squadrata sembra
+   rotta. */
+.chips.inventario {
+  gap: 8px;
+}
+
+.chips.inventario .chip {
+  padding: 10px 14px;
+  border-radius: 10px;
   font-family: inherit;
   font-size: 13px;
-  cursor: pointer;
 }
 
 .chip.oggetto:hover,
@@ -1529,7 +1559,10 @@ body:not(.debug) #tabs button[data-debug] {
 .palco {
   position: relative;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  /* La riga delle coordinate sta in cima, sopra la figura: e' la prima cosa
+     che si legge entrando in una scena, e da li' fa da titolo a quello che sta
+     sotto invece che da nota a pie' di figura. */
+  grid-template-rows: auto minmax(0, 1fr) auto;
   height: 46dvh;
   background: #0a0c11;
   border-bottom: 1px solid var(--line);
@@ -1689,7 +1722,7 @@ body.palco-ridotto .volto .nome {
   flex-wrap: wrap;
   gap: 4px 14px;
   padding: 6px 12px;
-  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.02);
   font-size: 12px;
   line-height: 1.4;
@@ -1801,7 +1834,7 @@ body.palco-ridotto .volto .nome {
    testo: e' quel bordo che si sposta, ed e' li' che si va a prenderlo. */
 @media (min-width: 900px), (min-width: 640px) and (max-height: 560px) {
   .palco {
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
     height: auto;
     padding-right: 18px;
     border-bottom: 0;
@@ -2016,8 +2049,14 @@ body.palco-ridotto .volto .nome {
 
 /* L'icona d'inventario di un oggetto che si sta guardando: piu' piccola di
    un'inquadratura, perche' e' una cosa che si tiene in mano e non un posto in
-   cui si e'. */
-.oggetto {
+   cui si e'.
+
+   Si chiamava `.oggetto`, che e' anche il nome della pastiglia dell'inventario
+   nel pannello: due cose diverse sotto lo stesso nome, e la figura passava
+   alla pastiglia il suo `line-height: 0` — una riga di testo alta zero dentro
+   un bottone. Finche' la pastiglia era stretta non si notava; dandole del
+   padding e' diventata una scatola con dentro niente. */
+.figura-oggetto {
   display: inline-block;
   justify-self: start;
   max-width: 100%;
@@ -2026,7 +2065,7 @@ body.palco-ridotto .volto .nome {
   text-align: left;
 }
 
-.oggetto img {
+.figura-oggetto img {
   display: block;
   width: 160px;
   max-width: 100%;
@@ -2037,7 +2076,7 @@ body.palco-ridotto .volto .nome {
 
 /* Le immagini si aprono grandi: qui si guardano, nel transcript si legge. */
 .ritratto img,
-.oggetto img {
+.figura-oggetto img {
   cursor: zoom-in;
 }
 

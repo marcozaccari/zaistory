@@ -337,7 +337,12 @@ function chipsInventario(ctx: PanelContext): HTMLElement {
   const inv = ctx.ui.state?.inventory ?? [];
   if (inv.length === 0) return el('p', 'empty', 'non hai niente con te');
 
-  const box = el('div', 'chips');
+  // Classe propria: qui le pastiglie non sono etichette di dati come altrove
+  // nel pannello, sono cose che si hanno in mano e che si toccano, e vanno
+  // dimensionate per il dito. Sta sul contenitore e non sulle singole perche'
+  // un oggetto senza `description` non e' toccabile ma resta della stessa
+  // famiglia: una fila mezza tonda e mezza squadrata sembra rotta.
+  const box = el('div', 'chips inventario');
   for (const id of inv) {
     const scheda = ctx.story.items?.find((i) => i.id === id);
     const nome = scheda?.name ?? (ctx.debug ? `${id} [senza scheda]` : id);
