@@ -153,6 +153,20 @@ non la partita.
   interfacce: se ti trovi a duplicare una regola in `src/web/` o `src/cli/`,
   è nel posto sbagliato. La PWA importerà lo stesso core.
 
+## Prima di ogni commit
+
+**Alza la versione del player.** Vive in un posto solo — il campo `version` di
+`player/package.json` — e da li' la prendono sia il web (vite la incolla nel
+bundle) sia la CLI. E' il numero che compare in fondo al pannello, ed e' l'unico
+modo che ha chi sta provando una build dal telefono di sapere se quello che ha
+in mano e' quello che gli e' stato appena mandato: senza, «ho gia' aggiornato?»
+non ha risposta. Patch per una correzione, minore per un pezzo di interfaccia
+nuovo.
+
+Poi ricostruisci quello che porta il numero dentro di se': `npm run build:web`
+e i `play.html` delle storie (`npm run embed`), altrimenti il pannello continua
+a mostrare la versione di prima.
+
 ## Riprendere il progetto
 
 Se l'utente chiede di riprendere senza specificare altro, chiedi su quale dei

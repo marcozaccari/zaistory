@@ -850,7 +850,10 @@ export class WebUI implements PlayerUI {
         const uscita = !cutscene && p.uscite.includes(a);
         const b = el('button', cutscene || uscita ? 'choice continue' : 'choice solo-debug');
         if (!cutscene && !uscita) b.append(el('span', 'idx', `${i + 1}`));
-        b.append(document.createTextNode(cutscene || uscita ? `▸ ${a.label}` : a.label));
+        // Il segno sta in un elemento suo: e' l'unica cosa del bottone che
+        // deve poter crescere senza portarsi dietro il testo e l'altezza.
+        if (cutscene || uscita) b.append(el('span', 'segno', '▸'));
+        b.append(document.createTextNode(a.label));
         b.append(
           el(
             'span',
@@ -1249,7 +1252,8 @@ export class WebUI implements PlayerUI {
     return new Promise<void>((resolve, reject) => {
       this.abort = reject;
       clear(this.dock);
-      const b = el('button', `choice continue${variant === 'start' ? ' start' : ''}`, `▸ ${label}`);
+      const b = el('button', `choice continue${variant === 'start' ? ' start' : ''}`);
+      b.append(el('span', 'segno', '▸'), document.createTextNode(label));
       // Si stacca per prima cosa, non per ultima: `press` puo' uscire senza
       // fare niente (partita gia' abbandonata), e in quel caso il listener
       // sarebbe rimasto attaccato per sempre.

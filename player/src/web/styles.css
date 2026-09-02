@@ -821,7 +821,7 @@ body.debug .assets.only-debug {
 .choice {
   display: block;
   width: 100%;
-  padding: 14px;
+  padding: 13px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--bg-soft);
@@ -862,16 +862,26 @@ body.debug .assets.only-debug {
   margin-right: 8px;
 }
 
-/* «continua» e «inizia» si toccano decine di volte per partita, spesso al buio
-   e con il pollice: sono i due bottoni che devono essere piu' grandi di tutti,
-   non della stessa taglia di una voce di dialogo. */
 .choice.continue {
-  padding: 18px 14px;
   text-align: center;
   border-color: var(--accent);
   color: var(--accent);
-  font-size: 17px;
   font-weight: 600;
+}
+
+/* Il segno che precede «continua» e «inizia».
+   Cresce da solo, senza portarsi dietro il bottone: era il triangolino a
+   essere piccolo, non il bersaglio — quello era gia' della taglia giusta, e
+   ingrandirlo mangiava altezza al testo per un problema che non aveva.
+   `line-height: 1` su un inline-block e' cio' che tiene il bottone della
+   stessa altezza di prima: senza, un carattere piu' grande alzerebbe la riga
+   che lo contiene. */
+.choice .segno {
+  display: inline-block;
+  margin-right: 6px;
+  font-size: 21px;
+  line-height: 1;
+  vertical-align: -3px;
 }
 
 /* Il bottone che apre la partita: pieno, cosi' non si confonde con i
@@ -906,7 +916,7 @@ body.debug .assets.only-debug {
 .riga-input .campo {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 15px 14px;
+  padding: 13px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--bg-soft);
@@ -927,21 +937,19 @@ body.debug .assets.only-debug {
   outline: none;
 }
 
-/* Il bersaglio del pollice, non il segno: il triangolino era grande quanto una
-   riga di testo, e su un telefono si mancava. Cinquantasei pixel di lato sono
-   la misura sotto la quale un tocco comincia a sbagliare bersaglio, e il segno
-   dentro cresce con lui — piccolo dentro un bottone grande sembra disattivato. */
+/* Il segno, non il bersaglio: il bottone era gia' alto quanto il campo — cioe'
+   della misura giusta — ed e' il triangolino dentro a essere piccolo. Cresce
+   lui e basta, l'ingombro resta quello di prima. */
 .riga-input .invia {
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  min-width: 56px;
   padding: 0 18px;
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   background: var(--accent);
   color: var(--bg);
-  font-size: 22px;
+  font-size: 21px;
   line-height: 1;
 }
 
