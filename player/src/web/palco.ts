@@ -103,13 +103,25 @@ export class Palco {
   private immagini: Immagini;
   private ridotto = false;
   /**
-   * L'id dell'inquadratura in scena.
+   * L'id della figura **disegnata adesso** nella tela.
    *
    * Serve a non riassegnare `src` quando due beat di fila condividono
    * l'immagine: riassegnarlo fa ripartire la decodifica e il palco sfarfalla
    * per un fotogramma su una figura che non e' cambiata.
    */
   private corrente?: string;
+  /**
+   * L'id dell'inquadratura **in scena**, che non e' la stessa cosa.
+   *
+   * Un nodo senza `image` non sposta la macchina: resta quella di prima, e
+   * questo campo e' la memoria di quale sia. Tenerlo separato da `corrente`
+   * non e' pignoleria — `corrente` dice cosa c'e' nel DOM e va azzerato ogni
+   * volta che la tela va ricostruita, per esempio riaccendendo le immagini.
+   * Quando erano lo stesso campo, riaccenderle in un beat che non dichiara
+   * un'immagine propria cancellava anche il ricordo di quale fosse: le facce
+   * tornavano e la figura no.
+   */
+  private inScena?: string;
   /** L'ultima inquadratura ricevuta e il cast della scena in corso: servono a
    * ridisegnare il palco quando cambia il *modo* di mostrarlo (immagini
    * accese o spente) senza aspettare il beat successivo. */
@@ -152,6 +164,8 @@ export class Palco {
    */
   rileggi(): void {
     if (!this.ultima) return;
+    // Solo `corrente`: la tela va ricostruita, ma quale inquadratura sia in
+    // scena non cambia perche' si accendono o si spengono le immagini.
     this.corrente = undefined;
     this.disegnaCast();
     this.mostra(this.ultima);
@@ -166,6 +180,7 @@ export class Palco {
    */
   svuota(): void {
     this.corrente = undefined;
+    this.inScena = undefined;
     this.ultima = undefined;
     this.cast = [];
     this.tela.replaceChildren();
@@ -187,20 +202,24 @@ export class Palco {
   }
 
   private disegnaTela(inq: Inquadratura): void {
-    const src = inq.image && this.immagini.accese ? this.immagini.url(inq.image) : undefined;
+    // Un nodo che dichiara un'immagine sposta la macchina; uno che non la
+    // dichiara lascia in scena quella di prima, che e' esattamente cio' che
+    // succede in una stanza dove l'inquadratura non e' cambiata.
+    if (inq.image) this.inScena = inq.image;
+    const id = this.inScena;
+    const src = id && this.immagini.accese ? this.immagini.url(id) : undefined;
 
     if (!src) {
-      // Nessuna immagine per questo nodo. Se una c'e' gia' sul palco resta
-      // dov'e': la macchina non si e' spostata. Se non c'e' — solo testo, o
-      // storia non ancora illustrata — al suo posto va il prompt, che e'
-      // l'unica descrizione d'autore di cio' che si vedrebbe.
-      if (this.corrente) return;
+      // Niente da mostrare: solo testo, o storia non ancora illustrata. Al
+      // posto della figura vanno i prompt, che sono l'unica descrizione
+      // d'autore di cio' che si vedrebbe.
+      this.corrente = undefined;
       this.tela.replaceChildren(this.tavola(inq));
       return;
     }
 
-    if (inq.image === this.corrente) return;
-    this.corrente = inq.image;
+    if (id === this.corrente) return;
+    this.corrente = id;
 
     const img = new Image();
     img.src = src;
@@ -228,7 +247,7 @@ export class Palco {
     img.onerror = () => {
       this.corrente = undefined;
       this.tela.replaceChildren(
-        el('p', 'manca', `(immagine «${inq.image}» dichiarata nell'IR ma non trovata)`),
+        el('p', 'manca', `(immagine «${id}» dichiarata nell'IR ma non trovata)`),
         this.tavola(inq),
       );
     };
@@ -236,7 +255,7 @@ export class Palco {
     // L'id sotto l'immagine, come sotto le figure del transcript: si vede solo
     // a debug acceso, e li' e' il modo di sapere quale file si sta guardando
     // senza aprire il pannello.
-    this.tela.replaceChildren(img, el('p', 'ir palco-id', inq.image));
+    this.tela.replaceChildren(img, el('p', 'ir palco-id', id));
   }
 
   /**

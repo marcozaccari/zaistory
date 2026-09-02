@@ -273,15 +273,15 @@ function modalitaImmagini(body: HTMLElement, ctx: PanelContext): void {
     [
       false,
       'testo',
-      "I prompt e la scheda della scena, come se le immagini non ci fossero: e' cosi' che si legge " +
-        "cosa *verrebbe* generato, ed e' il modo con cui si lavora sull'IR.",
+      "I prompt al posto delle inquadrature, in cima come le immagini che sostituiscono: e' cosi' " +
+        "che si legge cosa *verrebbe* generato, ed e' il modo con cui si lavora sull'IR.",
     ],
     [
       true,
       'immagini',
       `Le ${quante} immagini pubblicate: l'inquadratura corrente resta ferma in cima e il racconto ` +
-        'le scorre sotto. I prompt che l\'immagine mostra non si perdono, si chiudono su una riga ' +
-        'sola che si apre toccandola.',
+        "le scorre sotto. I prompt non si perdono: si aprono allargando l'immagine o la faccia a cui " +
+        'appartengono.',
     ],
   ];
   const riga = el('div', 'chips');

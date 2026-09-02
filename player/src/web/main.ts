@@ -223,15 +223,20 @@ function panelContext(s: Session): PanelContext {
     immagini,
     onImmagini: (v) => {
       immagini.imposta(v);
-      // Le immagini gia' stampate restano: il transcript e' il resoconto di
-      // cio' che e' successo, non una vista che si ridisegna. L'interruttore
-      // vale da qui in avanti, come tutto il resto.
+      // Il menu si chiude, come per «ricomincia» e «rigioca» e per la stessa
+      // ragione: quello che questa scelta cambia sta *dietro* al pannello. Un
+      // interruttore che si muove e non fa vedere niente e' indistinguibile da
+      // uno rotto — e su un telefono il pannello copre tutto lo schermo,
+      // quindi «niente» e' letteralmente quello che si vede.
+      closePanel();
+      // Le immagini gia' stampate nel transcript restano: quello e' il
+      // resoconto di cio' che e' successo, non una vista che si ridisegna, e
+      // l'interruttore vale da qui in avanti come tutto il resto.
       //
-      // Il palco no: quello non e' un resoconto ma una vista, e obbedisce
-      // subito — un pannello che resta come prima dopo aver detto "niente
-      // immagini" e' un interruttore che sembra rotto. Non sparisce pero': in
-      // solo testo la testa dello schermo continua a dire dove siamo, con i
-      // prompt al posto della figura e le iniziali al posto delle facce.
+      // Il palco no: quello e' una vista, e obbedisce subito. Non sparisce
+      // pero': in solo testo la testa dello schermo continua a dire dove
+      // siamo, con i prompt al posto della figura e le iniziali al posto
+      // delle facce.
       palco.rileggi();
     },
     ascolto,
