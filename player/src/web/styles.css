@@ -1053,8 +1053,13 @@ body.debug .dock .piega.solo-debug {
   line-height: 1.35;
 }
 
+/* Il suggerimento e' piu' scuro del testo spento della pagina. Con lo stesso
+   grigio delle narrazioni e delle etichette si leggeva come una riga di
+   storia — una in piu' fra le altre — invece che come il posto vuoto dove
+   scrivere: un segnaposto deve stare **sotto** a tutto cio' che e' scritto
+   davvero, altrimenti compete con quello che lo circonda. */
 .riga-input .campo::placeholder {
-  color: var(--fg-dim);
+  color: color-mix(in srgb, var(--fg-dim) 55%, var(--bg));
 }
 
 .riga-input .campo:focus {
