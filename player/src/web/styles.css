@@ -2676,6 +2676,41 @@ body[data-font="macchina"] {
   --prosa-corpo: 0.92em;
 }
 
+/* Su telefono le quattro taglie qui sopra scendono di un gradino; il bastoni
+   di sistema no, e resta a un `em` netto.
+
+   Le taglie erano state accordate su schermo grande, dove il bastoni e' il
+   piu' piccolo dei cinque e gli altri quattro devono crescere per pareggiargli
+   l'occhio. Su telefono quel pareggio non regge: il bastoni non e' piu' un
+   carattere da interfaccia desktop ma quello di sistema del telefono,
+   disegnato per essere letto a quindici centimetri dagli occhi e quindi gia'
+   largo e alto d'occhio di suo. Rispetto a lui gli altri quattro non
+   pareggiavano — sopravanzavano, e la riga di prosa ne usciva piu' grossa di
+   tutto il resto della pagina.
+
+   Un fattore solo per tutti e quattro, non quattro ritocchi a mano: i rapporti
+   fra loro erano giusti e restano quelli, e' il gradino comune contro il
+   riferimento che era sbagliato. Il monospazio scende con gli altri, cosi'
+   anche le battute — che con `macchina` prendono questa stessa misura —
+   restano in riga con la prosa. */
+@media (max-width: 639px), (max-height: 560px) {
+  body[data-font="charter"] {
+    --prosa-corpo: 1.02em;
+  }
+
+  body[data-font="pagella"] {
+    --prosa-corpo: 1.04em;
+  }
+
+  body[data-font="schoolbook"] {
+    --prosa-corpo: 0.99em;
+  }
+
+  body[data-font="macchina"] {
+    --prosa-corpo: 0.86em;
+  }
+}
+
 /* --- Cio' che il carattere non tocca --------------------------------------
 
    Le battute e il nome di chi le dice: monospazio, sempre. Una misura sotto il
