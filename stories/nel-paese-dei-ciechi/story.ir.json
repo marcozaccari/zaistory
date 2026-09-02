@@ -699,7 +699,7 @@
                 "goto": "d_vista"
               },
               {
-                "text": "Restare immobile e lasciarsi avvicinare.",
+                "text": "Resta immobile e lasciati avvicinare.",
                 "goto": "d_esame",
                 "effect": {
                   "narration": "I tre si avvicinano insieme, mani protese. Nuñez arretra d'istinto — poi si lascia toccare: viso, capelli, mento non rasato, giacca ruvida. Lo esaminano come si esamina una creatura nuova."
@@ -717,7 +717,7 @@
             "text": "Che creatura curiosa, Pedro. Senti quanto è rozzo il pelo, come il pelo di un lama. È ruvido come le rocce che l'hanno generato. Forse si affinerà.",
             "choices": [
               {
-                "text": "Toccarsi un occhio con un dito, per indicarlo.",
+                "text": "Toccati un occhio con un dito, per indicarlo.",
                 "goto": "d_occhi",
                 "effect": {
                   "narration": "Nuñez si dimena. Con un dito si tocca l'occhio per indicarlo — i tre reagiscono con un sussulto, come davanti a una stranezza sgradevole, e lo tastano di nuovo, lì."
@@ -928,14 +928,14 @@
             "text": "Racconta, creatura. Da dove saresti venuto?",
             "choices": [
               {
-                "text": "Parlare del cielo, delle montagne, del mondo là fuori.",
+                "text": "Parla del cielo, delle montagne, del mondo là fuori.",
                 "goto": "d_cosmogonia",
                 "effect": {
                   "narration": "Nuñez tenta di spiegare il mondo, il cielo, le montagne, la vista. Da quattordici generazioni questa gente è cieca e tagliata fuori dal mondo dei vedenti: i nomi di tutte le cose relative alla vista sono svaniti, e la storia del mondo esterno è diventata fiaba infantile. Non credono, non capiscono — nemmeno le parole."
                 }
               },
               {
-                "text": "Parlare della vista: dire che si possono conoscere le cose lontane senza toccarle.",
+                "text": "Parla della vista: di' che si possono conoscere le cose lontane senza toccarle.",
                 "goto": "d_cosmogonia",
                 "effect": {
                   "narration": "Nuñez tenta di spiegare il mondo, il cielo, le montagne, la vista. Da quattordici generazioni questa gente è cieca e tagliata fuori dal mondo dei vedenti: i nomi di tutte le cose relative alla vista sono svaniti, e la storia del mondo esterno è diventata fiaba infantile. Non credono, non capiscono — nemmeno le parole."
@@ -948,11 +948,11 @@
             "text": "Il mondo — la nostra valle — fu prima una cavità vuota nella roccia. Poi vennero le cose senza tatto, poi i lama e le altre creature di poco senno, poi gli uomini, e infine gli angeli, che si sentono cantare e frullare per l'aria, ma non si possono toccare.",
             "choices": [
               {
-                "text": "Capire di colpo: sta parlando degli uccelli. Tacere.",
+                "text": "Capisci di colpo: sta parlando degli uccelli. Taci.",
                 "goto": "d_tempo"
               },
               {
-                "text": "Insistere: «Gli angeli sono uccelli. Se aveste occhi li vedreste.»",
+                "text": "Insisti: «Gli angeli sono uccelli. Se aveste occhi li vedreste.»",
                 "goto": "d_tempo"
               }
             ]
@@ -1671,7 +1671,7 @@
                 "goto": "d_tetto"
               },
               {
-                "text": "Restare in silenzio e piangere.",
+                "text": "Resta in silenzio e piangi.",
                 "goto": "d_tetto"
               }
             ]
@@ -2247,7 +2247,7 @@
             "text": "Presto sarai guarito, figliolo! Il dottore dice che basta una piccola operazione.",
             "choices": [
               {
-                "text": "Restare in silenzio.",
+                "text": "Resta in silenzio.",
                 "goto": "d_delusione"
               },
               {
@@ -2276,7 +2276,7 @@
             "text": "Ci sono tante belle cose, piccole cose belle: i fiori, i licheni tra le rocce, i chiaroscuri su un pezzo di pelliccia, il cielo lontano con la sua lanugine di nuvole, i tramonti, le stelle. E ci sei tu. Per te soltanto è un bene avere la vista. Ma sono questi occhi che tu hai conquistato — questi occhi che ti legano a me — gli occhi che vogliono quegli idioti. Dovrei io, invece, toccarti, udirti, e non vederti mai più. Dovrei venire sotto quel tetto di roccia e tenebra... Non desidererai che io faccia questo?",
             "choices": [
               {
-                "text": "Tacere. Un dubbio gelido si insinua.",
+                "text": "Taci. Un dubbio gelido si insinua.",
                 "goto": "d_dubbio"
               },
               {

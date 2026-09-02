@@ -312,14 +312,26 @@ esporre informazioni che il giocatore dovrebbe scoprire tramite dialogo/azioni.
 
   ```
   «Vengo da oltre i monti, dove gli uomini vedono.»      battuta: virgolettata
-  Restare immobile e lasciarsi avvicinare.               azione: nuda
-  Insistere: «Se aveste occhi li vedreste.»              didascalia + battuta
-  Parlare del cielo e delle montagne.                    intenzione, non parole
+  Resta immobile e lasciati avvicinare.                  azione: nuda
+  Insisti: «Se aveste occhi li vedreste.»                didascalia + battuta
+  Parla del cielo e delle montagne.                      intenzione, non parole
   ```
+
+  La parte **non** virgolettata segue la stessa regola delle `label`: seconda
+  persona singolare, mai infinito. `"Resta immobile"`, non
+  `"Restare immobile"`.
 
   L'ultimo caso è la distinzione che conta: se stai *riassumendo* di cosa si
   parla non stai citando, e le virgolette non vanno. Vanno solo sulle parole
-  esatte. Stessa regola per `DialogueNode.text`, dove però il parlante è già
+  esatte.
+
+  **Il player legge questo segno**, quindi non è solo una convenzione di
+  lettura: una scelta virgolettata per intero, dopo il tocco, viene stampata
+  nel transcript come una battuta vera — nome del protagonista sopra, riga a
+  passo fisso sotto — e le virgolette si tolgono, perché il nome dice già che
+  quelle parole le ha dette lui. Tutto il resto resta una riga di resoconto.
+  Virgolettare un'intenzione riassunta la fa recitare al protagonista come se
+  fosse la sua battuta; non virgolettare parole esatte la declassa a nota. Stessa regola per `DialogueNode.text`, dove però il parlante è già
   esplicito nel campo `speaker`: lì le virgolette servono solo se la battuta
   contiene a sua volta una citazione.
 - **Un dialogo si gioca a scelte, sempre.** L'input libero vale per
@@ -446,6 +458,25 @@ scena**. NON stai costruendo un motore verbo×oggetto stile SCUMM classico
 - **Ogni azione deve essere concreta e specifica alla scena**, non generica.
   Bene: `"Osserva il camino"`, `"Raccogli la chiave sul bancone"`. Male:
   `"Guarda"`, `"Interagisci"`.
+- **`label` va sempre alla seconda persona singolare, mai all'infinito.**
+  `"Osserva il camino"`, non `"Osservare il camino"`; `"Apri l'armadietto"`,
+  non `"Aprire l'armadietto"`. L'infinito è la voce di un elenco di comandi
+  di un programma; la seconda persona è qualcuno che parla al giocatore, e in
+  un gioco interattivo quel «tu» è sempre il protagonista. Non è una
+  preferenza di stile: le `label` stanno nel dock accanto a quello che il
+  giocatore scrive di suo — e lui scrive `apri l'armadietto`, non
+  `aprire l'armadietto` — e finiscono nel transcript accanto alle battute
+  della storia, dove l'infinito suona come un'etichetta di interfaccia
+  capitata in mezzo alla prosa.
+
+  L'imperativo negativo fa eccezione solo in apparenza: in italiano è
+  `non` + infinito, quindi `"Non dire niente"` è già seconda persona e va
+  bene così.
+
+  Vale per ogni verbo, anche il secondo di un'azione composta:
+  `"Srotola il cavo e appoggia i fili"`, non `"…e appoggiare i fili"`; e i
+  riflessivi prendono il pronome attaccato — `"Guardati la coscia"`,
+  `"Siediti con le spalle al muro"`, `"Fermati, mira e spara"`.
 - **Includi sempre un modo di proseguire/uscire dalla scena** (via
   `goto_scene`), a meno che la scena non sia esplicitamente un finale.
   Una scena senza uscita è un bug di game design, non solo tecnico.

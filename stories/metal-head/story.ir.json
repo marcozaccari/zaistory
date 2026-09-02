@@ -484,7 +484,7 @@
                 }
               },
               {
-                "text": "Tenere il palmo chiuso e non rispondere.",
+                "text": "Tieni il palmo chiuso e non rispondere.",
                 "goto": "silenzio"
               }
             ]
@@ -550,7 +550,7 @@
       "actions": [
         {
           "id": "ascolta",
-          "label": "Ascoltare Tommy e Mark",
+          "label": "Ascolta Tommy e Mark",
           "target": "mark",
           "aliases": [
             "ascolta",
@@ -585,7 +585,7 @@
         },
         {
           "id": "guarda_il_palmo",
-          "label": "Aprire il palmo della mano",
+          "label": "Apri il palmo della mano",
           "target": "laura",
           "aliases": [
             "guarda la mano",
@@ -617,7 +617,7 @@
         },
         {
           "id": "guarda_fuori",
-          "label": "Guardare fuori dal finestrino",
+          "label": "Guarda fuori dal finestrino",
           "target": "ambiente",
           "aliases": [
             "guarda fuori",
@@ -648,7 +648,7 @@
         },
         {
           "id": "arriva",
-          "label": "Lasciare che la strada finisca",
+          "label": "Lascia che la strada finisca",
           "target": "ambiente",
           "condition": {
             "flag_present": "viaggio_ascoltato"
@@ -795,7 +795,7 @@
                 }
               },
               {
-                "text": "Caricarsi lo zaino in spalla e non rispondere.",
+                "text": "Caricati lo zaino in spalla e non rispondere.",
                 "goto": "tommy_ancora"
               }
             ]
@@ -836,7 +836,7 @@
       "actions": [
         {
           "id": "parla_con_tommy",
-          "label": "Sentire cosa vuole Tommy",
+          "label": "Senti cosa vuole Tommy",
           "target": "tommy",
           "aliases": [
             "parla con tommy",
@@ -868,7 +868,7 @@
         },
         {
           "id": "osserva_il_capannone",
-          "label": "Osservare il capannone",
+          "label": "Osserva il capannone",
           "target": "ambiente",
           "aliases": [
             "guarda il capannone",
@@ -898,7 +898,7 @@
         },
         {
           "id": "osserva_il_furgone",
-          "label": "Osservare il furgone bianco",
+          "label": "Osserva il furgone bianco",
           "target": "ambiente",
           "aliases": [
             "guarda il furgone",
@@ -927,7 +927,7 @@
         },
         {
           "id": "entra_nello_spaccio",
-          "label": "Entrare nel negozietto con Mark",
+          "label": "Entra nel negozietto con Mark",
           "target": "ambiente",
           "condition": {
             "flag_present": "tommy_resta_fuori"
@@ -1041,7 +1041,7 @@
                 "goto": "mark_soldi"
               },
               {
-                "text": "Girare le scatolette e leggere i nomi senza dire niente.",
+                "text": "Gira le scatolette e leggi i nomi senza dire niente.",
                 "goto": "mark_aspetta"
               }
             ]
@@ -1070,7 +1070,7 @@
       "actions": [
         {
           "id": "apri_la_cassa",
-          "label": "Aprire il registratore di cassa",
+          "label": "Apri il registratore di cassa",
           "target": "ambiente",
           "repeatable": false,
           "aliases": [
@@ -1104,7 +1104,7 @@
         },
         {
           "id": "apri_l_armadietto",
-          "label": "Aprire l'armadietto a muro",
+          "label": "Apri l'armadietto a muro",
           "target": "ambiente",
           "repeatable": false,
           "condition": {
@@ -1141,7 +1141,7 @@
         },
         {
           "id": "cerca_sugli_scaffali",
-          "label": "Cercare meglio sugli scaffali",
+          "label": "Cerca meglio sugli scaffali",
           "target": "ambiente",
           "repeatable": false,
           "condition": {
@@ -1183,7 +1183,7 @@
         },
         {
           "id": "prendi_le_caramelle",
-          "label": "Prendere il pacchetto di caramelle",
+          "label": "Prendi il pacchetto di caramelle",
           "target": "caramelle",
           "aliases": [
             "prendi le caramelle",
@@ -1214,7 +1214,7 @@
         },
         {
           "id": "osserva_lo_schedario",
-          "label": "Osservare lo schedario",
+          "label": "Osserva lo schedario",
           "target": "ambiente",
           "aliases": [
             "guarda lo schedario",
@@ -1243,7 +1243,7 @@
         },
         {
           "id": "vai_nel_magazzino",
-          "label": "Prendere la porta che dà sul magazzino",
+          "label": "Prendi la porta che dà sul magazzino",
           "target": "ambiente",
           "condition": {
             "has_item": "caramelle"
@@ -1392,7 +1392,7 @@
                 "goto": "mark_se_cado"
               },
               {
-                "text": "Restare ferma e non rispondere.",
+                "text": "Resta ferma e non rispondere.",
                 "goto": "mark_insiste"
               }
             ]
@@ -1432,7 +1432,7 @@
       "actions": [
         {
           "id": "confronta_il_codice",
-          "label": "Confrontare il codice sulla mano con le targhette",
+          "label": "Confronta il codice sulla mano con le targhette",
           "target": "laura",
           "repeatable": false,
           "aliases": [
@@ -1463,7 +1463,7 @@
         },
         {
           "id": "alza_la_torcia",
-          "label": "Alzare la torcia verso i ripiani alti",
+          "label": "Alza la torcia verso i ripiani alti",
           "target": "ambiente",
           "repeatable": false,
           "condition": {
@@ -1498,7 +1498,7 @@
         },
         {
           "id": "parla_con_mark",
-          "label": "Parlare con Mark della scatola",
+          "label": "Parla con Mark della scatola",
           "target": "mark",
           "condition": {
             "flag_present": "scatola_avvistata"
@@ -1531,7 +1531,7 @@
         },
         {
           "id": "illumina_i_corridoi",
-          "label": "Illuminare il corridoio alle spalle",
+          "label": "Illumina il corridoio alle spalle",
           "target": "ambiente",
           "aliases": [
             "guarda indietro",
@@ -1594,7 +1594,7 @@
         },
         {
           "id": "resta_a_guardare",
-          "label": "Restare ferma e guardare",
+          "label": "Resta ferma e guarda",
           "target": "ambiente",
           "condition": {
             "flag_present": "mark_sullo_scaffale"
@@ -1860,7 +1860,7 @@
       "actions": [
         {
           "id": "corri_tra_gli_scaffali",
-          "label": "Correre tra gli scaffali",
+          "label": "Corri tra gli scaffali",
           "target": "ambiente",
           "condition": {
             "flag_absent": "carrello_visto"
@@ -1883,7 +1883,7 @@
         },
         {
           "id": "rovescia_il_carrello",
-          "label": "Rovesciare il carrello dietro di sé",
+          "label": "Rovescia il carrello dietro di te",
           "target": "ambiente",
           "repeatable": false,
           "condition": {
@@ -1908,7 +1908,7 @@
         },
         {
           "id": "guarda_indietro",
-          "label": "Guardare indietro",
+          "label": "Guarda indietro",
           "target": "cane_robot",
           "aliases": [
             "guarda dietro",
@@ -1940,7 +1940,7 @@
         },
         {
           "id": "apri_la_scatola",
-          "label": "Aprire la scatola bianca",
+          "label": "Apri la scatola bianca",
           "target": "laura",
           "condition": {
             "has_item": "scatola_bianca"
@@ -1975,7 +1975,7 @@
         },
         {
           "id": "finta_e_rampa",
-          "label": "Fingere di prendere il corridoio laterale e lanciarsi sulla rampa",
+          "label": "Fingi di prendere il corridoio laterale e lanciati sulla rampa",
           "target": "ambiente",
           "condition": {
             "flag_present": "carrello_rovesciato"
@@ -2100,7 +2100,7 @@
         },
         {
           "id": "salta_dentro",
-          "label": "Gettarsi dentro senza dire niente",
+          "label": "Gettati dentro senza dire niente",
           "target": "tommy",
           "aliases": [
             "sali sul furgone",
@@ -2124,7 +2124,7 @@
         },
         {
           "id": "guarda_la_rampa",
-          "label": "Guardare la bocca della rampa",
+          "label": "Guarda la bocca della rampa",
           "target": "ambiente",
           "aliases": [
             "guarda la rampa",
@@ -2217,7 +2217,7 @@
                 "goto": "tommy_mark"
               },
               {
-                "text": "Tenere gli occhi sullo specchietto e non rispondere.",
+                "text": "Tieni gli occhi sullo specchietto e non rispondere.",
                 "goto": "tommy_mark"
               }
             ]
@@ -2261,7 +2261,7 @@
       "actions": [
         {
           "id": "rispondi_a_tommy",
-          "label": "Rispondere a Tommy",
+          "label": "Rispondi a Tommy",
           "target": "tommy",
           "aliases": [
             "parla con tommy",
@@ -2293,7 +2293,7 @@
         },
         {
           "id": "guarda_lo_specchietto",
-          "label": "Guardare nello specchietto",
+          "label": "Guarda nello specchietto",
           "target": "cane_robot",
           "aliases": [
             "guarda lo specchietto",
@@ -2325,7 +2325,7 @@
         },
         {
           "id": "aggrappati",
-          "label": "Aggrapparsi a quello che c'è",
+          "label": "Aggrappati a quello che c'è",
           "target": "laura",
           "condition": {
             "flag_present": "tommy_ha_chiesto_di_mark"
@@ -2475,7 +2475,7 @@
         },
         {
           "id": "afferra_il_volante",
-          "label": "Afferrare il volante",
+          "label": "Afferra il volante",
           "target": "tommy",
           "aliases": [
             "prendi il volante",
@@ -2509,7 +2509,7 @@
         },
         {
           "id": "spara_al_tetto",
-          "label": "Battere sul tetto e urlare",
+          "label": "Batti sul tetto e urla",
           "target": "cane_robot",
           "aliases": [
             "colpisci il tetto",
@@ -2619,7 +2619,7 @@
       "actions": [
         {
           "id": "osserva_tommy",
-          "label": "Guardare Tommy",
+          "label": "Guarda Tommy",
           "target": "tommy",
           "aliases": [
             "guarda tommy",
@@ -2651,7 +2651,7 @@
         },
         {
           "id": "osserva_il_finestrino",
-          "label": "Osservare il finestrino sopra di sé",
+          "label": "Osserva il finestrino sopra di te",
           "target": "ambiente",
           "aliases": [
             "guarda il finestrino",
@@ -2672,7 +2672,7 @@
         },
         {
           "id": "slacciati_la_cintura",
-          "label": "Slacciarsi la cintura",
+          "label": "Slacciati la cintura",
           "target": "laura",
           "repeatable": false,
           "aliases": [
@@ -2706,7 +2706,7 @@
         },
         {
           "id": "cerca_nella_cassetta",
-          "label": "Frugare nella cassetta degli attrezzi",
+          "label": "Fruga nella cassetta degli attrezzi",
           "target": "ambiente",
           "repeatable": false,
           "condition": {
@@ -2730,7 +2730,7 @@
         },
         {
           "id": "apri_la_scatola",
-          "label": "Aprire la scatola bianca",
+          "label": "Apri la scatola bianca",
           "target": "laura",
           "condition": {
             "has_item": "scatola_bianca"
@@ -2764,7 +2764,7 @@
         },
         {
           "id": "esci_dal_lunotto",
-          "label": "Uscire dal lunotto posteriore",
+          "label": "Esci dal lunotto posteriore",
           "target": "ambiente",
           "condition": {
             "has_item": "coltello"
@@ -2948,7 +2948,7 @@
       "actions": [
         {
           "id": "guarda_la_gamba",
-          "label": "Guardarsi la coscia",
+          "label": "Guardati la coscia",
           "target": "laura",
           "repeatable": false,
           "aliases": [
@@ -2982,7 +2982,7 @@
         },
         {
           "id": "sbircia_il_cane",
-          "label": "Sbirciare oltre il muretto",
+          "label": "Sbircia oltre il muretto",
           "target": "cane_robot",
           "aliases": [
             "guarda il cane robot",
@@ -3015,7 +3015,7 @@
         },
         {
           "id": "resta_immobile",
-          "label": "Restare immobile",
+          "label": "Resta immobile",
           "target": "laura",
           "aliases": [
             "non muoverti",
@@ -3047,7 +3047,7 @@
         },
         {
           "id": "scatta_e_corri",
-          "label": "Scattare e correre",
+          "label": "Scatta e corri",
           "target": "ambiente",
           "condition": {
             "flag_present": "gamba_osservata"
@@ -3215,7 +3215,7 @@
       "actions": [
         {
           "id": "cerca_un_albero",
-          "label": "Cercare un albero su cui salire",
+          "label": "Cerca un albero su cui salire",
           "target": "ambiente",
           "condition": {
             "flag_absent": "alberi_cercati"
@@ -3239,7 +3239,7 @@
         },
         {
           "id": "cerca_ancora",
-          "label": "Guardare meglio, con calma",
+          "label": "Guarda meglio, con calma",
           "target": "ambiente",
           "condition": {
             "flag_present": "alberi_cercati",
@@ -3266,7 +3266,7 @@
         },
         {
           "id": "albero_biforcuto",
-          "label": "Osservare l'albero dal tronco biforcuto",
+          "label": "Osserva l'albero dal tronco biforcuto",
           "target": "ambiente",
           "condition": {
             "flag_present": "alberi_cercati_ancora"
@@ -3292,7 +3292,7 @@
         },
         {
           "id": "guardati_indietro",
-          "label": "Guardarsi indietro",
+          "label": "Guardati indietro",
           "target": "cane_robot",
           "aliases": [
             "guarda dietro",
@@ -3324,7 +3324,7 @@
         },
         {
           "id": "arrampicati",
-          "label": "Arrampicarsi",
+          "label": "Arrampicati",
           "target": "ambiente",
           "condition": {
             "flag_present": "albero_trovato"
@@ -3611,7 +3611,7 @@
       "actions": [
         {
           "id": "guarda_il_led_spento",
-          "label": "Guardare la cosa raccolta sotto l'albero",
+          "label": "Guarda la cosa raccolta sotto l'albero",
           "target": "cane_robot",
           "condition": {
             "flag_present": "cane_a_riposo"
@@ -3648,7 +3648,7 @@
         },
         {
           "id": "guarda_il_led_acceso",
-          "label": "Guardare la cosa sveglia sotto l'albero",
+          "label": "Guarda la cosa sveglia sotto l'albero",
           "target": "cane_robot",
           "condition": {
             "flag_absent": "cane_a_riposo"
@@ -3686,7 +3686,7 @@
         },
         {
           "id": "muoviti_sul_ramo",
-          "label": "Cambiare posizione sul ramo",
+          "label": "Cambia posizione sul ramo",
           "target": "laura",
           "condition": {
             "flag_present": "cane_a_riposo"
@@ -3713,7 +3713,7 @@
         },
         {
           "id": "lancia_una_caramella",
-          "label": "Far cadere una caramella sul Cane-robot",
+          "label": "Fai cadere una caramella sul Cane-robot",
           "target": "cane_robot",
           "repeatable": false,
           "condition": {
@@ -3741,7 +3741,7 @@
         },
         {
           "id": "svuota_il_pacchetto",
-          "label": "Passare la notte a lanciargliele tutte",
+          "label": "Passa la notte a lanciargliele tutte",
           "target": "cane_robot",
           "condition": {
             "flag_present": "caramella_provata",
@@ -3769,7 +3769,7 @@
         },
         {
           "id": "apri_la_scatola",
-          "label": "Aprire la scatola bianca",
+          "label": "Apri la scatola bianca",
           "target": "laura",
           "condition": {
             "has_item": "scatola_bianca"
@@ -3896,7 +3896,7 @@
       "actions": [
         {
           "id": "guarda_la_coscia",
-          "label": "Guardarsi la coscia",
+          "label": "Guardati la coscia",
           "target": "laura",
           "repeatable": false,
           "aliases": [
@@ -3930,7 +3930,7 @@
         },
         {
           "id": "usa_il_coltello",
-          "label": "Tirare fuori il coltello",
+          "label": "Tira fuori il coltello",
           "target": "laura",
           "repeatable": false,
           "condition": {
@@ -3970,7 +3970,7 @@
         },
         {
           "id": "osserva_il_tracker",
-          "label": "Osservare il cilindretto contro il cielo",
+          "label": "Osserva il cilindretto contro il cielo",
           "target": "laura",
           "condition": {
             "has_item": "tracker"
@@ -4006,7 +4006,7 @@
         },
         {
           "id": "infila_nella_pecora",
-          "label": "Infilare il cilindretto nella lana della carcassa",
+          "label": "Infila il cilindretto nella lana della carcassa",
           "target": "ambiente",
           "condition": {
             "has_item": "tracker"
@@ -4030,7 +4030,7 @@
         },
         {
           "id": "apri_la_scatola",
-          "label": "Aprire la scatola bianca",
+          "label": "Apri la scatola bianca",
           "target": "laura",
           "condition": {
             "has_item": "scatola_bianca"
@@ -4064,7 +4064,7 @@
         },
         {
           "id": "vai_nella_direzione_opposta",
-          "label": "Andare nella direzione opposta",
+          "label": "Vai nella direzione opposta",
           "target": "ambiente",
           "condition": {
             "flag_present": "tracker_nella_pecora"
@@ -4225,7 +4225,7 @@
       "actions": [
         {
           "id": "osserva_la_villa",
-          "label": "Osservare la villa",
+          "label": "Osserva la villa",
           "target": "ambiente",
           "aliases": [
             "guarda la casa",
@@ -4244,7 +4244,7 @@
         },
         {
           "id": "osserva_l_utilitaria",
-          "label": "Osservare l'utilitaria",
+          "label": "Osserva l'utilitaria",
           "target": "ambiente",
           "aliases": [
             "guarda l'auto",
@@ -4264,7 +4264,7 @@
         },
         {
           "id": "osserva_il_giardino",
-          "label": "Osservare quello che era il giardino",
+          "label": "Osserva quello che era il giardino",
           "target": "ambiente",
           "aliases": [
             "guarda il giardino",
@@ -4284,7 +4284,7 @@
         },
         {
           "id": "osserva_la_cassetta",
-          "label": "Osservare la cassetta della posta",
+          "label": "Osserva la cassetta della posta",
           "target": "ambiente",
           "aliases": [
             "guarda la posta",
@@ -4305,7 +4305,7 @@
         },
         {
           "id": "osserva_il_patio",
-          "label": "Guardare verso il patio",
+          "label": "Guarda verso il patio",
           "target": "ambiente",
           "aliases": [
             "guarda il patio",
@@ -4325,7 +4325,7 @@
         },
         {
           "id": "fruga_nell_auto",
-          "label": "Frugare dentro l'auto",
+          "label": "Fruga dentro l'auto",
           "target": "ambiente",
           "repeatable": false,
           "aliases": [
@@ -4346,7 +4346,7 @@
         },
         {
           "id": "prova_il_portone",
-          "label": "Provare il portone",
+          "label": "Prova il portone",
           "target": "ambiente",
           "aliases": [
             "apri la porta",
@@ -4363,7 +4363,7 @@
         },
         {
           "id": "apri_il_portone",
-          "label": "Aprire il portone con la chiave",
+          "label": "Apri il portone con la chiave",
           "target": "ambiente",
           "condition": {
             "has_item": "chiave_casa"
@@ -4448,7 +4448,7 @@
       "actions": [
         {
           "id": "bevi",
-          "label": "Bere dalla bottiglia trovata in cucina",
+          "label": "Bevi dalla bottiglia trovata in cucina",
           "target": "ambiente",
           "repeatable": false,
           "aliases": [
@@ -4470,7 +4470,7 @@
         },
         {
           "id": "apri_gli_armadietti",
-          "label": "Aprire gli armadietti della cucina",
+          "label": "Apri gli armadietti della cucina",
           "target": "ambiente",
           "repeatable": false,
           "aliases": [
@@ -4490,7 +4490,7 @@
         },
         {
           "id": "mangia",
-          "label": "Mangiare una scatoletta a mani nude",
+          "label": "Mangia una scatoletta a mani nude",
           "target": "laura",
           "repeatable": false,
           "condition": {
@@ -4523,7 +4523,7 @@
         },
         {
           "id": "osserva_il_soggiorno",
-          "label": "Osservare il soggiorno",
+          "label": "Osserva il soggiorno",
           "target": "ambiente",
           "aliases": [
             "osserva il soggiorno",
@@ -4542,7 +4542,7 @@
         },
         {
           "id": "apri_la_scatola",
-          "label": "Aprire la scatola bianca",
+          "label": "Apri la scatola bianca",
           "target": "laura",
           "condition": {
             "has_item": "scatola_bianca"
@@ -4576,7 +4576,7 @@
         },
         {
           "id": "sali_di_sopra",
-          "label": "Salire al piano di sopra",
+          "label": "Sali al piano di sopra",
           "target": "ambiente",
           "condition": {
             "flag_present": "scatoletta_mangiata"
@@ -4684,7 +4684,7 @@
       "actions": [
         {
           "id": "osserva_le_sagome",
-          "label": "Guardare le due sagome sul letto",
+          "label": "Guarda le due sagome sul letto",
           "target": "ambiente",
           "aliases": [
             "guarda il letto",
@@ -4705,7 +4705,7 @@
         },
         {
           "id": "osserva_il_comodino",
-          "label": "Osservare il comodino",
+          "label": "Osserva il comodino",
           "target": "ambiente",
           "aliases": [
             "guarda il comodino",
@@ -4725,7 +4725,7 @@
         },
         {
           "id": "apri_il_cassetto",
-          "label": "Aprire il cassetto del comodino",
+          "label": "Apri il cassetto del comodino",
           "target": "ambiente",
           "repeatable": false,
           "aliases": [
@@ -4745,7 +4745,7 @@
         },
         {
           "id": "apri_l_armadio",
-          "label": "Aprire l'armadio",
+          "label": "Apri l'armadio",
           "target": "ambiente",
           "repeatable": false,
           "aliases": [
@@ -4765,7 +4765,7 @@
         },
         {
           "id": "torna_in_soggiorno",
-          "label": "Tornare giù in soggiorno",
+          "label": "Torna giù in soggiorno",
           "target": "ambiente",
           "condition": {
             "has_item": "fucile"
@@ -4865,7 +4865,7 @@
       "actions": [
         {
           "id": "carica_il_fucile",
-          "label": "Caricare il fucile",
+          "label": "Carica il fucile",
           "target": "laura",
           "repeatable": false,
           "condition": {
@@ -4899,7 +4899,7 @@
         },
         {
           "id": "siediti",
-          "label": "Sedersi con le spalle al muro",
+          "label": "Siediti con le spalle al muro",
           "target": "laura",
           "aliases": [
             "siediti",
@@ -4922,7 +4922,7 @@
         },
         {
           "id": "guarda_la_vetrata",
-          "label": "Guardare oltre la vetrata",
+          "label": "Guarda oltre la vetrata",
           "target": "ambiente",
           "aliases": [
             "guarda fuori",
@@ -4944,7 +4944,7 @@
         },
         {
           "id": "vai_nel_corridoio",
-          "label": "Arretrare nel corridoio vetrato",
+          "label": "Arretra nel corridoio vetrato",
           "target": "ambiente",
           "condition": {
             "flag_present": "cane_avvistato",
@@ -5053,7 +5053,7 @@
       "actions": [
         {
           "id": "resta_a_guardare",
-          "label": "Restare ferma a guardarlo",
+          "label": "Resta ferma a guardarlo",
           "target": "cane_robot",
           "aliases": [
             "aspetta",
@@ -5085,7 +5085,7 @@
         },
         {
           "id": "spara_attraverso_il_vetro",
-          "label": "Sparare attraverso il vetro",
+          "label": "Spara attraverso il vetro",
           "target": "cane_robot",
           "condition": {
             "flag_present": "fucile_carico"
@@ -5124,7 +5124,7 @@
         },
         {
           "id": "indietreggia_e_spara",
-          "label": "Indietreggiare lungo il corridoio e sparare da lontano",
+          "label": "Indietreggia lungo il corridoio e spara da lontano",
           "target": "cane_robot",
           "condition": {
             "flag_present": "fucile_carico"
@@ -5151,7 +5151,7 @@
         },
         {
           "id": "osserva_il_cane",
-          "label": "Osservare la macchina oltre il vetro",
+          "label": "Osserva la macchina oltre il vetro",
           "target": "cane_robot",
           "aliases": [
             "guarda il cane robot",
@@ -5247,7 +5247,7 @@
       "actions": [
         {
           "id": "spara_alla_cieca",
-          "label": "Sparare alla cieca dietro di sé",
+          "label": "Spara alla cieca dietro di te",
           "target": "cane_robot",
           "condition": {
             "flag_absent": "colpo_alla_cieca"
@@ -5284,7 +5284,7 @@
         },
         {
           "id": "mira_e_spara",
-          "label": "Fermarsi, mirare e sparare",
+          "label": "Fermati, mira e spara",
           "target": "cane_robot",
           "condition": {
             "flag_absent": "colpo_alla_cieca"
@@ -5310,7 +5310,7 @@
         },
         {
           "id": "corri_in_bagno",
-          "label": "Correre in bagno",
+          "label": "Corri in bagno",
           "target": "ambiente",
           "condition": {
             "flag_present": "colpo_alla_cieca"
@@ -5416,7 +5416,7 @@
       "actions": [
         {
           "id": "guarda_la_porta",
-          "label": "Guardare la porta",
+          "label": "Guarda la porta",
           "target": "ambiente",
           "aliases": [
             "guarda i fori",
@@ -5436,7 +5436,7 @@
         },
         {
           "id": "guarda_la_finestrella",
-          "label": "Guardare la finestrella sopra la vasca",
+          "label": "Guarda la finestrella sopra la vasca",
           "target": "ambiente",
           "aliases": [
             "guarda la finestra",
@@ -5457,7 +5457,7 @@
         },
         {
           "id": "guarda_la_vasca",
-          "label": "Guardare la vasca e i rubinetti",
+          "label": "Guarda la vasca e i rubinetti",
           "target": "ambiente",
           "aliases": [
             "osserva la vasca",
@@ -5478,7 +5478,7 @@
         },
         {
           "id": "guarda_lo_specchio",
-          "label": "Guardarsi nello specchio",
+          "label": "Guardati nello specchio",
           "target": "laura",
           "aliases": [
             "guarda il riflesso",
@@ -5511,7 +5511,7 @@
         },
         {
           "id": "guarda_il_controsoffitto",
-          "label": "Alzare gli occhi al controsoffitto",
+          "label": "Alza gli occhi al controsoffitto",
           "target": "ambiente",
           "aliases": [
             "guarda in alto",
@@ -5528,7 +5528,7 @@
         },
         {
           "id": "prendi_il_nastro",
-          "label": "Prendere il rotolo di nastro isolante",
+          "label": "Prendi il rotolo di nastro isolante",
           "target": "ambiente",
           "repeatable": false,
           "aliases": [
@@ -5550,7 +5550,7 @@
         },
         {
           "id": "ricarica",
-          "label": "Ricaricare il fucile",
+          "label": "Ricarica il fucile",
           "target": "laura",
           "condition": {
             "has_item": "fucile"
@@ -5581,7 +5581,7 @@
         },
         {
           "id": "svita_le_farfalle",
-          "label": "Svitare le viti a farfalla con il coltello",
+          "label": "Svita le viti a farfalla con il coltello",
           "target": "ambiente",
           "repeatable": false,
           "condition": {
@@ -5605,7 +5605,7 @@
         },
         {
           "id": "issati",
-          "label": "Issarsi nel controsoffitto",
+          "label": "Issati nel controsoffitto",
           "target": "ambiente",
           "condition": {
             "flag_present": "farfalle_svitate"
@@ -5788,7 +5788,7 @@
       "actions": [
         {
           "id": "gira_la_cornice",
-          "label": "Girare la cornice a faccia in giù",
+          "label": "Gira la cornice a faccia in giù",
           "target": "ambiente",
           "repeatable": false,
           "aliases": [
@@ -5806,7 +5806,7 @@
         },
         {
           "id": "fruga_nel_cassetto",
-          "label": "Frugare nel primo cassetto",
+          "label": "Fruga nel primo cassetto",
           "target": "ambiente",
           "repeatable": false,
           "aliases": [
@@ -5826,7 +5826,7 @@
         },
         {
           "id": "leggi_il_biglietto",
-          "label": "Leggere il foglietto",
+          "label": "Leggi il foglietto",
           "target": "ambiente",
           "condition": {
             "flag_present": "biglietto_trovato"
@@ -5848,7 +5848,7 @@
         },
         {
           "id": "rovescia_i_cassetti",
-          "label": "Rovesciare i cassetti per terra",
+          "label": "Rovescia i cassetti per terra",
           "target": "ambiente",
           "aliases": [
             "svuota i cassetti",
@@ -5869,7 +5869,7 @@
         },
         {
           "id": "fai_cadere_la_cornice",
-          "label": "Far cadere la cornice",
+          "label": "Fai cadere la cornice",
           "target": "ambiente",
           "aliases": [
             "butta la cornice",
@@ -5892,7 +5892,7 @@
         },
         {
           "id": "esci_dalla_finestra",
-          "label": "Uscire dalla finestra sul patio",
+          "label": "Esci dalla finestra sul patio",
           "target": "ambiente",
           "aliases": [
             "apri la finestra",
@@ -5981,7 +5981,7 @@
       "actions": [
         {
           "id": "ascolta_la_casa",
-          "label": "Ascoltare la casa",
+          "label": "Ascolta la casa",
           "target": "ambiente",
           "aliases": [
             "ascolta",
@@ -5999,7 +5999,7 @@
         },
         {
           "id": "sali_le_scale",
-          "label": "Risalire le scale",
+          "label": "Risali le scale",
           "target": "ambiente",
           "aliases": [
             "sali",
@@ -6018,7 +6018,7 @@
         },
         {
           "id": "scendi_in_lavanderia",
-          "label": "Scendere verso la lavanderia",
+          "label": "Scendi verso la lavanderia",
           "target": "ambiente",
           "aliases": [
             "vai in lavanderia",
@@ -6036,7 +6036,7 @@
         },
         {
           "id": "guarda_la_vetrata_rotta",
-          "label": "Guardare la vetrata sfondata",
+          "label": "Guarda la vetrata sfondata",
           "target": "ambiente",
           "aliases": [
             "guarda il vetro rotto",
@@ -6121,7 +6121,7 @@
       "actions": [
         {
           "id": "leggi_l_adesivo",
-          "label": "Leggere l'adesivo giallo",
+          "label": "Leggi l'adesivo giallo",
           "target": "ambiente",
           "aliases": [
             "leggi l'etichetta",
@@ -6139,7 +6139,7 @@
         },
         {
           "id": "tira_la_leva_grande",
-          "label": "Tirare la leva grande",
+          "label": "Tira la leva grande",
           "target": "ambiente",
           "condition": {
             "flag_absent": "leva_piccola_tirata"
@@ -6161,7 +6161,7 @@
         },
         {
           "id": "tira_la_leva_piccola",
-          "label": "Tirare la leva piccola in basso",
+          "label": "Tira la leva piccola in basso",
           "target": "ambiente",
           "repeatable": false,
           "aliases": [
@@ -6182,7 +6182,7 @@
         },
         {
           "id": "tira_la_grande_dopo",
-          "label": "Tirare la leva grande, adesso",
+          "label": "Tira la leva grande, adesso",
           "target": "ambiente",
           "repeatable": false,
           "condition": {
@@ -6207,7 +6207,7 @@
         },
         {
           "id": "risali",
-          "label": "Risalire",
+          "label": "Risali",
           "target": "ambiente",
           "aliases": [
             "torna su",
@@ -6299,7 +6299,7 @@
       "actions": [
         {
           "id": "salta",
-          "label": "Saltare per prendere la cordicella",
+          "label": "Salta per prendere la cordicella",
           "target": "ambiente",
           "aliases": [
             "salta",
@@ -6317,7 +6317,7 @@
         },
         {
           "id": "sali_sul_corrimano",
-          "label": "Salire in piedi sul corrimano",
+          "label": "Sali in piedi sul corrimano",
           "target": "ambiente",
           "repeatable": false,
           "condition": {
@@ -6341,7 +6341,7 @@
         },
         {
           "id": "sali_sul_tetto",
-          "label": "Salire sul tetto",
+          "label": "Sali sul tetto",
           "target": "ambiente",
           "condition": {
             "flag_present": "botola_aperta"
@@ -6363,7 +6363,7 @@
         },
         {
           "id": "vai_nello_studio",
-          "label": "Entrare nello studio",
+          "label": "Entra nello studio",
           "target": "ambiente",
           "aliases": [
             "torna nello studio",
@@ -6381,7 +6381,7 @@
         },
         {
           "id": "torna_in_bagno",
-          "label": "Rientrare nel bagno",
+          "label": "Rientra nel bagno",
           "target": "ambiente",
           "aliases": [
             "torna in bagno",
@@ -6401,7 +6401,7 @@
         },
         {
           "id": "scendi_in_soggiorno",
-          "label": "Scendere in soggiorno",
+          "label": "Scendi in soggiorno",
           "target": "ambiente",
           "aliases": [
             "scendi",
@@ -6516,7 +6516,7 @@
       "actions": [
         {
           "id": "spazza_le_foglie",
-          "label": "Spazzare via le foglie dai pannelli",
+          "label": "Spazza via le foglie dai pannelli",
           "target": "ambiente",
           "aliases": [
             "pulisci i pannelli",
@@ -6533,7 +6533,7 @@
         },
         {
           "id": "osserva_il_ramo",
-          "label": "Osservare il ramo caduto",
+          "label": "Osserva il ramo caduto",
           "target": "ambiente",
           "aliases": [
             "guarda il ramo",
@@ -6553,7 +6553,7 @@
         },
         {
           "id": "osserva_il_pannello",
-          "label": "Osservare il pannello rotto",
+          "label": "Osserva il pannello rotto",
           "target": "ambiente",
           "aliases": [
             "guarda il pannello",
@@ -6574,7 +6574,7 @@
         },
         {
           "id": "osserva_i_due_capi",
-          "label": "Osservare i due monconi di cavo",
+          "label": "Osserva i due monconi di cavo",
           "target": "ambiente",
           "aliases": [
             "guarda i cavi",
@@ -6596,7 +6596,7 @@
         },
         {
           "id": "prova_a_ricollegare",
-          "label": "Provare a ricollegare i capi al pannello",
+          "label": "Prova a ricollegare i capi al pannello",
           "target": "ambiente",
           "condition": {
             "flag_present": "pannello_esaminato"
@@ -6616,7 +6616,7 @@
         },
         {
           "id": "unisci_col_nastro",
-          "label": "Unire i due monconi tra loro e fasciarli col nastro",
+          "label": "Unisci i due monconi tra loro e fasciali col nastro",
           "target": "ambiente",
           "repeatable": false,
           "condition": {
@@ -6644,7 +6644,7 @@
         },
         {
           "id": "osserva_la_pecora",
-          "label": "Affacciarsi a cercare la carcassa della pecora",
+          "label": "Affacciati a cercare la carcassa della pecora",
           "target": "ambiente",
           "aliases": [
             "guarda la valle",
@@ -6662,7 +6662,7 @@
         },
         {
           "id": "osserva_il_prato",
-          "label": "Seguire con gli occhi l'erba schiacciata",
+          "label": "Segui con gli occhi l'erba schiacciata",
           "target": "ambiente",
           "condition": {
             "flag_present": "pecora_osservata"
@@ -6683,7 +6683,7 @@
         },
         {
           "id": "guardati_la_gamba",
-          "label": "Guardarsi la gamba",
+          "label": "Guardati la gamba",
           "target": "laura",
           "condition": {
             "flag_present": "linea_vista"
@@ -6720,7 +6720,7 @@
         },
         {
           "id": "rientra_dalla_botola",
-          "label": "Tornare alla botola",
+          "label": "Torna alla botola",
           "target": "ambiente",
           "condition": {
             "flag_present": "corrente_ripristinata"
@@ -6743,7 +6743,7 @@
         },
         {
           "id": "rientra_senza_fare_niente",
-          "label": "Tornare dentro così com'è",
+          "label": "Torna dentro così come sei",
           "target": "ambiente",
           "condition": {
             "flag_absent": "corrente_ripristinata"
@@ -6925,7 +6925,7 @@
       "actions": [
         {
           "id": "carica_il_walkie",
-          "label": "Mettere in carica il walkie talkie",
+          "label": "Metti in carica il walkie talkie",
           "target": "laura",
           "repeatable": false,
           "condition": {
@@ -6963,7 +6963,7 @@
         },
         {
           "id": "taglia_il_cavo",
-          "label": "Tagliare il cavo dell'avvolgicavo",
+          "label": "Taglia il cavo dell'avvolgicavo",
           "target": "ambiente",
           "repeatable": false,
           "condition": {
@@ -6989,7 +6989,7 @@
         },
         {
           "id": "osserva_la_berlina",
-          "label": "Osservare la berlina sotto il telo",
+          "label": "Osserva la berlina sotto il telo",
           "target": "ambiente",
           "aliases": [
             "guarda l'auto",
@@ -7010,7 +7010,7 @@
         },
         {
           "id": "nasconditi_e_la_piastra_salta",
-          "label": "Buttarsi dietro la berlina",
+          "label": "Buttati dietro la berlina",
           "target": "cane_robot",
           "condition": {
             "flag_present": "piastra_integra"
@@ -7045,7 +7045,7 @@
         },
         {
           "id": "nasconditi",
-          "label": "Buttarsi dietro la berlina e aspettare che passi",
+          "label": "Buttati dietro la berlina e aspetta che passi",
           "target": "cane_robot",
           "condition": {
             "flag_present": "piastra_scardinata"
@@ -7077,7 +7077,7 @@
         },
         {
           "id": "esci_subito",
-          "label": "Uscire subito dal garage",
+          "label": "Esci subito dal garage",
           "target": "ambiente",
           "aliases": [
             "esci",
@@ -7172,7 +7172,7 @@
       "actions": [
         {
           "id": "apri_i_rubinetti",
-          "label": "Aprire il rubinetto della vasca e quello del lavabo",
+          "label": "Apri il rubinetto della vasca e quello del lavabo",
           "target": "ambiente",
           "repeatable": false,
           "aliases": [
@@ -7194,7 +7194,7 @@
         },
         {
           "id": "srotola_il_cavo",
-          "label": "Srotolare il cavo e appoggiare i fili sul pavimento",
+          "label": "Srotola il cavo e appoggia i fili sul pavimento",
           "target": "ambiente",
           "repeatable": false,
           "condition": {
@@ -7219,7 +7219,7 @@
         },
         {
           "id": "sali_sul_lavabo",
-          "label": "Salire in piedi sul lavabo",
+          "label": "Sali in piedi sul lavabo",
           "target": "ambiente",
           "aliases": [
             "sali sul lavabo",
@@ -7237,7 +7237,7 @@
         },
         {
           "id": "guarda_la_porta_bucata",
-          "label": "Guardare la porta bucata",
+          "label": "Guarda la porta bucata",
           "target": "ambiente",
           "aliases": [
             "guarda la porta",
@@ -7258,7 +7258,7 @@
         },
         {
           "id": "torna_in_garage",
-          "label": "Tornare giù in garage",
+          "label": "Torna giù in garage",
           "target": "ambiente",
           "condition": {
             "flag_absent": "cavo_preso"
@@ -7280,7 +7280,7 @@
         },
         {
           "id": "prendi_la_spina_e_aspetta",
-          "label": "Prendere la spina, aprire lo sportellino della presa e aspettare",
+          "label": "Prendi la spina, apri lo sportellino della presa e aspetta",
           "target": "ambiente",
           "condition": {
             "flag_present": "sul_lavabo",
@@ -7470,7 +7470,7 @@
       "actions": [
         {
           "id": "infila_la_spina",
-          "label": "Infilare la spina",
+          "label": "Infila la spina",
           "target": "ambiente",
           "condition": {
             "flag_present": "fili_in_acqua",
@@ -7493,7 +7493,7 @@
         },
         {
           "id": "spara_dal_lavabo",
-          "label": "Sparare dal lavabo",
+          "label": "Spara dal lavabo",
           "target": "cane_robot",
           "condition": {
             "flag_present": "piastra_integra"
@@ -7532,7 +7532,7 @@
         },
         {
           "id": "infila_la_spina_a_secco",
-          "label": "Infilare la spina lo stesso",
+          "label": "Infila la spina lo stesso",
           "target": "ambiente",
           "condition": {
             "flag_absent": "fili_in_acqua"
@@ -7716,7 +7716,7 @@
       "actions": [
         {
           "id": "scendi_uno",
-          "label": "Scendere dal lavabo",
+          "label": "Scendi dal lavabo",
           "target": "laura",
           "condition": {
             "flag_absent": "piede_ritirato"
@@ -7746,7 +7746,7 @@
         },
         {
           "id": "scendi_due",
-          "label": "Scendere dal lavabo",
+          "label": "Scendi dal lavabo",
           "target": "laura",
           "condition": {
             "flag_present": "piede_ritirato",
@@ -7778,7 +7778,7 @@
         },
         {
           "id": "scendi_tre",
-          "label": "Scendere dal lavabo",
+          "label": "Scendi dal lavabo",
           "target": "laura",
           "condition": {
             "flag_present": "piede_ritirato_ancora"
@@ -7810,7 +7810,7 @@
         },
         {
           "id": "apri_la_scatola",
-          "label": "Aprire la scatola bianca",
+          "label": "Apri la scatola bianca",
           "target": "laura",
           "condition": {
             "has_item": "scatola_bianca"
@@ -7844,7 +7844,7 @@
         },
         {
           "id": "osserva_la_carcassa",
-          "label": "Osservare la carcassa",
+          "label": "Osserva la carcassa",
           "target": "cane_robot",
           "condition": {
             "flag_present": "scesa_dal_lavabo"
@@ -7880,7 +7880,7 @@
         },
         {
           "id": "guarda_il_petto",
-          "label": "Guardarsi il petto",
+          "label": "Guardati il petto",
           "target": "laura",
           "condition": {
             "flag_present": "scesa_dal_lavabo"
@@ -8169,7 +8169,7 @@
       "actions": [
         {
           "id": "apri_la_scatola",
-          "label": "Tirare fuori la scatola bianca e aprirla",
+          "label": "Tira fuori la scatola bianca e aprila",
           "target": "laura",
           "repeatable": false,
           "condition": {
@@ -8205,7 +8205,7 @@
         },
         {
           "id": "osserva_il_contenuto",
-          "label": "Osservare il contenuto",
+          "label": "Osserva il contenuto",
           "target": "laura",
           "condition": {
             "flag_present": "scatola_aperta"
@@ -8242,7 +8242,7 @@
         },
         {
           "id": "accendi_il_walkie",
-          "label": "Accendere il walkie talkie",
+          "label": "Accendi il walkie talkie",
           "target": "laura",
           "condition": {
             "flag_present": "walkie_carico",
@@ -8274,7 +8274,7 @@
         },
         {
           "id": "guarda_fuori",
-          "label": "Guardare fuori dalla vetrata",
+          "label": "Guarda fuori dalla vetrata",
           "target": "ambiente",
           "aliases": [
             "guarda il prato",
@@ -8294,7 +8294,7 @@
         },
         {
           "id": "apri_il_coltello",
-          "label": "Aprire il coltello",
+          "label": "Apri il coltello",
           "target": "laura",
           "condition": {
             "flag_present": "contenuto_osservato",
