@@ -873,15 +873,22 @@ body.debug .assets.only-debug {
    Cresce da solo, senza portarsi dietro il bottone: era il triangolino a
    essere piccolo, non il bersaglio — quello era gia' della taglia giusta, e
    ingrandirlo mangiava altezza al testo per un problema che non aveva.
-   `line-height: 1` su un inline-block e' cio' che tiene il bottone della
-   stessa altezza di prima: senza, un carattere piu' grande alzerebbe la riga
-   che lo contiene. */
+
+   `line-height: 0` e' il trucco che lo rende possibile: un inline-block con
+   interlinea nulla contribuisce **zero** all'altezza della riga, e il glifo
+   viene disegnato fuori dalla sua scatola. Cosi' il carattere puo' essere piu'
+   grande del testo che lo accompagna — molto piu' grande — senza che il
+   bottone si alzi di un pixel. Il triangolino di per se' occupa poco meno di
+   meta' del corpo in cui e' scritto, quindi a quaranta pixel resta comodamente
+   dentro un bottone alto cinquanta. La larghezza e' esplicita perche' una
+   scatola alta zero e' anche larga quanto le pare. */
 .choice .segno {
   display: inline-block;
-  margin-right: 6px;
-  font-size: 21px;
-  line-height: 1;
-  vertical-align: -3px;
+  width: 22px;
+  margin-right: 4px;
+  font-size: 40px;
+  line-height: 0;
+  vertical-align: middle;
 }
 
 /* Il bottone che apre la partita: pieno, cosi' non si confonde con i
@@ -939,18 +946,20 @@ body.debug .assets.only-debug {
 
 /* Il segno, non il bersaglio: il bottone era gia' alto quanto il campo — cioe'
    della misura giusta — ed e' il triangolino dentro a essere piccolo. Cresce
-   lui e basta, l'ingombro resta quello di prima. */
+   lui e basta, l'ingombro resta quello di prima: l'altezza gliela da' il campo
+   accanto (`align-items: stretch`), e `line-height: 0` impedisce al carattere
+   di reclamarne di piu'. */
 .riga-input .invia {
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  padding: 0 18px;
+  padding: 0 14px;
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   background: var(--accent);
   color: var(--bg);
-  font-size: 21px;
-  line-height: 1;
+  font-size: 40px;
+  line-height: 0;
 }
 
 /* Le chip delle azioni con un resolver a input libero: restano nel DOM ma si
