@@ -72,9 +72,9 @@ export interface PanelContext {
   /** La modalita' ascolto e il modo di regolarla a partita in corso. */
   ascolto: Ascolto;
   onAscolto: (imp: ImpostazioniAscolto) => void;
-  /** Le immagini della storia e il modo di spegnerle. */
+  /** Le immagini della storia. Spegnerle e' un interruttore in barra, non una
+   * voce di questo pannello: si cambia guardando quello che cambia. */
   immagini: Immagini;
-  onImmagini: (v: boolean) => void;
 }
 
 export function renderPanel(body: HTMLElement, tab: Tab, ctx: PanelContext): void {
@@ -226,85 +226,46 @@ function renderPrincipale(body: HTMLElement, ctx: PanelContext): void {
   body.append(el('h3', undefined, 'inventario'));
   body.append(chipsInventario(ctx));
 
-  body.append(el('h3', undefined, 'come si vede'));
-  modalitaImmagini(body, ctx);
+  // «Come si vede» compare **solo quando non si puo' scegliere**, e allora e'
+  // l'unica cosa che ha da dire: perche' non si puo'. Quando la scelta c'e',
+  // sta in barra come interruttore — la si prende guardando quello che cambia,
+  // non leggendo due paragrafi dentro un menu che copre lo schermo.
+  const perche = perNiente(ctx);
+  if (perche) {
+    body.append(el('h3', undefined, 'come si vede'));
+    body.append(el('p', 'empty', perche));
+  }
 }
 
 /**
- * Testo o immagini: due modi di leggere la stessa storia.
+ * Perche' non si puo' scegliere fra testo e immagini, quando non si puo'.
  *
- * La scelta compare **solo quando c'e' davvero qualcosa da scegliere**, cioe'
- * quando la storia ha immagini pubblicate e il player sa dove cercarle. Un
- * interruttore che non cambia niente e' peggio della sua assenza: chi lo trova
- * spento prova ad accenderlo, non vede cambiare nulla e conclude che il player
- * e' rotto. Negli altri due casi qui c'e' una riga che dice quale dei due
- * pezzi manca — e dove si va a prenderlo.
+ * `undefined` vuol dire che la scelta c'e' e la fa l'interruttore in barra. Un
+ * interruttore che non cambia niente e' peggio della sua assenza — chi lo
+ * trova lo prova, non vede succedere nulla e conclude che il player e' rotto —
+ * quindi negli altri due casi l'interruttore sparisce e qui resta una riga che
+ * dice quale dei due pezzi manca, e dove si va a prenderlo.
  */
-function modalitaImmagini(body: HTMLElement, ctx: PanelContext): void {
-  const im = ctx.immagini;
-  if (!im.disponibili) {
-    body.append(
-      el(
-        'p',
-        'empty',
-        "L'IR e' stato aperto a mano, quindi non c'e' nessuna cartella storia intorno da cui prendere " +
-          'le immagini: si gioca in solo testo, con i prompt al posto delle inquadrature. Aprendolo ' +
-          'dalla pagina che sta dentro la cartella della storia — o servito da http — le immagini ' +
-          'compaiono da sole.',
-      ),
+export function perNiente(ctx: { immagini: Immagini; story: Story }): string | undefined {
+  if (!ctx.immagini.disponibili) {
+    return (
+      "L'IR e' stato aperto a mano, quindi non c'e' nessuna cartella storia intorno da cui prendere " +
+      'le immagini: si gioca in solo testo, con i prompt al posto delle inquadrature. Aprendolo ' +
+      'dalla pagina che sta dentro la cartella della storia — o servito da http — le immagini ' +
+      'compaiono da sole.'
     );
-    return;
   }
-  const quante = contaImmagini(ctx.story);
-  if (!quante) {
-    body.append(
-      el(
-        'p',
-        'empty',
-        "Questa storia non ha ancora immagini pubblicate: nessun nodo dell'IR porta un id, quindi non " +
-          "c'e' niente da mostrare al posto dei prompt. Si pubblicano dallo studio degli asset, " +
-          'marcando come definitive quelle che convincono.',
-      ),
+  if (!contaImmagini(ctx.story)) {
+    return (
+      "Questa storia non ha ancora immagini pubblicate: nessun nodo dell'IR porta un id, quindi non " +
+      "c'e' niente da mostrare al posto dei prompt. Si pubblicano dallo studio degli asset, " +
+      'marcando come definitive quelle che convincono.'
     );
-    return;
   }
-
-  const MODI: Array<[boolean, string, string]> = [
-    [
-      false,
-      'testo',
-      "I prompt al posto delle inquadrature, in cima come le immagini che sostituiscono: e' cosi' " +
-        "che si legge cosa *verrebbe* generato, ed e' il modo con cui si lavora sull'IR.",
-    ],
-    [
-      true,
-      'immagini',
-      `Le ${quante} immagini pubblicate: l'inquadratura corrente resta ferma in cima e il racconto ` +
-        "le scorre sotto. I prompt non si perdono: si aprono allargando l'immagine o la faccia a cui " +
-        'appartengono.',
-    ],
-  ];
-  const riga = el('div', 'chips');
-  for (const [valore, etichetta, spiegazione] of MODI) {
-    const b = el('button', `chip scelta${im.accese === valore ? ' on' : ''}`, etichetta);
-    // La spiegazione sta addosso alla scelta invece che in un paragrafo sotto.
-    // Due ragioni: erano quattro righe di prosa sempre a schermo per una
-    // decisione che si prende una volta, e soprattutto raccontavano solo il
-    // modo *gia' attivo* — cioe' l'unico dei due su cui non ci si sta facendo
-    // domande. Cosi' invece si legge quella di quello che si sta per scegliere.
-    b.title = spiegazione;
-    b.onclick = async () => {
-      if (im.accese === valore) return;
-      await premi(b);
-      ctx.onImmagini(valore);
-    };
-    riga.append(b);
-  }
-  body.append(riga);
+  return undefined;
 }
 
-/** Quanti nodi dell'IR portano gia' un'immagine. */
-function contaImmagini(story: Story): number {
+export function contaImmagini(story: Story): number {
   let n = 0;
   const conta = (o?: { image?: string }) => {
     if (o?.image) n += 1;

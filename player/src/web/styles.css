@@ -350,6 +350,32 @@ body.con-palco .dock {
   color: var(--debug);
 }
 
+/* L'interruttore delle immagini e' della stessa specie del debug — due modi di
+   guardare la stessa storia — ma non e' diagnostica: prende l'accento, non il
+   viola. Acceso e' lo stato normale, quindi il colore dice «stai vedendo le
+   immagini», e spento torna grigio come tutto il resto della barra. */
+.icon.toggle.immagini[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Un bottone che porta solo un segno: quadrato, non una pastiglia con dentro
+   uno spazio vuoto dove starebbe il testo. */
+.icon.toggle.immagini {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  padding: 0;
+}
+
+.icon.toggle.immagini .icona {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  vertical-align: 0;
+}
+
 /* ------------------------------------------------------------ transcript */
 
 .transcript {

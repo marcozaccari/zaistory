@@ -41,6 +41,10 @@
           <strong id="story-title"></strong>
           <span id="story-meta"></span>
         </div>
+        <!-- Testo o immagini: un interruttore, non una scheda del menu. Si
+             cambia guardando quello che cambia, e nasce nascosto — compare
+             solo quando c'e' davvero qualcosa da scegliere. -->
+        <button class="icon toggle immagini" id="btn-immagini" aria-pressed="true" hidden></button>
         <button class="icon toggle" id="btn-debug" aria-pressed="false" title="Modalita' debug">debug</button>
       </header>
 
@@ -98,6 +102,7 @@
         <span id="panel-version"></span>
         <div class="piede-azioni">
           <button class="icon" id="btn-restart" title="Ricomincia la partita">ricomincia</button>
+          <button class="icon toggle immagini" id="btn-immagini-panel" aria-pressed="true" hidden></button>
           <button class="icon toggle" id="btn-debug-panel" aria-pressed="false" title="Modalita' debug">debug</button>
         </div>
       </div>

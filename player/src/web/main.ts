@@ -39,7 +39,8 @@ import { Palco } from './palco.js';
 import { Voce } from './voce.js';
 import { PLAYER_VERSION } from '../version.js';
 import { $, clear, el, staScrivendo } from './dom.js';
-import { TAB_DEBUG, chiediSeRicominciare, renderPanel, type PanelContext, type Tab } from './panel.js';
+import { icona } from './icone.js';
+import { TAB_DEBUG, chiediSeRicominciare, perNiente, renderPanel, type PanelContext, type Tab } from './panel.js';
 import { WebUI } from './webui.js';
 
 declare global {
@@ -221,24 +222,6 @@ function panelContext(s: Session): PanelContext {
       }
     },
     immagini,
-    onImmagini: (v) => {
-      immagini.imposta(v);
-      // Il menu si chiude, come per «ricomincia» e «rigioca» e per la stessa
-      // ragione: quello che questa scelta cambia sta *dietro* al pannello. Un
-      // interruttore che si muove e non fa vedere niente e' indistinguibile da
-      // uno rotto — e su un telefono il pannello copre tutto lo schermo,
-      // quindi «niente» e' letteralmente quello che si vede.
-      closePanel();
-      // Le immagini gia' stampate nel transcript restano: quello e' il
-      // resoconto di cio' che e' successo, non una vista che si ridisegna, e
-      // l'interruttore vale da qui in avanti come tutto il resto.
-      //
-      // Il palco no: quello e' una vista, e obbedisce subito. Non sparisce
-      // pero': in solo testo la testa dello schermo continua a dire dove
-      // siamo, con i prompt al posto della figura e le iniziali al posto
-      // delle facce.
-      palco.rileggi();
-    },
     ascolto,
     onAscolto: (imp) => {
       impAscolto = imp;
@@ -289,6 +272,7 @@ function applicaConfig(c: ConfigPlayer): void {
   ascolto.configura(impAscolto);
   immagini.imposta(c.immagini);
   palco.rileggi();
+  aggiornaImmaginiUI();
   configEmbedder = c.embedder;
   impostaDebug(c.debug);
   // Il backend si riaccende solo se cambia davvero: `scegliResolver` esce
@@ -313,6 +297,50 @@ function ricomincia(): void {
   // ricaricamento della pagina.
   dimenticaRipresa(s.story);
   start(s.story, s.findings);
+}
+
+/**
+ * Testo o immagini: l'interruttore, non piu' una scheda del menu.
+ *
+ * Sta in barra e nel piede del menu accanto al debug, che e' l'altro
+ * interruttore della stessa specie: due modi di guardare la stessa storia, e
+ * si scelgono guardando quello che cambia. Dentro un pannello che su telefono
+ * copre tutto lo schermo, invece, si sceglieva alla cieca — il menu si
+ * chiudeva apposta per far vedere l'effetto.
+ *
+ * Il menu resta chiuso anche adesso se era aperto: si e' toccato un
+ * interruttore, non si e' entrati in una scheda.
+ */
+function impostaImmagini(on: boolean): void {
+  immagini.imposta(on);
+  closePanel();
+  // Le immagini gia' stampate nel transcript restano: quello e' il resoconto
+  // di cio' che e' successo, non una vista che si ridisegna, e l'interruttore
+  // vale da qui in avanti come tutto il resto. Il palco no: quello e' una
+  // vista, e obbedisce subito. Non sparisce pero' — in solo testo la testa
+  // dello schermo continua a dire dove siamo, con i prompt al posto della
+  // figura e le iniziali al posto delle facce.
+  palco.rileggi();
+  aggiornaImmaginiUI();
+}
+
+/**
+ * L'interruttore si vede solo quando c'e' davvero qualcosa da scegliere.
+ *
+ * Un interruttore che non cambia niente e' peggio della sua assenza: chi lo
+ * trova lo prova, non vede succedere nulla e conclude che il player e' rotto.
+ * Quando non c'e' scelta sparisce, e il perche' resta scritto nel menu.
+ */
+function aggiornaImmaginiUI(): void {
+  const scelta = session ? !perNiente({ immagini, story: session.story }) : false;
+  const on = immagini.accese;
+  for (const b of [btnImmagini, btnImmaginiPannello]) {
+    b.hidden = !scelta;
+    b.setAttribute('aria-pressed', String(on));
+    const etichetta = on ? 'immagini: accese' : 'immagini: spente (solo i prompt)';
+    b.setAttribute('aria-label', etichetta);
+    b.title = etichetta;
+  }
 }
 
 function impostaDebug(on: boolean): void {
@@ -433,6 +461,18 @@ for (const b of [btnDebug, btnDebugPannello]) {
   b.addEventListener('click', () => impostaDebug(!document.body.classList.contains('debug')));
 }
 
+// Lo stesso interruttore in due posti, come il debug: in barra sotto il
+// pollice mentre si gioca, e nel piede del menu dove lo si va a cercare.
+const btnImmagini = $<HTMLButtonElement>('#btn-immagini');
+const btnImmaginiPannello = $<HTMLButtonElement>('#btn-immagini-panel');
+for (const b of [btnImmagini, btnImmaginiPannello]) {
+  // Il segno e' quello che il transcript usa gia' per i prompt d'immagine: la
+  // stessa cosa deve avere lo stesso disegno ovunque compaia.
+  const segno = icona('image');
+  if (segno) b.append(segno);
+  b.addEventListener('click', () => impostaImmagini(!immagini.accese));
+}
+
 // ---------------------------------------------------------------- partita
 
 function start(story: Story, findings: Finding[], script?: ScriptDriver, ripresa = false): void {
@@ -465,6 +505,7 @@ function start(story: Story, findings: Finding[], script?: ScriptDriver, ripresa
 
   $('#story-title').textContent = story.title;
   refreshHeader();
+  aggiornaImmaginiUI();
 
   const { errors, warnings } = countFindings(findings);
   if (errors || warnings) {
