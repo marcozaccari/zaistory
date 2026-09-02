@@ -626,9 +626,15 @@ body.con-palco .dock {
   content: ")";
 }
 
-/* scene_type: e' una categoria, non un valore da leggere — sta meglio come
-   pastiglia accanto al titolo, dove distingue a colpo d'occhio una cutscene da
-   una scena interattiva mentre si scorre il transcript. */
+/* scene_type: una categoria, non un valore da leggere. Sta come pastiglia
+   accanto al titolo, dove distingue a colpo d'occhio una cutscene da una scena
+   interattiva mentre si scorre il transcript — ma **solo col debug**: a chi
+   gioca dice che sta guardando una macchina, e per giunta gli anticipa se la
+   scena che sta per leggere avra' qualcosa da fare o no. */
+body:not(.debug) .scene h2 .stype {
+  display: none;
+}
+
 .scene h2 .stype {
   margin-left: auto;
   padding: 1px 8px;
@@ -1508,6 +1514,26 @@ body:not(.debug) #tabs button[data-debug] {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
+}
+
+/* «Ricomincia», sotto l'inventario. Squadrato e largo quanto la colonna come
+   le pastiglie dell'inventario che gli stanno sopra: e' la stessa famiglia di
+   cose che si toccano, non un'etichetta. Il colore resta neutro finche' non lo
+   si preme — e' un comando che butta via una partita, non un invito. */
+.btn.ricomincia {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--fg-dim);
+}
+
+.btn.ricomincia:hover,
+.btn.ricomincia:focus-visible {
+  border-color: var(--red);
+  color: var(--red);
 }
 
 .trace {

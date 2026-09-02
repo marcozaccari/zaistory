@@ -212,9 +212,11 @@ function renderInterprete(body: HTMLElement, ctx: PanelContext): void {
  * dell'inventario. Gli id restano nella scheda «stato», che e' dove si va
  * quando si sta collaudando invece di giocare.
  *
- * «Ricomincia» non sta qui ma nel piede del menu, accanto al debug: non e' una
- * cosa che si guarda, e' un comando, e vale per tutta la partita e non per la
- * scheda che si sta leggendo.
+ * «Ricomincia» sta qui sotto, e non nel piede del menu com'era prima: e' vero
+ * che e' un comando e non una cosa da guardare, ma e' anche l'unico comando che
+ * qualcuno cerchi *mentre* legge questa scheda — si guarda dove si e' arrivati
+ * e cosa si ha in mano, e da li' si decide se ricominciare. Nel piede stava
+ * accanto al debug, cioe' fra gli interruttori, che e' un'altra famiglia.
  */
 function renderPrincipale(body: HTMLElement, ctx: PanelContext): void {
   const sc = ctx.ui.scene;
@@ -225,6 +227,18 @@ function renderPrincipale(body: HTMLElement, ctx: PanelContext): void {
 
   body.append(el('h3', undefined, 'inventario'));
   body.append(chipsInventario(ctx));
+
+  // Subito sotto quello che si ha in mano: e' li' che si decide di ricominciare
+  // — si guarda a che punto si e' e cosa si e' raccolto, e si conclude che
+  // conviene rifare la strada. La domanda prima di farlo non e' cortesia: da
+  // quando la partita si salva, questo e' l'unico bottone del player che possa
+  // buttare via qualcosa di irrecuperabile.
+  const ricomincia = el('button', 'btn ricomincia', 'ricomincia la partita');
+  ricomincia.onclick = async () => {
+    await premi(ricomincia);
+    if (await chiediSeRicominciare()) ctx.onRestart();
+  };
+  body.append(ricomincia);
 
   // «Come si vede» compare **solo quando non si puo' scegliere**, e allora e'
   // l'unica cosa che ha da dire: perche' non si puo'. Quando la scelta c'e',

@@ -35,6 +35,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import extract_manifest as estrazione
 import generate
 import publish as pubblica
 
@@ -102,6 +103,47 @@ class Studio:
     def reload_manifest(self):
         self.manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
         self.jobs = {j["id"]: j for j in self.manifest["jobs"]}
+        self.disallineato = self._disallineato()
+
+    def _disallineato(self) -> dict:
+        """Cosa l'IR chiede oggi che il manifest non ha, e viceversa.
+
+        Il manifest e' una fotografia dell'IR presa una volta, e da allora l'IR
+        cambia: si aggiunge una copertina, si spezza una scena, si toglie un
+        personaggio. Finora l'unico a saperlo era `publish.py`, che si ferma
+        quando i `source` non tornano piu' — ma quello e' l'ultimo passo, e nel
+        frattempo lo studio mostrava serenamente un elenco vecchio. Il sintomo,
+        visto da fuori, e' indistinguibile da uno studio rotto: «l'IR ha una
+        copertina e qui non c'e'».
+
+        Si ricava rifacendo l'estrazione in memoria e confrontando i soli id.
+        Costa una lettura dell'IR e un po' di aritmetica — nessuna rete, niente
+        spesa — e si fa una volta per caricamento del manifest.
+        """
+        vuoto = {"mancanti": [], "avanzati": []}
+        ir_path = None
+        if self.story and (self.story / "story.ir.json").is_file():
+            ir_path = self.story / "story.ir.json"
+        elif self.manifest.get("ir_file"):
+            candidato = pathlib.Path(self.manifest["ir_file"])
+            if candidato.is_file():
+                ir_path = candidato
+        if ir_path is None:
+            return vuoto
+        try:
+            ir = json.loads(ir_path.read_text(encoding="utf-8"))
+            ex = estrazione.Extractor(ir, str(ir_path),
+                                      dict(self.manifest.get("defaults") or {}),
+                                      dict(self.manifest.get("models") or {}))
+            ex.collect_anchors()
+            ex.collect_shots()
+        except Exception:
+            # Un IR spostato o illeggibile non e' un motivo per non aprire lo
+            # studio: le immagini gia' generate restano quelle.
+            return vuoto
+        adesso = set(ex.anchors) | {j["id"] for j in ex.shots}
+        prima = set(self.jobs)
+        return {"mancanti": sorted(adesso - prima), "avanzati": sorted(prima - adesso)}
 
     def _settings_path(self) -> pathlib.Path:
         return self.outdir / SETTINGS_NAME
@@ -280,6 +322,7 @@ class Studio:
         return {
             "story": self.manifest.get("title") or self.manifest.get("story_id"),
             "story_dir": str(self.story) if self.story else None,
+            "disallineato": self.disallineato,
             "jobs": jobs,
             "settings": self.settings,
             "preference": self.registry["preference"],
@@ -782,6 +825,13 @@ button.spesa:hover{border-color:#f0a45c;background:#f0a45c}
 button.pub{background:var(--pub);border-color:var(--pub);color:#0d1220;font-weight:600}
 button.pub:hover{border-color:#7aa6ea;background:#7aa6ea}
 button.pub:disabled{background:none;color:inherit;border-color:var(--line)}
+/* Il manifest non combacia piu' con l'IR. Non e' un errore da cui fermarsi —
+   le immagini gia' generate restano quelle — ma va detto forte: e' la
+   differenza fra «lo studio e' rotto» e «il manifest e' vecchio». */
+.avviso{background:rgba(224,178,92,.12);border-top:1px solid var(--warn);
+    color:var(--warn);font-size:13px;line-height:1.5;align-items:flex-start}
+.avviso code{background:rgba(0,0,0,.28);padding:1px 6px;border-radius:5px;
+    font-size:12px;user-select:all}
 /* Un lavoro in corso: il tasto resta acceso ma respira, e non si preme.
    Convertire ottantotto immagini in WebP non e' istantaneo, e un tasto che
    torna com'era senza che succeda niente si preme una seconda volta. */
@@ -895,6 +945,7 @@ pre{white-space:pre-wrap;font-size:11px;color:var(--mut);border-left:2px solid v
     <button id="qPause"></button>
     <button id="qClear" class="danger">Svuota la coda</button>
   </div>
+  <div class="riga avviso" id="disallineato" hidden></div>
 </header>
 <main>
   <div class="grid" id="grid"></div>
@@ -914,6 +965,7 @@ let sig = null;
 async function load(){
   S = await (await fetch('/api/state')).json();
   document.getElementById('story').textContent = 'Studio asset — ' + (S.story||'');
+  disallineato();
   fillModels();
   // Ridisegnare a ogni polling chiudeva i menu aperti sotto le dita: il
   // browser butta via il <select> insieme all'HTML che lo conteneva. Si
@@ -981,6 +1033,32 @@ function fillModels(){
 
 const post = (url,body) => fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
                                      body:JSON.stringify(body)}).then(r=>r.json());
+
+/**
+ * L'avviso quando il manifest non e' piu' quello dell'IR.
+ *
+ * Dice le due cose che servono a capire: cosa manca (con qualche id, non solo
+ * un numero — «shot.cover» spiega da se' cos'e' successo) e il comando che
+ * rimette a posto. Rigenerare il manifest non ricomincia niente: gli id dei
+ * job restano gli stessi, quindi approvazioni e immagini gia' fatte
+ * sopravvivono.
+ */
+function disallineato(){
+  const box = document.getElementById('disallineato');
+  const d = S.disallineato || {mancanti: [], avanzati: []};
+  const m = d.mancanti || [], a = d.avanzati || [];
+  if (!m.length && !a.length){ box.hidden = true; return; }
+  const elenco = ids => ids.slice(0,4).map(i=>`<code>${i}</code>`).join(' ') +
+      (ids.length > 4 ? ` e altri ${ids.length - 4}` : '');
+  const pezzi = [];
+  if (m.length) pezzi.push(`<b>${m.length}</b> nell'IR e non qui: ${elenco(m)}`);
+  if (a.length) pezzi.push(`<b>${a.length}</b> qui e non piu' nell'IR: ${elenco(a)}`);
+  box.innerHTML = `<span>Il manifest non combacia piu&#39; con l&#39;IR — ${pezzi.join(' · ')}. ` +
+    `Rifallo e riapri lo studio: <code>python3 assets-studio/images/extract_manifest.py ` +
+    `&lt;storia&gt;/story.ir.json -o &lt;storia&gt;/_work/assets_manifest.json</code>. ` +
+    `Gli id dei job non cambiano, quindi approvazioni e immagini gia&#39; fatte restano.</span>`;
+  box.hidden = false;
+}
 
 function visible(){
   const f = document.getElementById('filter').value;

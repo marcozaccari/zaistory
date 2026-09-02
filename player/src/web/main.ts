@@ -40,7 +40,7 @@ import { Voce } from './voce.js';
 import { PLAYER_VERSION } from '../version.js';
 import { $, clear, el, staScrivendo } from './dom.js';
 import { icona } from './icone.js';
-import { TAB_DEBUG, chiediSeRicominciare, perNiente, renderPanel, type PanelContext, type Tab } from './panel.js';
+import { TAB_DEBUG, perNiente, renderPanel, type PanelContext, type Tab } from './panel.js';
 import { WebUI } from './webui.js';
 
 declare global {
@@ -284,9 +284,10 @@ function applicaConfig(c: ConfigPlayer): void {
 /**
  * Ricominciare da capo.
  *
- * Sta qui e non nel pannello perche' ora ha due punti di partenza — il piede
- * del menu e la scheda «traccia» — e sono la stessa cosa: la domanda si fa una
- * volta sola, in `chiediSeRicominciare`, e la partita riparte in un modo solo.
+ * Sta qui e non nel pannello perche' ha due punti di partenza — la scheda
+ * principale, sotto l'inventario, e la scheda «traccia» — e sono la stessa
+ * cosa: la domanda si fa una volta sola, in `chiediSeRicominciare`, e la
+ * partita riparte in un modo solo.
  */
 function ricomincia(): void {
   const s = session;
@@ -447,14 +448,6 @@ for (const b of document.querySelectorAll<HTMLButtonElement>('#tabs button')) {
 // pollice mentre si gioca, e quello in fondo al menu accanto alla versione —
 // che e' dove lo si va a cercare quando il player lo si sta usando e non
 // programmando.
-// Ricominciare vale per tutta la partita, non per la scheda che si sta
-// guardando: sta nel piede del menu, accanto al debug, e non dentro una
-// scheda. La domanda prima di farlo e' la stessa che fa la scheda «traccia».
-const btnRestart = $<HTMLButtonElement>('#btn-restart');
-btnRestart.addEventListener('click', async () => {
-  if (await chiediSeRicominciare()) ricomincia();
-});
-
 const btnDebug = $<HTMLButtonElement>('#btn-debug');
 const btnDebugPannello = $<HTMLButtonElement>('#btn-debug-panel');
 for (const b of [btnDebug, btnDebugPannello]) {
