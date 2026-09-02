@@ -29,6 +29,7 @@ import {
 import {
   configPlayerSerializzabile,
   leggiConfigPlayer,
+  type Tema,
   type ConfigPlayer,
 } from './config.js';
 import { CONFIG_DEFAULT, caricaEmbedder, type ConfigEmbedder } from './embedder.js';
@@ -64,6 +65,26 @@ $('#panel-version').textContent = `zaiplay v${PLAYER_VERSION}`;
 
 let session: Session | undefined;
 let tab: Tab = 'principale';
+
+/**
+ * Il tema di lettura in prova.
+ *
+ * Vive qui e non in `webui.ts` per la stessa ragione delle immagini: non e'
+ * stato di gioco, e ricominciare non deve costringere a riscegliere come si
+ * legge. Chi lo applica e' il CSS, da un attributo sul `body` — cosi' vale
+ * anche per il transcript gia' scorso, come per il debug.
+ */
+let tema: Tema = 'attuale';
+
+function impostaTema(t: Tema): void {
+  tema = t;
+  document.body.dataset.tema = t;
+}
+
+// Scritto subito, prima di qualsiasi partita: senza, l'attributo comparirebbe
+// solo alla prima scelta, e un tema ripreso dal deposito arriverebbe dopo che
+// la copertina si e' gia' disegnata.
+impostaTema(tema);
 
 /**
  * Il backend attivo. Parte dal lessicale: deterministico, nessuna rete,
@@ -222,6 +243,17 @@ function panelContext(s: Session): PanelContext {
       }
     },
     immagini,
+    tema,
+    // Come l'interruttore delle immagini, e per la stessa ragione: un tema di
+    // lettura si giudica sul testo della storia, e dentro un pannello che su
+    // telefono copre tutto lo schermo si sceglieva alla cieca. Il menu si
+    // chiude, la scena di prima torna in vista, e li' si vede se si legge
+    // meglio. La partita non si tocca: e' una scelta su come si guarda.
+    onTema: (t) => {
+      impostaTema(t);
+      closePanel();
+      refresh();
+    },
     ascolto,
     onAscolto: (imp) => {
       impAscolto = imp;
@@ -263,6 +295,7 @@ function configCorrente(): ConfigPlayer {
     embedder: configEmbedder,
     resolver: nomeResolver,
     immagini: immagini.accese,
+    tema,
     debug: document.body.classList.contains('debug'),
   };
 }
@@ -271,6 +304,7 @@ function applicaConfig(c: ConfigPlayer): void {
   impAscolto = c.ascolto;
   ascolto.configura(impAscolto);
   immagini.imposta(c.immagini);
+  impostaTema(c.tema);
   palco.rileggi();
   aggiornaImmaginiUI();
   configEmbedder = c.embedder;

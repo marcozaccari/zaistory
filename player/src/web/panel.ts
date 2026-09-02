@@ -26,6 +26,7 @@ import {
 } from '../core/index.js';
 import { clear, conferma, el, kv, premi } from './dom.js';
 import type { ConfigEmbedder } from './embedder.js';
+import { TEMI_VALIDI, type Tema } from './config.js';
 import { ASCOLTO_DEFAULT, type Ascolto, type ImpostazioniAscolto } from './ascolto.js';
 import type { Immagini } from './immagini.js';
 import type { WebUI } from './webui.js';
@@ -38,7 +39,15 @@ import type { WebUI } from './webui.js';
  * enigmi al posto del giocatore, che e' la stessa ragione per cui le chip del
  * dock stanno sotto il debug.
  */
-export type Tab = 'principale' | 'disco' | 'interprete' | 'ascolto' | 'stato' | 'linter' | 'traccia';
+export type Tab =
+  | 'principale'
+  | 'disco'
+  | 'interprete'
+  | 'ascolto'
+  | 'lettura'
+  | 'stato'
+  | 'linter'
+  | 'traccia';
 
 /** Le schede che esistono solo a debug acceso. */
 export const TAB_DEBUG: readonly Tab[] = ['stato', 'linter', 'traccia'];
@@ -75,6 +84,9 @@ export interface PanelContext {
   /** Le immagini della storia. Spegnerle e' un interruttore in barra, non una
    * voce di questo pannello: si cambia guardando quello che cambia. */
   immagini: Immagini;
+  /** Il tema di lettura in prova e il modo di cambiarlo a partita in corso. */
+  tema: Tema;
+  onTema: (t: Tema) => void;
 }
 
 export function renderPanel(body: HTMLElement, tab: Tab, ctx: PanelContext): void {
@@ -91,6 +103,9 @@ export function renderPanel(body: HTMLElement, tab: Tab, ctx: PanelContext): voi
       break;
     case 'ascolto':
       renderAscolto(body, ctx);
+      break;
+    case 'lettura':
+      renderLettura(body, ctx);
       break;
     case 'stato':
       renderStato(body, ctx);
@@ -746,6 +761,99 @@ function renderAscolto(body: HTMLElement, ctx: PanelContext): void {
   };
   btns.append(prova, reset);
   body.append(btns);
+}
+
+/**
+ * La scheda «lettura»: come si distinguono le voci del testo.
+ *
+ * Esiste per una domanda precisa e provvisoria. Nella stessa colonna scrivono
+ * cinque registri — l'autore, i personaggi, il player che commenta, la macchina
+ * coi suoi prompt, il file coi suoi id — e fino a qui erano tutti dello stesso
+ * grigio: chi legge non ha modo di sapere se una riga e' prosa d'autore o il
+ * segnaposto di un'immagine che non esiste ancora. Il perche' pero' non si
+ * decide a tavolino: puo' essere il colore, puo' essere il carattere, puo'
+ * essere che stanno tutti nella stessa colonna senza segni.
+ *
+ * Ogni tema isola **una** di quelle tre ipotesi, e per questo vanno provati uno
+ * per volta e non mescolati: se il quinto funziona ma tocca tutte e tre le
+ * leve, non si e' imparato quale contasse. Il testo sotto ogni nome non dice
+ * come e' fatto il tema — quello si vede — ma **che cosa si sta misurando**
+ * scegliendolo.
+ *
+ * La scheda si chiude appena si sceglie, come l'interruttore delle immagini e
+ * per la stessa ragione: un tema di lettura si giudica sul testo della storia,
+ * non su tre righe di menu che coprono lo schermo. Torna scegliendo di nuovo.
+ *
+ * Quando uno vince, questa scheda se ne va con lui.
+ */
+function renderLettura(body: HTMLElement, ctx: PanelContext): void {
+  // Un `Record` sull'unione e non un elenco a parte: cosi' aggiungere un tema a
+  // `TEMI_VALIDI` senza spiegare che cosa misura non compila. L'ordine in cui si
+  // vedono lo da' `TEMI_VALIDI`, che e' anche l'ordine in cui stanno in
+  // `styles.css` — tre elenchi della stessa cosa erano gia' troppi.
+  const TEMI: Record<Tema, [string, string]> = {
+    attuale: [
+      'il punto di partenza',
+      "Quello che il player ha sempre fatto: un grigio solo per la narrazione, il look, il tono, i prompt e le diagnostiche. Non e' un tema, e' il termine di paragone — se nessuno degli altri cinque si legge meglio di questo, il problema non era nei testi.",
+    ],
+    voce: [
+      'il colore, e le battute a macchina',
+      "Ipotesi: il grigio unico. L'autore scrive caldo, la macchina scrive freddo e scende sotto il grigio di prima; sparisce il corsivo, e le battute passano al monospazio — non quello dei dati, quello di una trascrizione. Nato per isolare il colore e basta, non lo isola piu': se vince, resta da capire se ha vinto il caldo/freddo o la macchina da scrivere.",
+    ],
+    carta: [
+      'solo il carattere',
+      "Ipotesi: il carattere unico. I colori restano quelli di adesso, grigi compresi: cambia solo che la prosa d'autore passa a un graziato di sistema, con corpo e interlinea suoi, mentre l'interfaccia resta in bastoni e la macchina in monospazio. Se la pagina si scioglie lo stesso, il colore non era il problema.",
+    ],
+    copione: [
+      'solo lo spazio',
+      "Ipotesi: la colonna unica. Colori e caratteri invariati; cambia dove stanno le cose — filetto pieno alla narrazione, punteggiato al look, i prompt rientrati su un fondo appena staccato. Nessun marcatore porta parole: il player non scrive testo che non sia nell'IR, e vale anche per il CSS.",
+    ],
+    scena: [
+      'le tre leve insieme',
+      "Non e' i tre temi accesi insieme: e' quello che resta di ciascuno dopo aver tolto cio' che un altro faceva meglio. Graziato col suo corsivo per chi racconta, monospazio per chi parla, due filetti soli — pieno alla narrazione, punteggiato al look — e una regola sui colori che gli altri temi non hanno: l'azzurro e' l'interfaccia, il giallo e' la storia. Chi parla e il tono in giallo, come la luce delle inquadrature; quello che il giocatore scrive e sceglie in azzurro, come i bottoni. E' il candidato, e gli altri servono a dire se batte ognuno di loro preso da solo.",
+    ],
+    sottotitoli: [
+      "l'immagine e' il soggetto",
+      "L'ipotesi opposta a tutte le altre: non che i registri siano indistinguibili, ma che siano troppi in vista mentre si guarda un'inquadratura. Prosa grande su misura corta come una didascalia di film, tutto il resto al limite della leggibilita'. Se non si perde niente, il player mostra piu' cose di quante ne servano.",
+    ],
+  };
+
+  body.append(el('h3', undefined, 'come si distinguono le voci'));
+
+  const riga = el('div', 'chips');
+  for (const nome of TEMI_VALIDI) {
+    const b = el('button', `chip scelta${ctx.tema === nome ? ' on' : ''}`, nome);
+    b.onclick = async () => {
+      if (ctx.tema === nome) return;
+      await premi(b);
+      ctx.onTema(nome);
+    };
+    riga.append(b);
+  }
+  body.append(riga);
+
+  // Che cosa si sta misurando adesso: sotto le chip, come per il backend nella
+  // scheda «interprete». Il tema si vede da solo; quello che non si vede e'
+  // l'ipotesi che sta provando.
+  const [cosa, perche] = TEMI[ctx.tema];
+  body.append(el('h3', undefined, cosa));
+  body.append(el('p', 'empty', perche));
+
+  body.append(el('hr', 'sep-forte'));
+  body.append(
+    el(
+      'p',
+      'empty',
+      "Sono varianti dello stesso buio, non l'inizio di un tema chiaro: la palette resta una, e la ragione — un fondo bianco intorno a un'inquadratura cambia come si legge l'immagine, non solo come si legge il testo — non e' cambiata. Questa scheda e' provvisoria: quando uno vince, i suoi valori diventano quelli del player e gli altri cinque spariscono da qui.",
+    ),
+  );
+  body.append(
+    el(
+      'p',
+      'empty',
+      "Si giudicano sul testo della storia, non qui dentro: un tema si sceglie, il menu si chiude, e la prova e' rileggere la scena in cui si era. Il piu' onesto e' rigiocare lo stesso pezzo con due temi diversi — quello che si nota alla seconda lettura non e' il tema, e' che si sapeva gia' cosa c'era scritto.",
+    ),
+  );
 }
 
 /** Svuota e restituisce lo stesso nodo: serve al solo caso in cui la scheda

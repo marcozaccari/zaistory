@@ -25,12 +25,31 @@ import { CONFIG_DEFAULT, type ConfigEmbedder } from './embedder.js';
 /** I nomi di backend che il player sa accendere. */
 export const RESOLVER_VALIDI = ['lessicale', 'ibrido', 'embedding'] as const;
 
+/**
+ * I temi di lettura in prova.
+ *
+ * Non e' una preferenza di stile e non e' l'inizio di un tema chiaro: la
+ * palette resta una, scura, per la ragione scritta in ARCHITECTURE.md. Sono
+ * cinque varianti dello stesso buio piu' il punto di partenza, e servono a
+ * capire *perche'* il testo del player si legge come un blocco unico —
+ * l'ipotesi che ciascuno isola sta scritta accanto al suo nome in
+ * `styles.css` e nella scheda «lettura» del pannello.
+ *
+ * E' un elenco provvisorio per costruzione: quando uno vince, i suoi valori
+ * salgono nel `:root` e questo campo sparisce insieme agli altri quattro.
+ */
+export const TEMI_VALIDI = ['attuale', 'voce', 'carta', 'copione', 'scena', 'sottotitoli'] as const;
+
+export type Tema = (typeof TEMI_VALIDI)[number];
+
 export interface ConfigPlayer {
   ascolto: ImpostazioniAscolto;
   embedder: ConfigEmbedder;
   resolver: string;
   /** Se mostrare le immagini pubblicate della storia, quando ci sono. */
   immagini: boolean;
+  /** Come si distinguono le voci del testo. In prova: vedi `TEMI_VALIDI`. */
+  tema: Tema;
   debug: boolean;
 }
 
@@ -40,6 +59,9 @@ export function configPlayerDefault(): ConfigPlayer {
     embedder: { ...CONFIG_DEFAULT },
     resolver: 'lessicale',
     immagini: true,
+    // Il default e' il punto di partenza, non il candidato: finche' la prova
+    // non ha un esito, chi apre il player deve vedere quello che vedeva ieri.
+    tema: 'attuale',
     debug: false,
   };
 }
@@ -81,6 +103,11 @@ export function leggiConfigPlayer(raw: Record<string, unknown> | undefined, base
       ? String(raw.resolver)
       : base.resolver,
     immagini: bool(raw.immagini, base.immagini),
+    // Un tema che non esiste piu' torna a quello corrente in silenzio: e'
+    // esattamente il caso che questo elenco produrra' — cinque di questi sei
+    // nomi sono destinati a sparire, e un codice salvato oggi non deve
+    // rompersi domani.
+    tema: (TEMI_VALIDI as readonly string[]).includes(String(raw.tema)) ? (String(raw.tema) as Tema) : base.tema,
     debug: bool(raw.debug, base.debug),
   };
 }
@@ -116,6 +143,7 @@ export function configPlayerSerializzabile(c: ConfigPlayer): Record<string, unkn
     embedder: { ...c.embedder },
     resolver: c.resolver,
     immagini: c.immagini,
+    tema: c.tema,
     debug: c.debug,
   };
 }
