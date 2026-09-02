@@ -2693,64 +2693,9 @@ body[data-font="macchina"] {
   --prosa-corpo: 0.92em;
 }
 
-/* Su telefono le cinque taglie qui sopra si azzerano: tutte a un `em` netto.
-
-   Le taglie per carattere sono un accordo ottico e valgono dove c'e' spazio
-   per accorgersene. Su telefono no. Il termine di paragone cambia sotto —
-   `-apple-system` non e' piu' un carattere d'interfaccia da scrivania ma
-   quello di sistema del telefono, disegnato per essere letto a quindici
-   centimetri dagli occhi e quindi gia' largo e alto d'occhio di suo — e
-   rispetto a lui gli altri quattro non pareggiavano: sopravanzavano, e la riga
-   di prosa usciva piu' grossa di tutto il resto della pagina. Un primo giro
-   li aveva fatti scendere tutti di un gradino tenendo i rapporti; su schermo
-   piccolo si vedeva ancora, e la risposta giusta era che li' i rapporti non
-   servono. Uno, per tutti e cinque.
-
-   Non e' una taglia scelta: e' quella del corpo del documento, cioe' la stessa
-   misura di tutto il resto della pagina. Su telefono la colonna e' una sola e
-   la prosa ci sta dentro con l'interfaccia — accordarla a se stessa carattere
-   per carattere vuol dire scordarla dal contesto in cui si legge davvero. Le
-   cinque taglie restano, e valgono da 640 pixel in su, dove la prosa ha una
-   colonna sua e il confronto fra un graziato e un monospazio si fa a occhio
-   sulla pagina invece che contro un'interfaccia.
-
-   La soglia e' quella del layout stretto letta al contrario: telefono in piedi
-   (sotto i 640) o coricato (sotto i 560 di altezza). */
-@media (max-width: 639px), (max-height: 560px) {
-  body[data-font="sistema"],
-  body[data-font="charter"],
-  body[data-font="pagella"],
-  body[data-font="schoolbook"],
-  body[data-font="macchina"] {
-    --prosa-corpo: 1em;
-  }
-
-  /* Il corsivo scende di tre centesimi sotto il corpo. Alla stessa misura del
-     tondo non pesa uguale: su telefono, dove la riga e' corta e tutto sta al
-     corpo del documento, la prosa inclinata esce piu' grossa di quella dritta
-     che le sta intorno — e siccome il corsivo qui e' proprio la prosa d'autore, e' la
-     parte che si legge di piu' a sembrare fuori misura.
-
-     Tre centesimi e non un gradino vero: non si vuole che il corsivo si legga
-     piu' piccolo, si vuole che si legga uguale. Una misura che si nota avrebbe
-     detto «questa e' un'altra cosa», e queste righe sono la cosa principale.
-
-     L'elenco e' esattamente quello di cio' che e' inclinato: la narrazione e i
-     beat, la didascalia dentro un dialogo, il tono. Il `look` resta fuori
-     perche' e' l'unica prosa d'autore in tondo — sta scritto sopra il perche',
-     ed e' la prova che l'elenco segue il corsivo e non la voce.
-
-     Il tono e' qui dentro e non ha piu' una regola sua: e' l'unica riga del
-     palco scritta nel carattere della prosa e in corsivo, quindi il gradino
-     lo prende dalla parte del corsivo insieme a tutto il resto, e non dalla
-     parte del palco. Su schermo grande resta a 1.08. */
-  .entry.narration,
-  .entry.beat,
-  .entry.line.didascalia,
-  .palco-riga .tono {
-    font-size: 0.97em;
-  }
-}
+/* Le cinque taglie valgono da 640 pixel in su: sotto quella soglia si
+   azzerano, e la regola che lo fa sta in fondo al file. Vedi «il telefono, per
+   ultimo». */
 
 /* --- Cio' che il carattere non tocca --------------------------------------
 
@@ -2849,4 +2794,76 @@ body[data-font="macchina"] .entry.line:not(.didascalia) {
    oggetto, e a distinguerli basta il bordo spento. */
 .chips.inventario .chip {
   color: var(--voce-storia);
+}
+
+/* ================================================== il telefono, per ultimo
+   Le regole di questo blocco valgono sotto la soglia dello schermo stretto e
+   stanno in fondo al file per una ragione meccanica: una `@media` non aggiunge
+   specificita', quindi a parita' di selettore vince chi e' scritto dopo. Il
+   tono della scena ha una regola sua molto piu' in basso di dove questo blocco
+   stava prima, e se la riprendeva indietro senza dare segno — una misura
+   scritta e ignorata, che e' peggio di una misura sbagliata. In coda al file
+   nessuna delle regole qui sotto puo' essere scavalcata da qualcosa che si
+   aggiunge sopra. */
+
+/* Su telefono le cinque taglie qui sopra si azzerano: tutte a un `em` netto.
+
+   Le taglie per carattere sono un accordo ottico e valgono dove c'e' spazio
+   per accorgersene. Su telefono no. Il termine di paragone cambia sotto —
+   `-apple-system` non e' piu' un carattere d'interfaccia da scrivania ma
+   quello di sistema del telefono, disegnato per essere letto a quindici
+   centimetri dagli occhi e quindi gia' largo e alto d'occhio di suo — e
+   rispetto a lui gli altri quattro non pareggiavano: sopravanzavano, e la riga
+   di prosa usciva piu' grossa di tutto il resto della pagina. Un primo giro
+   li aveva fatti scendere tutti di un gradino tenendo i rapporti; su schermo
+   piccolo si vedeva ancora, e la risposta giusta era che li' i rapporti non
+   servono. Uno, per tutti e cinque.
+
+   Non e' una taglia scelta: e' quella del corpo del documento, cioe' la stessa
+   misura di tutto il resto della pagina. Su telefono la colonna e' una sola e
+   la prosa ci sta dentro con l'interfaccia — accordarla a se stessa carattere
+   per carattere vuol dire scordarla dal contesto in cui si legge davvero. Le
+   cinque taglie restano, e valgono da 640 pixel in su, dove la prosa ha una
+   colonna sua e il confronto fra un graziato e un monospazio si fa a occhio
+   sulla pagina invece che contro un'interfaccia.
+
+   La soglia e' quella del layout stretto letta al contrario: telefono in piedi
+   (sotto i 640) o coricato (sotto i 560 di altezza). */
+@media (max-width: 639px), (max-height: 560px) {
+  body[data-font="sistema"],
+  body[data-font="charter"],
+  body[data-font="pagella"],
+  body[data-font="schoolbook"],
+  body[data-font="macchina"] {
+    --prosa-corpo: 1em;
+  }
+
+  /* La prosa d'autore scende di tre centesimi sotto il corpo. Su telefono, dove
+     la riga e' corta e tutto sta al corpo del documento, usciva piu' grossa di
+     quello che le sta intorno — ed e' la parte che si legge di piu', quindi e'
+     la sola in cui uno scarto di poco si nota davvero.
+
+     Tre centesimi e non un gradino vero: non la si vuole leggere piu' piccola,
+     la si vuole leggere uguale. Una misura che si nota avrebbe detto «questa
+     e' un'altra cosa», e queste righe sono la cosa principale.
+
+     L'elenco e' quello della prosa d'autore, tutta: la narrazione e i beat, la
+     didascalia dentro un dialogo, il `look`, il tono della scena. Che tre siano
+     in corsivo e il `look` in tondo qui non conta — quella differenza dice se
+     e' appena successo qualcosa o se lo si e' chiesto, non quanto sia grande.
+
+     Restano fuori le battute, che una misura sotto il tondo ce l'hanno gia' per
+     la ragione opposta — un passo fisso alla stessa taglia sembra piu' grosso —
+     e tutto cio' che e' interfaccia o macchina.
+
+     Il tono non ha piu' una regola sua: e' prosa d'autore anche lui, e il
+     gradino lo prende da qui e non dalla parte del palco. Su schermo grande
+     resta a 1.08. */
+  .entry.narration,
+  .entry.beat,
+  .entry.line.didascalia,
+  .entry.look,
+  .palco-riga .tono {
+    font-size: 0.97em;
+  }
 }
