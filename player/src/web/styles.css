@@ -454,9 +454,18 @@ body.con-palco .dock {
   color: var(--fg-dim);
 }
 
-/* Chi ha deciso il turno. Piccolo e in coda, ma sempre visibile: il backend a
-   vettori esiste per essere valutato, e un rapporto di copertura non dice cosa
-   si prova a giocarci. */
+/* Chi ha deciso il turno: verbo del player, lessicale, vettori. Sta nel
+   documento a ogni riga — cosi' accendere il debug vale anche per il transcript
+   gia' scorso — ma si vede **solo col debug**. Era sempre visibile, e la
+   ragione era buona: il backend a vettori esiste per essere valutato, e un
+   rapporto di copertura non dice cosa si prova a giocarci. Solo che quella
+   valutazione la fa chi collauda, ed e' esattamente cio' che il debug accende;
+   a chi gioca, una pastiglia con scritto «lessicale» in coda alla risposta
+   della storia dice che sta guardando dentro una macchina. */
+body:not(.debug) .via {
+  display: none;
+}
+
 .via {
   margin-left: 8px;
   padding: 1px 6px;

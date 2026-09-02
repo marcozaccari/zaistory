@@ -1211,9 +1211,11 @@ export class WebUI implements PlayerUI {
     if (fig) this.push(fig);
   }
 
-  /** Una riga di transcript con il marchio di chi ha deciso il turno. Si vede
-   * sempre, non solo in debug: e' l'unico modo di accorgersi *giocando* di
-   * quando il backend a vettori serva davvero. */
+  /** Una riga di transcript con il marchio di chi ha deciso il turno — verbo
+   * del player, lessicale, vettori. Sta nel documento sempre e si vede col
+   * debug, come tutta l'altra diagnostica: e' il modo di accorgersi *giocando*
+   * di quando il backend a vettori serva davvero, e chi gioca e basta non ha
+   * niente da farci. */
   private entryVia(cls: string, text: string, e: EsitoTurno): void {
     const p = el('p', `entry ${cls}`);
     p.append(document.createTextNode(text));
