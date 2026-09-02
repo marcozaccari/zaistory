@@ -88,7 +88,7 @@ function impostaFont(f: Font): void {
  *
  * Il nome sta scritto sul bottone e non dietro un menu perche' e' meta' di cio'
  * che serve sapere — l'altra meta' e' come si legge, e quella e' sotto, nella
- * pagina. Cinque nomi in un giro sono pochi abbastanza da non aver bisogno di
+ * pagina. Tre nomi in un giro sono pochi abbastanza da non aver bisogno di
  * un elenco: si tocca finche' non si e' contenti, e a ogni tocco cambia sotto
  * gli occhi la stessa scena che si stava leggendo. Un elenco avrebbe chiesto un
  * pannello, e un pannello su telefono copre esattamente cio' su cui si sta

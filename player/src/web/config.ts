@@ -41,8 +41,17 @@ export const RESOLVER_VALIDI = ['lessicale', 'ibrido', 'embedding'] as const;
  * storia».
  *
  * Nessun font esterno: sono pile di caratteri che i sistemi hanno gia'.
+ *
+ * Tre e non cinque. Un giro si prova tutto: piu' corti sono e piu' e' probabile
+ * che si arrivi in fondo invece di fermarsi al primo che non disturba. Sono
+ * spariti Palatino — un umanista bellissimo che pero' regge peggio i testi
+ * lunghi, cioe' esattamente cio' per cui questo elenco esiste — e il
+ * monospazio, che non era una variante ma una struttura diversa: portava tutto
+ * il transcript, battute comprese, a una voce sola, e per tenerlo in piedi
+ * serviva un caso speciale nel CSS. Restano i due graziati che si giudicano
+ * uno contro l'altro e il bastoni che fa da termine di paragone.
  */
-export const FONT_VALIDI = ['charter', 'pagella', 'schoolbook', 'sistema', 'macchina'] as const;
+export const FONT_VALIDI = ['charter', 'schoolbook', 'sistema'] as const;
 
 export type Font = (typeof FONT_VALIDI)[number];
 

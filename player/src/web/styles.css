@@ -446,7 +446,7 @@ body.con-palco .dock {
 /* Il carattere della prosa: un segno e, accanto, il nome di quello corrente.
    E' l'unico bottone della barra che porti tutti e due, ed e' perche' e' anche
    l'unico che non sia a due stati — «acceso o spento» si legge da un colore,
-   «quale dei cinque» no. Il nome sta in bastoni e piccolo: e' un'etichetta
+   «quale dei tre» no. Il nome sta in bastoni e piccolo: e' un'etichetta
    dell'interfaccia, e scriverlo nel carattere che nomina sarebbe una piccola
    anteprima che a undici pixel non si vede e che confonderebbe il bottone con
    la cosa su cui agisce. */
@@ -2631,8 +2631,13 @@ body.debug .kv > dd.only-debug {
 }
 
 /* ============================================================ il carattere
-   Cinque caratteri fra cui scegliere, e si applicano a due cose sole: la prosa
+   Tre caratteri fra cui scegliere, e si applicano a due cose sole: la prosa
    d'autore e il resoconto di quello che il giocatore ha fatto.
+
+   Tre: due graziati che si giudicano uno contro l'altro e il bastoni di
+   sistema che fa da termine di paragone. Un giro corto si prova tutto — su
+   cinque ci si fermava al primo che non disturbava, e gli ultimi due non li
+   vedeva nessuno.
 
    Tutto il resto resta fermo, e non e' una svista. Le battute stanno al
    monospazio perche' fanno il paio con il graziato della narrazione — graziato
@@ -2642,10 +2647,11 @@ body.debug .kv > dd.only-debug {
    non sono una scelta di lettura ma il modo in cui il player dice «questo non
    e' la storia», e su di loro non c'e' niente da provare.
 
-   Ogni carattere porta la sua taglia. Un graziato umanista e un monospazio alla
-   stessa misura in `em` non hanno la stessa altezza dell'occhio, e confrontarli
-   cosi' vorrebbe dire confrontare due corpi diversi credendo di confrontare due
-   disegni: la scelta e' fra caratteri, non fra dimensioni.
+   Ogni carattere porta la sua taglia. Un graziato e un bastoni alla stessa
+   misura in `em` non hanno la stessa altezza dell'occhio, e confrontarli cosi'
+   vorrebbe dire confrontare due corpi diversi credendo di confrontare due
+   disegni: la scelta e' fra caratteri, non fra dimensioni. Su telefono le
+   taglie si azzerano — vedi «il telefono, per ultimo» in fondo al file.
 
    Le pile nominano prima la migliore versione che ogni sistema ha davvero —
    quello che c'e' su un Mac, quello che c'e' su Linux, quello che c'e' su un
@@ -2668,14 +2674,6 @@ body[data-font="charter"] {
   --prosa-corpo: 1.1em;
 }
 
-/* Palatino: graziato umanista, nato dalla penna larga. Le curve non sono
-   simmetriche e il corsivo e' calligrafico — la voce piu' «raccontata» delle
-   cinque, ed e' anche quella che regge peggio i testi molto lunghi. */
-body[data-font="pagella"] {
-  --prosa-font: Palatino, "Palatino Linotype", "URW Palladio L", "TeX Gyre Pagella", "Book Antiqua", ui-serif, serif;
-  --prosa-corpo: 1.12em;
-}
-
 /* Century Schoolbook: graziato da libro di lettura, aperto e senza carattere
    proprio. Fatto per non farsi notare mentre si legge, che secondo chi l'ha
    disegnato e' la sola cosa che un testo lungo chieda. */
@@ -2684,40 +2682,22 @@ body[data-font="schoolbook"] {
   --prosa-corpo: 1.06em;
 }
 
-/* Monospazio: tutto il transcript a passo fisso, battute comprese. Qui la
-   coppia graziato/monospazio sparisce e la pagina torna a una voce sola —
-   e' l'unica di queste cinque che cambi la struttura e non solo il disegno,
-   e sta nell'elenco per questo. */
-body[data-font="macchina"] {
-  --prosa-font: ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
-  --prosa-corpo: 0.92em;
-}
-
-/* Le cinque taglie valgono da 640 pixel in su: sotto quella soglia si
-   azzerano, e la regola che lo fa sta in fondo al file. Vedi «il telefono, per
-   ultimo». */
-
 /* --- Cio' che il carattere non tocca --------------------------------------
 
    Le battute e il nome di chi le dice: monospazio, sempre. Una misura sotto il
    tondo, perche' un passo fisso alla stessa taglia sembra un corpo piu' grosso
    e la battuta finirebbe per gridare sopra la narrazione invece di starle
-   accanto. La didascalia dentro un dialogo resta fuori: e' prosa e non battuta
-   — non c'e' nessuno a dirla — e segue il carattere scelto insieme al resto
-   della prosa. */
+   accanto. Con il monospazio fuori dall'elenco della prosa questa riga non ha
+   piu' un caso in cui cade: la coppia fra chi racconta e chi parla c'e' sempre,
+   qualunque dei tre si scelga, e non e' piu' una promessa con un'eccezione.
+
+   La didascalia dentro un dialogo resta fuori: e' prosa e non battuta — non
+   c'e' nessuno a dirla — e segue il carattere scelto insieme al resto della
+   prosa. */
 .entry.line:not(.didascalia) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
   font-size: 0.9em;
   line-height: 1.6;
-}
-
-/* Col monospazio scelto per la prosa la distinzione fra chi racconta e chi
-   parla non puo' piu' stare nel carattere, e passa tutta al corsivo e al
-   filetto: la battuta e' l'unica cosa in tondo e senza filetto della colonna.
-   Torna anche la stessa taglia — due monospazi di misura diversa nella stessa
-   pagina si leggono come un errore, non come due registri. */
-body[data-font="macchina"] .entry.line:not(.didascalia) {
-  font-size: var(--prosa-corpo);
 }
 
 /* --- I due filetti della prosa d'autore -----------------------------------
@@ -2806,25 +2786,25 @@ body[data-font="macchina"] .entry.line:not(.didascalia) {
    nessuna delle regole qui sotto puo' essere scavalcata da qualcosa che si
    aggiunge sopra. */
 
-/* Su telefono le cinque taglie qui sopra si azzerano: tutte a un `em` netto.
+/* Su telefono le tre taglie qui sopra si azzerano: tutte a un `em` netto.
 
    Le taglie per carattere sono un accordo ottico e valgono dove c'e' spazio
    per accorgersene. Su telefono no. Il termine di paragone cambia sotto —
    `-apple-system` non e' piu' un carattere d'interfaccia da scrivania ma
    quello di sistema del telefono, disegnato per essere letto a quindici
    centimetri dagli occhi e quindi gia' largo e alto d'occhio di suo — e
-   rispetto a lui gli altri quattro non pareggiavano: sopravanzavano, e la riga
-   di prosa usciva piu' grossa di tutto il resto della pagina. Un primo giro
-   li aveva fatti scendere tutti di un gradino tenendo i rapporti; su schermo
-   piccolo si vedeva ancora, e la risposta giusta era che li' i rapporti non
-   servono. Uno, per tutti e cinque.
+   rispetto a lui i due graziati non pareggiavano: sopravanzavano, e la riga di
+   prosa usciva piu' grossa di tutto il resto della pagina. Un primo giro li
+   aveva fatti scendere di un gradino tenendo i rapporti; su schermo piccolo si
+   vedeva ancora, e la risposta giusta era che li' i rapporti non servono. Uno,
+   per tutti e tre.
 
    Non e' una taglia scelta: e' quella del corpo del documento, cioe' la stessa
    misura di tutto il resto della pagina. Su telefono la colonna e' una sola e
    la prosa ci sta dentro con l'interfaccia — accordarla a se stessa carattere
    per carattere vuol dire scordarla dal contesto in cui si legge davvero. Le
-   cinque taglie restano, e valgono da 640 pixel in su, dove la prosa ha una
-   colonna sua e il confronto fra un graziato e un monospazio si fa a occhio
+   tre taglie restano, e valgono da 640 pixel in su, dove la prosa ha una
+   colonna sua e il confronto fra i due graziati e il bastoni si fa a occhio
    sulla pagina invece che contro un'interfaccia.
 
    La soglia e' quella del layout stretto letta al contrario: telefono in piedi
@@ -2832,9 +2812,7 @@ body[data-font="macchina"] .entry.line:not(.didascalia) {
 @media (max-width: 639px), (max-height: 560px) {
   body[data-font="sistema"],
   body[data-font="charter"],
-  body[data-font="pagella"],
-  body[data-font="schoolbook"],
-  body[data-font="macchina"] {
+  body[data-font="schoolbook"] {
     --prosa-corpo: 1em;
   }
 
