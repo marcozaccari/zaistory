@@ -1516,6 +1516,16 @@ body:not(.debug) #tabs button[data-debug] {
   margin-top: 12px;
 }
 
+/* Il filo che divide il guardare dal fare. Piu' marcato di quello che separa
+   le sezioni (che e' 1px di `--line`): quello dice «qui comincia un altro
+   argomento», questo dice «sotto c'e' un comando». */
+.sep-forte {
+  height: 0;
+  margin: 22px 0 0;
+  border: 0;
+  border-top: 2px solid color-mix(in srgb, var(--line) 45%, var(--fg-dim));
+}
+
 /* «Ricomincia», sotto l'inventario. Squadrato e largo quanto la colonna come
    le pastiglie dell'inventario che gli stanno sopra: e' la stessa famiglia di
    cose che si toccano, non un'etichetta. Il colore resta neutro finche' non lo
@@ -1523,7 +1533,7 @@ body:not(.debug) #tabs button[data-debug] {
 .btn.ricomincia {
   display: block;
   width: 100%;
-  margin-top: 16px;
+  margin-top: 18px;
   padding: 12px 14px;
   border-radius: 10px;
   font-size: 13px;

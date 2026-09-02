@@ -233,6 +233,13 @@ function renderPrincipale(body: HTMLElement, ctx: PanelContext): void {
   // conviene rifare la strada. La domanda prima di farlo non e' cortesia: da
   // quando la partita si salva, questo e' l'unico bottone del player che possa
   // buttare via qualcosa di irrecuperabile.
+  // Un filo piu' marcato di quelli che dividono le sezioni: sotto c'e' l'unico
+  // bottone del player che possa buttare via qualcosa di irrecuperabile, e non
+  // deve sembrare la continuazione dell'elenco che gli sta sopra. Le sezioni si
+  // separano perche' parlano di cose diverse; questo separa il guardare dal
+  // fare.
+  body.append(el('hr', 'sep-forte'));
+
   const ricomincia = el('button', 'btn ricomincia', 'ricomincia la partita');
   ricomincia.onclick = async () => {
     await premi(ricomincia);
