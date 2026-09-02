@@ -6,6 +6,10 @@
  * si consulta il mondo, e quell'ordine e' una scelta di progetto, non un
  * dettaglio d'implementazione:
  *
+ *   0. **le due domande**: «cosa posso fare?» e «guardati intorno». Non sono
+ *      tentativi di agire sul mondo, e non devono poter applicare nessun
+ *      `Effect`: e' l'unica eccezione all'ordine, ed e' motivata in
+ *      `verbi.ts`;
  *   1. **il resolver**, su tutte le azioni della scena — comprese quelle che
  *      una condizione ha filtrato, perche' a parole il giocatore le chiede lo
  *      stesso;
@@ -29,7 +33,7 @@ import type { Verbo } from './verbi.js';
 import { noMatchPool } from './types.js';
 import { classificaIntento } from './lexical.js';
 import { scegliFallback } from './resolver.js';
-import { isDomandaDiAiuto, oggettoDaEsaminare, oggettoNominato, testoAiuto, testoInventario, testoLook, testoOggetto, testoPresenti, verboDelPlayer } from './verbi.js';
+import { isDomandaDiAiuto, isGuardatiIntorno, oggettoDaEsaminare, oggettoNominato, testoAiuto, testoInventario, testoLook, testoOggetto, testoPresenti, verboDelPlayer } from './verbi.js';
 
 export type EsitoKind = 'azione' | 'bloccata' | 'verbo' | 'niente';
 
@@ -95,6 +99,26 @@ export class InputLibero {
         verbo: 'aiuto',
         testo,
         nota: buco(`la scena "${p.scene.id}" non risponde a "aiuto"`, 'look', testo),
+      };
+    }
+
+    // «Guardati intorno» subito dopo, e per la stessa ragione: «guarda»,
+    // «osserva», «cosa c'e'», «cosa vedo» sono la stessa domanda detta in
+    // cinque modi, e nessuno dei cinque e' un tentativo di agire sul mondo.
+    // Passandoli dal resolver, «osserva» somigliava abbastanza agli alias di
+    // certe azioni da farle partire — e ogni sinonimo finiva in un posto
+    // diverso, che e' il modo piu' rapido di far smettere di parlare al player.
+    //
+    // Solo la forma **pura**: «guarda il camino» ha un complemento vero, resta
+    // materia del resolver e la sua azione vince come sempre.
+    if (isGuardatiIntorno(input)) {
+      const soddisfaSubito = (c?: Parameters<typeof p.state.meets>[0]) => p.state.meets(c).ok;
+      const testo = testoLook(p.scene, soddisfaSubito);
+      return {
+        kind: 'verbo',
+        verbo: 'look',
+        testo,
+        nota: buco(`la scena "${p.scene.id}" non risponde a "look"`, 'look', testo),
       };
     }
 

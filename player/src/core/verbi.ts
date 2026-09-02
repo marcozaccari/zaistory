@@ -15,6 +15,12 @@
  * non se la vede scippare da qui. I verbi rispondono solo dove il resolver ha
  * gia' detto di no.
  *
+ * Due eccezioni, e sono le stesse per la stessa ragione: `isDomandaDiAiuto` e
+ * `isGuardatiIntorno` si consultano **prima** del resolver. Non sono tentativi
+ * di agire sul mondo ma domande — «cosa posso fare?», «cosa c'e'?» — e
+ * lasciarle somigliare agli alias di un'azione significava farla partire. Una
+ * domanda non puo' applicare un `Effect`.
+ *
  * Qui non si genera niente: tutto il testo che esce da questo modulo l'ha
  * scritto l'autore (`look`, `look_variants`, `player_voice`). Dove l'autore
  * non ha scritto, il player lo dice come diagnostica e non inventa prosa.
@@ -90,7 +96,12 @@ const AIUTO = [
 // "posta", e "guarda la posta" e' un'azione di scena, non un guardarsi
 // intorno. "dove sono" e "che posto e' questo" sono gia' coperti dalla forma
 // esatta piu' sotto.
-const AMBIENTE = new Set(['intorn', 'attorn', 'giro', 'ambient', 'stanz', 'camer', 'luog', 'dov', 'trov', 'scen']);
+// 'gir' e non 'giro': qui si confrontano **radici**, e la radice di "giro" e'
+// "gir" — con la parola intera «guarda in giro» non ha mai combaciato con
+// niente. E' sicura quanto le altre: da sola non fa scattare un look, che ha
+// comunque bisogno di un verbo di percezione, e «gira la manovella» ha un
+// complemento vero.
+const AMBIENTE = new Set(['intorn', 'attorn', 'gir', 'ambient', 'stanz', 'camer', 'luog', 'dov', 'trov', 'scen']);
 const PERCEZIONE_ELENCO = ['guard', 'osserv', 'ved', 'esamin', 'ispezion', 'scrut'] as const;
 const PERCEZIONE = new Set<string>(PERCEZIONE_ELENCO);
 const CONTENITORI = new Set(['inventari', 'zain', 'tasch', 'bors', 'sacc']);
@@ -185,11 +196,62 @@ export function verboDelPlayer(input: string): Verbo {
   // per conto suo.)
   if (isDomandaDiAiuto(input)) return 'aiuto';
 
-  if (/^dove (sono|mi trovo|siamo|ci troviamo)\??$/.test(piatto)) return 'look';
-  const haPercezione = rs.some((r) => PERCEZIONE.has(r));
-  if (haPercezione && rs.every((r) => PERCEZIONE.has(r) || AMBIENTE.has(r) || FUNZIONALI.has(r))) return 'look';
+  if (isGuardatiIntorno(input)) return 'look';
 
   return 'nessuno';
+}
+
+/**
+ * Le domande che chiedono cosa si vede senza contenere un verbo di percezione
+ * riconoscibile parola per parola.
+ *
+ * «cosa c'e'?» non ha un verbo di percezione affatto, e «cosa vedo?» ce l'ha
+ * ma accompagnato da "cosa", che non e' ne' ambiente ne' parola funzionale —
+ * con la regola generale sarebbe un complemento, cioe' un'azione di scena.
+ * Sono pero' esattamente la stessa domanda di «guardati intorno», e chi gioca
+ * le usa indifferentemente. Ancorate a inizio e fine come quelle dell'aiuto:
+ * «cosa c'e' dietro la porta» ha un complemento vero, ed e' un'azione.
+ */
+const GUARDA = [
+  /^dove (sono|mi trovo|siamo|ci troviamo)$/,
+  /^(ma |e |allora )?(che cosa|cosa|che)( c e| ce)( qui| qua| intorno| in giro| qui intorno| qui attorno)?$/,
+  /^(ma |e |allora )?(che cosa|cosa|che) (vedo|vedi|vediamo|si vede)( qui| qua| adesso| ora| intorno| in giro)?$/,
+  /^(che cosa|cosa|che) (c e|ce) da (vedere|guardare)( qui| qua)?$/,
+];
+
+/**
+ * Vera se la frase e' un guardarsi intorno **puro**: la domanda su dove si e',
+ * senza niente su cui agire.
+ *
+ * Sta fuori da `verboDelPlayer` per la stessa ragione di `isDomandaDiAiuto`, e
+ * per lo stesso difetto: viene consultata **prima del resolver**. «osserva» da
+ * sola somigliava abbastanza agli alias di certe azioni da farle partire, e chi
+ * scrive «osserva» non sta agendo sul mondo — sta chiedendo cos'ha davanti. Una
+ * domanda non deve poter applicare un `Effect`.
+ *
+ * Il prezzo e' lo stesso gia' accettato per l'aiuto, e va detto: una storia non
+ * puo' avere un'azione che si chiama esattamente «guarda» o «osserva». Puo'
+ * averne una che si chiama «osserva il cadavere», perche' li' c'e' un
+ * complemento vero e questa funzione dice di no.
+ *
+ * Stretta apposta, in tutte e tre le direzioni: basta un complemento («guarda
+ * il camino») perche' torni a essere materia del resolver, e una parola di
+ * contenitore («guarda nello zaino») o di presenza («chi vedi») la manda ai
+ * verbi che le competono, che sono altri.
+ */
+export function isGuardatiIntorno(input: string): boolean {
+  const piatto = normalizza(input);
+  if (piatto === '') return false;
+  // «cosa posso fare qui» contiene "qui", che e' funzionale, e senza questo
+  // cadrebbe fra i guardarsi intorno alla prima occasione.
+  if (isDomandaDiAiuto(input)) return false;
+  if (GUARDA.some((r) => r.test(piatto))) return true;
+
+  const rs = radiciIntere(input);
+  if (!rs.some((r) => PERCEZIONE.has(r))) return false;
+  // Lo zaino e chi c'e' hanno i loro verbi: qui si parla della stanza.
+  if (rs.some((r) => CONTENITORI.has(r) || PRESENZA.has(r))) return false;
+  return rs.every((r) => PERCEZIONE.has(r) || AMBIENTE.has(r) || FUNZIONALI.has(r));
 }
 
 /**

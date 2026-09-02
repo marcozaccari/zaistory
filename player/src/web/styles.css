@@ -1865,16 +1865,16 @@ body.palco-ridotto .volto .nome {
   /* Le facce crescono: in colonna sul bordo di un telefono ogni pixel di
      larghezza lo toglievano all'inquadratura, qui stanno in una fila sotto la
      figura e la larghezza c'e'. A quarantaquattro pixel una faccia si
-     riconosce solo se la si sa gia'; a sessantaquattro si guarda. */
+     riconosce solo se la si sa gia'; a centoventotto si guarda in faccia. */
   .volto {
-    width: 76px;
+    width: 140px;
   }
 
   .volto img,
   .volto .iniziali {
-    width: 64px;
-    height: 64px;
-    font-size: 19px;
+    width: 128px;
+    height: 128px;
+    font-size: 34px;
   }
 
   .volto .nome {
@@ -1884,14 +1884,14 @@ body.palco-ridotto .volto .nome {
   /* Da ridotto la colonna si stringe, non si abbassa: le facce restano
      leggibili, solo un po' meno ingombranti. */
   body.palco-ridotto .volto {
-    width: 56px;
+    width: 100px;
   }
 
   body.palco-ridotto .volto img,
   body.palco-ridotto .volto .iniziali {
-    width: 46px;
-    height: 46px;
-    font-size: 15px;
+    width: 88px;
+    height: 88px;
+    font-size: 26px;
   }
 
   body.palco-ridotto .volto .nome {
