@@ -40,8 +40,8 @@ struttura giocabile (JSON conforme allo schema), non altro testo narrativo.
 ## Per chi stai compilando: un giocatore che scrive, non che sceglie
 
 Tienilo presente da prima di cominciare, perché cambia cosa scrivi in ogni
-scena. Il player di test mostra le azioni come bottoni, ma **quella è
-impalcatura di collaudo**: il player definitivo si comanda a parole — «guardati
+scena. Le azioni si vedono come bottoni solo a debug acceso, e **quella è
+impalcatura di collaudo**: il player si comanda a parole — «guardati
 intorno», «dove mi trovo», «prendi il coltello», «cosa ho nello zaino», «apri la
 porta con la chiave», «parla con Mark». Un modulo separato (il resolver) prende
 la frase e sceglie fra le azioni che hai definito; non ne inventa nessuna.

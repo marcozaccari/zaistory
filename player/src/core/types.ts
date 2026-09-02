@@ -92,8 +92,8 @@ export interface Place {
   image?: ImageRef;
 }
 
-/** Anagrafica di un oggetto di inventario. Esiste perche' il player definitivo
- * si comanda a parole: un id non e' una risposta a "cosa ho nello zaino", e
+/** Anagrafica di un oggetto di inventario. Esiste perche' il player si
+ * comanda a parole: un id non e' una risposta a "cosa ho nello zaino", e
  * "usa il coltellino" ha bisogno di qualcosa a cui agganciarsi. */
 export interface Item {
   id: string;

@@ -1,8 +1,13 @@
-# zaiplay — player di test
+# zaiplay — il player
 
-Player minimale, **puramente testuale**: nessuna risorsa grafica o audio,
-nessun manifest asset. Consuma esclusivamente `story.ir.json` e serve a giocare
-e testare una storia molto prima che esistano il modulo assets e la PWA.
+Consuma esclusivamente `story.ir.json` — nessun manifest asset, nessun indice —
+e mostra le immagini che la storia ha già pubblicato, quando ci sono.
+
+**È il player del progetto, non un banco di prova.** Serve tre pubblici con una
+build sola: chi sviluppa il motore, chi collauda una storia, chi la gioca e
+basta. A distinguerli è un interruttore — il debug — che accende la diagnostica
+e spento non lascia traccia di sé. È anche la garanzia che quello che il tester
+prova sia esattamente quello che il giocatore riceverà.
 
 È il modo più economico per scoprire che una storia compilata *non è giocabile*
 — scena senza uscita, `goto` verso un id inesistente, flag mai impostato ma
@@ -18,8 +23,7 @@ Due facce, **un solo core**:
 | **CLI `zaiplay`** | `--lint` e `--script` headless: analisi statica e test di regressione rigiocabili in CI. Non gira su mobile — non è il suo mestiere. |
 
 `src/core/` non tocca il DOM e non legge da stdin: engine, stato, linter e
-lettura dell'IR stanno lì una volta sola, e le due facce li condividono. È
-anche il pezzo che la futura PWA può riusare così com'è.
+lettura dell'IR stanno lì una volta sola, e le due facce li condividono.
 
 ## Provare subito
 

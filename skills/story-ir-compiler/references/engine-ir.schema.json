@@ -237,7 +237,7 @@
 
     "Item": {
       "type": "object",
-      "description": "Un oggetto che il giocatore puo' avere in inventario. Esiste perche' il player definitivo si comanda a parole: 'cosa ho nello zaino' deve poter rispondere con un nome e non con uno slug, e 'usa il rotolo di scotch' deve poter agganciare l'oggetto giusto. Non e' un elenco di tutto cio' che si vede nella storia: solo di cio' che si puo' portare via.",
+      "description": "Un oggetto che il giocatore puo' avere in inventario. Esiste perche' il player si comanda a parole: 'cosa ho nello zaino' deve poter rispondere con un nome e non con uno slug, e 'usa il rotolo di scotch' deve poter agganciare l'oggetto giusto. Non e' un elenco di tutto cio' che si vede nella storia: solo di cio' che si puo' portare via.",
       "required": ["id", "name"],
       "additionalProperties": false,
       "properties": {

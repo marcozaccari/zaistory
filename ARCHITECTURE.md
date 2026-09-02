@@ -8,10 +8,10 @@
 > bene — è così che è nato `scene_type`, testando su materiale reale invece
 > che discutendo in astratto. Regole operative per gli agenti: `AGENTS.md`. Oggi il lavoro attivo è su due fronti:
 > la skill `skills/story-ir-compiler`, che applica queste regole direttamente
-> in conversazione, e il player di test `player/`, che le verifica
-> giocando l'IR prodotto. In futuro le stesse regole del compilatore verranno
-> implementate in un generatore dedicato (non ancora iniziato, nessuna scelta
-> di linguaggio/stack presa).
+> in conversazione, e il player `player/`, che è **il** player del progetto —
+> quello con cui si collauda una storia e quello con cui la si gioca. In futuro
+> le stesse regole del compilatore verranno implementate in un generatore
+> dedicato (non ancora iniziato, nessuna scelta di linguaggio/stack presa).
 
 ## Obiettivo
 
@@ -19,9 +19,18 @@ Motore narrativo interattivo moderno (tipo SCUMM, ma leggero): l'autore
 scrive sceneggiature in markdown libero (formato ottimizzato per la
 creatività, non per la macchina). Un compilatore le trasforma in un formato
 IR (`story.ir.json`) giocabile e player-agnostic, che poi alimenta un modulo
-di generazione asset (immagini/voce/musica) e infine uno o più player
-(PWA, bot Telegram, ...) — nessuno di questi componenti deve essere
-accoppiato agli altri: l'IR è il contratto che li tiene separati.
+di generazione asset (immagini/voce/musica) e infine il player (`player/`) —
+nessuno di questi componenti deve essere accoppiato agli altri: l'IR è il
+contratto che li tiene separati.
+
+**Il player è quello, ed è definitivo.** Non è un banco di prova in attesa di
+un prodotto vero: la stessa build si apre da `file://`, si manda in chat, si
+mette su qualunque static host, e serve tutti e tre i suoi pubblici — chi
+sviluppa il motore, chi collauda una storia, chi la gioca e basta. La
+differenza fra loro non è un'applicazione diversa ma **un interruttore**: il
+debug accende la diagnostica, e spento non ce n'è traccia. Tenerne uno solo è
+anche ciò che garantisce che quello che il tester prova sia esattamente quello
+che il giocatore riceverà.
 
 ## Pipeline concettuale
 
@@ -40,8 +49,7 @@ assets_manifest.json → generazione → studio (si guarda, si rifà, si approva
     ▼  PUBBLICAZIONE (`publish.py`)
 stories/<id>/assets/images/*.webp  +  il campo `image` scritto nell'IR
     │
-    ▼  PLAYER DEFINITIVO (non ancora costruito)
-PWA (principale) + eventuale bot Telegram (secondario, testuale)
+    └─▶  lo stesso PLAYER, che adesso ha le immagini da mostrare
 ```
 
 Una storia vive in **una cartella** (`stories/<id>/`), con dentro l'IR, la
@@ -202,8 +210,9 @@ Decisioni di design, con il *perché* (per non riscoprirle da capo):
   allo stato iniziale prima di entrare in `start_scene`.
 
 - **Il contratto e' scritto per un player che si comanda a parole** (1.6.0).
-  Le chip del player di test sono il banco di prova, non l'interfaccia: quella
-  decisa e' il resolver — testo libero in, id di un'azione gia' esistente out.
+  Le chip erano il banco di prova, non l'interfaccia: quella decisa e' il
+  resolver — testo libero in, id di un'azione gia' esistente out, e oggi le
+  chip restano solo sotto il debug.
   Provando "Metal Head" con le chip e' emerso che l'IR reggeva il *matching* ma
   non il *parlare*: quattro campi mancavano, e mancavano tutti dalla stessa
   parte, quella del giocatore che scrive invece di scegliere.
@@ -747,11 +756,18 @@ per voce ed effetti sonori puntuali, non vincolante. Le decisioni che
 riguardano la voce sono quelle generali qui sopra: due livelli, il testo che
 non sta nei prompt, la musica per tag invece che generata.
 
-## Player di test (`player/`, costruito)
+## Player (`player/`, costruito)
 
-Player minimale. Consuma **esclusivamente `story.ir.json`** — nessun manifest
+Il player del progetto, e non un banco di prova in attesa di un prodotto vero.
+Serve tre pubblici con **una build sola**: chi sviluppa il motore, chi collauda
+una storia, chi la gioca e basta. La differenza fra loro non e' un'applicazione
+diversa ma un interruttore — il debug — che accende la diagnostica e spento non
+lascia traccia di se'. E' anche la ragione per cui e' una sola: quello che il
+tester prova e' esattamente quello che il giocatore ricevera'.
+
+Consuma **esclusivamente `story.ir.json`** — nessun manifest
 asset, nessun indice — e serve a giocare e testare una storia molto prima che
-esista la PWA. Nato puramente testuale; da IR 1.9.0 mostra anche le immagini
+esista il modulo voce. Nato puramente testuale; da IR 1.9.0 mostra anche le immagini
 che la storia ha già pubblicato, quando ci sono, e dalla 1.10.0 apre sulla
 locandina invece che su una pagina di testo.
 
@@ -923,8 +939,8 @@ locandina invece che su una pagina di testo.
   un beat che nel player web resterebbe senza inquadratura, e il playthrough di
   regressione lo mostra senza aprire un browser.
 
-Perché serve, in una riga: è il modo più economico per scoprire che una
-storia compilata *non è giocabile* (scena senza uscita, `goto` che punta a
+Perché il linter serve, in una riga: è il modo più economico per scoprire che
+una storia compilata *non è giocabile* (scena senza uscita, `goto` che punta a
 un id inesistente, flag mai impostato ma richiesto da una condizione, ramo
 di dialogo irraggiungibile) senza dover prima generare immagini e voci.
 La validazione di schema dice che l'IR è *ben formato*; solo giocarlo dice
@@ -945,10 +961,10 @@ indipendentemente dal device* — e in browser ci si arriva solo con JS.
 - `player/src/cli/` — il terminale, per `--lint` e `--script` headless in CI.
   Non gira su mobile e non deve: è l'altra metà del bisogno.
 
-Cosa si guadagna rispetto al Go, oltre al browser: la logica dell'engine non
-andrà riscritta per la PWA — `player/src/core/` è già quello che la PWA
-importerà. Contro consapevole: si perde il binario autonomo, e la CLI ora
-richiede Node installato. Le dipendenze restano zero a runtime (TypeScript e
+Cosa si guadagna rispetto al Go, oltre al browser: la logica dell'engine sta in
+un posto solo e le due facce se la dividono, invece di essere riscritta una
+seconda volta per il web. Contro consapevole: si perde il binario autonomo, e
+la CLI ora richiede Node installato. Le dipendenze restano zero a runtime (TypeScript e
 Vite sono soli strumenti di build).
 
 - **Input unico: l'IR.** Nessun'altra dipendenza. Tutti i campi destinati
@@ -961,7 +977,7 @@ Vite sono soli strumenti di build).
   nella sua intestazione, quelli di un beat appesi al beat, `voice_override`
   sotto la battuta, `narration_voice` e `play_sound_prompt` dopo l'effetto che
   li produce. Sono il segnaposto di
-  quello che un giorno sarà immagine, suono e voce, ed è leggendoli mentre si
+  quello che diventeranno immagine, suono e voce, ed è leggendoli mentre si
   gioca che ci si accorge che un beat ha cambiato inquadratura senza dirlo o
   che manca un suono — cioè si rilegge la storia con gli occhi del modulo
   assets, prima che il modulo assets esista. Il debug non aggiunge prompt:
@@ -1430,19 +1446,25 @@ Vite sono soli strumenti di build).
   che il player aggiunge, e non introduce logica narrativa: lo schema non ha
   un marcatore esplicito di finale.
 
-## Deploy del player (solo discusso, nulla costruito)
+## Distribuire il player
 
-- **PWA** (target principale): installabile da browser mobile, può
-  funzionare offline se gli asset sono precachati, nessun vincolo di
-  formato — pensata come il player "di riferimento" più completo. Con il
-  player di test passato a TypeScript, `player/src/core/` è già il pezzo che
-  la PWA importerà: engine, stato, `Effect`/`Condition` e linter non vanno
-  riscritti, cambia solo l'interfaccia sopra di essi.
-- **Bot Telegram** (target secondario): meno adatto a un'interfaccia
-  punta-e-clicca vera, ma buon secondo target proprio perché il modello di
-  interazione scelto (dialoghi a scelte + azioni contestuali, non
-  verbo×oggetto) si presta bene anche a un'interfaccia a bottoni inline o
-  a puro testo.
+Non c'è un secondo player da costruire, e non c'è un deploy da progettare: la
+build è **un unico file HTML**, e questo è già il modo di distribuirla. Si apre
+da `file://`, si manda in chat, si mette su qualunque static host, e con l'IR
+incorporato (`npm run embed`) una storia intera è un file che si tocca e parte.
+`start_local_player.sh` fa build + embed + serve in un colpo, che è il modo di
+provarla dal telefono sulla rete di casa.
+
+Cosa resta aperto, e sono due cose diverse da «un altro player»:
+
+- **Dove stanno gli asset quando la storia non è più in locale.** Oggi la
+  convenzione è `assets/images/<id>.webp` accanto all'IR: regge una chiavetta e
+  uno static host, non un catalogo di storie. È una decisione di hosting,
+  rimandata.
+- **Installabilità e offline.** Un manifest e un service worker
+  trasformerebbero lo stesso file in qualcosa che si installa da browser
+  mobile e funziona senza rete. Non cambia l'architettura: è una passata sopra
+  quello che c'è già.
 
 ## Sceneggiature di riferimento per i test
 
@@ -1480,9 +1502,10 @@ Vite sono soli strumenti di build).
 1. Continuare a iterare sulla skill: testarla su altre sceneggiature reali
    (stili diversi da quello già provato), correggere prompt/schema quando
    emergono lacune concrete — non in astratto.
-2. ~~Costruire il **player di test**~~ — fatto (`player/`, TypeScript: player
-   web mobile-first + CLI headless sullo stesso core, resolver a menu,
-   modalità debug, linter, script di playthrough).
+2. ~~Costruire il **player**~~ — fatto (`player/`, TypeScript: player web
+   mobile-first + CLI headless sullo stesso core, modalità debug, linter,
+   script di playthrough). È quello definitivo: una build sola per chi
+   sviluppa, chi collauda e chi gioca.
 3. ~~Implementare il resolver per input testuale libero~~ — fatto in 1.8.0
    (lessicale + embedding opzionale, verbi del player, fallback d'autore,
    `--copertura`). Resta aperto il backend **Claude**, che serve come oracolo
@@ -1506,6 +1529,6 @@ Vite sono soli strumenti di build).
 7. Costruire il modulo assets per **voce e suoni**, che è il pezzo più costoso
    e non è ancora iniziato.
 8. Decidere la pubblicazione/hosting degli asset (rimandato finora).
-9. Costruire il player definitivo (PWA prima, bot Telegram poi). Le immagini
-   ci sono già: la PWA eredita `player/src/core/` e la convenzione
-   `assets/images/<id>`, e quello che cambia è l'interfaccia sopra.
+9. Decidere se rendere il player installabile e utilizzabile offline
+   (manifest + service worker sopra il file che c'è già). Non è un player
+   nuovo: è una passata sopra quello attuale.

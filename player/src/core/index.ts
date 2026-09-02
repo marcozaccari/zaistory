@@ -3,8 +3,8 @@
  *
  * Questo modulo non tocca il DOM, non legge da stdin e non stampa niente.
  * E' la ragione per cui esiste: la stessa logica gira nel player web sul
- * telefono, nella CLI node in CI e — domani — nella PWA, senza essere
- * riscritta tre volte e senza rischiare che le tre versioni divergano.
+ * telefono e nella CLI node in CI senza essere riscritta due volte e senza
+ * rischiare che le due versioni divergano.
  *
  * Vincolo architetturale che si vede direttamente nel codice: qui non c'e'
  * logica narrativa. Nessuna azione inventata, nessun testo generato, nessun

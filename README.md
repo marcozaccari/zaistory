@@ -29,7 +29,9 @@ immagini che la storia ha già; e il **modulo assets per le immagini**
 una in uno studio web e pubblica nella storia quelle marcate come definitive.
 Il player ha due facce sullo stesso core: una **web**, per provare la storia
 dal telefono o dal desktop, e una **CLI**, per il linter e i playthrough di
-regressione headless. Voce, suoni e i player definitivi (PWA, bot) sono
+regressione headless. È **il** player del progetto, non un banco di prova: la
+stessa build serve chi sviluppa, chi collauda e chi gioca, e a distinguerli è un
+interruttore — il debug — non un'applicazione diversa. Voce e suoni sono
 progettati ma non ancora costruiti.
 
 Una storia è **una cartella** (`stories/<id>/`): l'IR, la sceneggiatura, i
@@ -111,7 +113,7 @@ python assets-studio/images/publish.py stories/metal-head --dry-run
 | `skills/story-ir-compiler/` | Il compilatore sceneggiatura → IR (skill Claude) |
 | `skills/story-ir-compiler/references/engine-ir.schema.json` | Lo schema dell'IR — il contratto stabile del progetto |
 | `skills/story-ir-compiler/scripts/` | Validatore dell'IR e segmentatore delle scene |
-| `player/` | Il player di test: web e CLI (`zaiplay`) sullo stesso core, linter di giocabilità, script di playthrough |
+| `player/` | Il player: web e CLI (`zaiplay`) sullo stesso core, linter di giocabilità, script di playthrough |
 | `assets-studio/` | Gli strumenti che trasformano i prompt in asset: una cartella per tipo — oggi `images/`, domani voce e suoni |
 | `assets-studio/images/` | Immagini: estrazione del manifest, generazione, studio web, prototipazione, pubblicazione |
 | `start_local_player.sh` | Costruisce il player, lo incorpora in ogni storia e serve `stories/` in rete locale (per giocare dal telefono) |

@@ -448,7 +448,7 @@ class Linter {
     // inventory_schema: un oggetto senza scheda non ha un nome da mostrare a chi
     // chiede cosa ha nello zaino, ne' sinonimi con cui nominarlo. In un player
     // che si comanda a parole e' un oggetto che il giocatore non puo' usare.
-    // Il player definitivo si comanda a parole: "dove mi trovo" e' la domanda
+    // Il player si comanda a parole: "dove mi trovo" e' la domanda
     // piu' frequente di tutte, e senza `look` non ha una risposta d'autore.
     for (const sc of this.story.scenes) {
       if (sceneType(sc) === SCENE_INTERACTIVE && !sc.look) {

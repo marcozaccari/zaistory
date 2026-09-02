@@ -149,9 +149,14 @@ non la partita.
 - **Nessuno stack è stato scelto** per il generatore ad hoc. La scelta è
   deliberatamente rimandata: chiedi, non decidere per conto tuo. (Per il player
   invece è scelto: TypeScript, `player/` — web e CLI sullo stesso core.)
+- **Il player in `player/` è quello definitivo, non un prototipo.** Non ne
+  esiste un secondo da costruire e non va progettato: la stessa build la usano
+  chi sviluppa il motore, chi collauda una storia e chi la gioca, e a
+  distinguerli è il debug — un interruttore, non un'applicazione diversa. Se ti
+  viene da scrivere «il player definitivo farà X», X va fatto qui.
 - **La logica di gioco sta in `player/src/core/`, e solo lì.** Web e CLI sono
   interfacce: se ti trovi a duplicare una regola in `src/web/` o `src/cli/`,
-  è nel posto sbagliato. La PWA importerà lo stesso core.
+  è nel posto sbagliato.
 
 ## Prima di ogni commit
 
@@ -171,5 +176,5 @@ a mostrare la versione di prima.
 
 Se l'utente chiede di riprendere senza specificare altro, chiedi su quale dei
 fronti aperti si lavora: iterare sulla skill del compilatore, estendere il
-player di test (`player/`, già costruito), impostare il modulo assets, o
+player (`player/`, già costruito), impostare il modulo assets, o
 impostare il generatore ad hoc.

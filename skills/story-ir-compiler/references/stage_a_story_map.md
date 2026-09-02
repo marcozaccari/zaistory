@@ -279,8 +279,8 @@ passare il blocco giusto allo Stadio B.
    in cui potrebbe nominarlo scrivendo: "coltellino", "lama", "serramanico") e,
    quando serve, una `description` di cosa vede se lo guarda in mano.
 
-   Il perché sta nell'interfaccia vera del gioco: il player definitivo si
-   comanda a parole. "Cosa ho nello zaino" deve poter rispondere con dei nomi,
+   Il perché sta nell'interfaccia vera del gioco: il player si comanda a
+   parole. "Cosa ho nello zaino" deve poter rispondere con dei nomi,
    e "usa il rotolo di scotch" deve poter agganciare `nastro_isolante`. Un
    oggetto senza nome e senza sinonimi esiste solo per chi ha letto il JSON.
 
@@ -345,8 +345,8 @@ passare il blocco giusto allo Stadio B.
    dove si cammina all'indietro, le stanze in cui si ripassa sono ricorrenti
    per costruzione, anche se la sceneggiatura le descrive una volta sola.
 
-14. **`player_voice`: la prosa dei verbi del player.** Il player definitivo si
-   comanda a parole, e le due domande che il giocatore fa piu' spesso di tutte
+14. **`player_voice`: la prosa dei verbi del player.** Il player si comanda a
+   parole, e le due domande che il giocatore fa piu' spesso di tutte
    — «cosa ho nello zaino» e una frase che non corrisponde a niente — non
    passano da nessuna azione. Senza testo d'autore un player a parole risponde
    con un elenco di slug e con un non-ho-capito da programma.
