@@ -285,8 +285,14 @@ function modalitaImmagini(body: HTMLElement, ctx: PanelContext): void {
     ],
   ];
   const riga = el('div', 'chips');
-  for (const [valore, etichetta] of MODI) {
+  for (const [valore, etichetta, spiegazione] of MODI) {
     const b = el('button', `chip scelta${im.accese === valore ? ' on' : ''}`, etichetta);
+    // La spiegazione sta addosso alla scelta invece che in un paragrafo sotto.
+    // Due ragioni: erano quattro righe di prosa sempre a schermo per una
+    // decisione che si prende una volta, e soprattutto raccontavano solo il
+    // modo *gia' attivo* — cioe' l'unico dei due su cui non ci si sta facendo
+    // domande. Cosi' invece si legge quella di quello che si sta per scegliere.
+    b.title = spiegazione;
     b.onclick = async () => {
       if (im.accese === valore) return;
       await premi(b);
@@ -295,7 +301,6 @@ function modalitaImmagini(body: HTMLElement, ctx: PanelContext): void {
     riga.append(b);
   }
   body.append(riga);
-  body.append(el('p', 'empty', MODI.find(([v]) => v === im.accese)?.[2] ?? ''));
 }
 
 /** Quanti nodi dell'IR portano gia' un'immagine. */

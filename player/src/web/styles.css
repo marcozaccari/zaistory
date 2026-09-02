@@ -1279,16 +1279,25 @@ body:not(.debug) #tabs button[data-debug] {
   font-size: 12px;
 }
 
+/* Un filo sopra ogni intestazione: le sezioni del pannello sono elenchi corti
+   di cose diverse — dove sei, cosa hai in mano, come si vede — e senza una
+   riga che le separi scorrono via come un blocco solo, in cui l'intestazione
+   sembra appartenere a quello che le sta sopra. */
 .panel-body h3 {
   margin: 18px 0 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
   font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--fg-dim);
 }
 
+/* La prima non separa niente: sopra di lei c'e' il bordo della testata. */
 .panel-body h3:first-child {
   margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .kv {
@@ -1851,6 +1860,42 @@ body.palco-ridotto .volto .nome {
   .palco-riga {
     max-height: calc(6 * 1.4em + 16px);
     padding: 8px 12px;
+  }
+
+  /* Le facce crescono: in colonna sul bordo di un telefono ogni pixel di
+     larghezza lo toglievano all'inquadratura, qui stanno in una fila sotto la
+     figura e la larghezza c'e'. A quarantaquattro pixel una faccia si
+     riconosce solo se la si sa gia'; a sessantaquattro si guarda. */
+  .volto {
+    width: 76px;
+  }
+
+  .volto img,
+  .volto .iniziali {
+    width: 64px;
+    height: 64px;
+    font-size: 19px;
+  }
+
+  .volto .nome {
+    font-size: 11px;
+  }
+
+  /* Da ridotto la colonna si stringe, non si abbassa: le facce restano
+     leggibili, solo un po' meno ingombranti. */
+  body.palco-ridotto .volto {
+    width: 56px;
+  }
+
+  body.palco-ridotto .volto img,
+  body.palco-ridotto .volto .iniziali {
+    width: 46px;
+    height: 46px;
+    font-size: 15px;
+  }
+
+  body.palco-ridotto .volto .nome {
+    display: block;
   }
 
   /* Le facce tornano una fila orizzontale sotto la figura: di lato
