@@ -593,9 +593,45 @@ if (embedded) {
  */
 const vv = window.visualViewport;
 if (vv) {
+  /**
+   * Vero quando la tastiera e' chiusa da un gesto di sistema invece che dal
+   * fuoco.
+   *
+   * Il palco si ritira quando il campo prende il fuoco e torna quando lo
+   * perde — ma chiudendo la tastiera con il tasto del sistema operativo il
+   * campo il fuoco **non lo perde**: `blur` non arriva mai, e il palco
+   * restava nascosto per il resto della partita. Il fuoco, da solo, non e'
+   * quindi un buon segnale: quello che conta e' se i tasti sono sullo
+   * schermo, e a dirlo e' l'altezza del viewport visuale rispetto a quella
+   * della finestra, che la tastiera non tocca.
+   *
+   * `ridottoVisto` serve a non fidarsi di questa misura dove non funziona:
+   * su qualche browser il viewport visuale non si stringe affatto, e li' una
+   * regola che toglie la classe «appena il viewport e' pieno» la toglierebbe
+   * sempre, cioe' subito. Finche' una riduzione non si e' vista almeno una
+   * volta non si conclude niente, e il fuoco resta l'unico comando.
+   */
+  let ridottoVisto = false;
+  const nelCampo = () => document.activeElement?.classList.contains('campo') === true;
+
   const adatta = () => {
     document.documentElement.style.setProperty('--altezza-app', `${vv.height}px`);
+    // Quando la tastiera si apre iOS scorre il viewport di layout per portare
+    // il campo in vista, e siccome la pagina non scorre — l'altezza e' fissa e
+    // a scorrere e' il transcript dentro di se' — quello scorrimento sposta
+    // tutta l'applicazione lasciando una striscia vuota in cima.
     if (window.scrollY !== 0) window.scrollTo(0, 0);
+
+    const ridotto = vv.height < window.innerHeight - 100;
+    if (ridotto) {
+      ridottoVisto = true;
+      // I tasti sono tornati su un campo che aveva gia' il fuoco: nessun
+      // `focus` da intercettare, ma il palco deve ritirarsi lo stesso.
+      if (nelCampo()) document.body.classList.add('tastiera');
+    } else if (ridottoVisto) {
+      ridottoVisto = false;
+      document.body.classList.remove('tastiera');
+    }
   };
   vv.addEventListener('resize', adatta);
   vv.addEventListener('scroll', adatta);

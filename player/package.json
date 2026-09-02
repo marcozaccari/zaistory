@@ -1,6 +1,6 @@
 {
   "name": "zaistory-player",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "type": "module",
   "description": "Player di test per story.ir.json: web (telefono/desktop) e CLI, sullo stesso core.",
