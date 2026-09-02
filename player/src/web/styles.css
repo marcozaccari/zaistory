@@ -2725,12 +2725,30 @@ body[data-font="macchina"] {
     --prosa-corpo: 1em;
   }
 
-  /* E il tono con loro. E' l'unica riga del palco scritta nel carattere della
-     prosa, quindi il gradino che quella si toglie deve toglierselo anche lui,
-     o resterebbe la sola cosa in pagina piu' grande del corpo — e per giunta
-     dentro una striscia il cui spazio e' contato in righe. */
+  /* Il corsivo scende di tre centesimi sotto il corpo. Alla stessa misura del
+     tondo non pesa uguale: su telefono, dove la riga e' corta e tutto sta al
+     corpo del documento, la prosa inclinata esce piu' grossa di quella dritta
+     che le sta intorno — e siccome il corsivo qui e' proprio la prosa d'autore, e' la
+     parte che si legge di piu' a sembrare fuori misura.
+
+     Tre centesimi e non un gradino vero: non si vuole che il corsivo si legga
+     piu' piccolo, si vuole che si legga uguale. Una misura che si nota avrebbe
+     detto «questa e' un'altra cosa», e queste righe sono la cosa principale.
+
+     L'elenco e' esattamente quello di cio' che e' inclinato: la narrazione e i
+     beat, la didascalia dentro un dialogo, il tono. Il `look` resta fuori
+     perche' e' l'unica prosa d'autore in tondo — sta scritto sopra il perche',
+     ed e' la prova che l'elenco segue il corsivo e non la voce.
+
+     Il tono e' qui dentro e non ha piu' una regola sua: e' l'unica riga del
+     palco scritta nel carattere della prosa e in corsivo, quindi il gradino
+     lo prende dalla parte del corsivo insieme a tutto il resto, e non dalla
+     parte del palco. Su schermo grande resta a 1.08. */
+  .entry.narration,
+  .entry.beat,
+  .entry.line.didascalia,
   .palco-riga .tono {
-    font-size: 1em;
+    font-size: 0.97em;
   }
 }
 
