@@ -7,7 +7,7 @@
   },
   "id": "metal-head",
   "title": "Metal Head",
-  "description": "Adattamento giocabile di Metal Head. Quattro atti, nessuna sconfitta possibile: qualunque cosa faccia il giocatore si arriva sempre allo stesso finale, e l'unico prezzo dell'errore e' rifare la strada.",
+  "description": "Adattamento giocabile di Metal Head, liberamente ricostruito dall'episodio 4x05 di Black Mirror (soggetto di Charlie Brooker, regia di David Slade).",
   "cover": {
     "image_prompt": "locandina verticale: Laura in primo piano con Tommy accanto, Mark mezzo passo dietro; tutti e tre fermi in un corridoio del magazzino, immobili, con le torce basse. Nel buio in fondo al corridoio la sagoma bassa di un Cane-robot, un solo LED acceso. Luce da lucernario sporco, i tre a fuoco e il fondo piatto, nessun testo",
     "image_prompt_en": "vertical poster: Laura in the foreground with Tommy beside her, Mark half a step behind; all three standing still in a warehouse aisle, flashlights held low. Deep in the dark at the end of the aisle, the low silhouette of a robot dog with a single lit LED. Light from a dirty skylight, the three figures in focus and the background flat, no text",
@@ -16,7 +16,8 @@
       "laura",
       "mark",
       "tommy"
-    ]
+    ],
+    "image": "shot.cover"
   },
   "language": "it",
   "global_style": {
