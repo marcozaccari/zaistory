@@ -226,6 +226,10 @@ export class WebUI implements PlayerUI {
   private chiudiTastiera(): void {
     const a = document.activeElement;
     if (a instanceof HTMLElement && this.dock.contains(a)) a.blur();
+    // `blur` da solo basterebbe — c'e' un gestore che la toglie — ma non
+    // quando il campo viene rimosso dal DOM senza aver mai perso il fuoco: li'
+    // il palco resterebbe ritirato per il resto della partita.
+    document.body.classList.remove('tastiera');
   }
 
   /** Interrompe l'attesa in corso (usata quando si ricomincia o si cambia IR). */
@@ -1004,9 +1008,24 @@ export class WebUI implements PlayerUI {
     };
     campo.onfocus = () => {
       window.visualViewport?.addEventListener('resize', suViewport);
+      // Con la tastiera aperta lo schermo utile si dimezza, e il palco — che
+      // e' alto in `dvh`, cioe' misurato sulla finestra intera — si prendeva
+      // quasi tutto quello che restava: sopra l'inquadratura, sotto i tasti, e
+      // in mezzo due righe di testo. Mentre si scrive non si sta guardando la
+      // figura, si sta leggendo cosa e' appena successo per decidere cosa
+      // fare: la figura si toglie e le coordinate restano. Torna da sola
+      // appena il campo perde il fuoco.
+      if (!this.tastieraFisica) document.body.classList.add('tastiera');
       this.scrollEnd();
+      // Una seconda volta a layout rifatto: la riga da leggere e' quella in
+      // fondo, e dove sia lo si sa solo dopo che il palco si e' ritirato.
+      requestAnimationFrame(() => this.scrollEnd());
     };
-    campo.onblur = () => window.visualViewport?.removeEventListener('resize', suViewport);
+    campo.onblur = () => {
+      window.visualViewport?.removeEventListener('resize', suViewport);
+      document.body.classList.remove('tastiera');
+      requestAnimationFrame(() => this.scrollEnd());
+    };
 
     // Il fuoco automatico solo dove non fa danni: su un telefono aprirebbe la
     // tastiera a ogni scena, mangiandosi meta' schermo proprio mentre c'e' da

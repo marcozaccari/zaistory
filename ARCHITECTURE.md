@@ -861,6 +861,15 @@ che la storia ha già pubblicato, quando ci sono.
   `visualViewport` misura quello che si vede davvero, e l'app ci si adatta: il
   dock resta appoggiato al bordo dei tasti e il transcript si accorcia sopra di
   lui. `100dvh` resta come ricaduta dove `visualViewport` non c'è.
+- **Mentre si scrive, il palco si ritira alla sola riga delle coordinate.**
+  Adattare l'altezza dell'app non bastava: il palco è alto in `dvh`, cioè
+  misurato sulla finestra intera, e su metà schermo si prendeva tutto quello
+  che restava — sopra l'inquadratura, sotto i tasti, in mezzo due righe di
+  testo. Chi ha il dito sulla tastiera non sta guardando la figura: sta
+  leggendo cosa è appena successo per decidere cosa scrivere. Sparisce la
+  figura, restano il tono e il luogo, e tutto torna al primo tocco fuori dal
+  campo. Non è il collasso della maniglia — quello è una scelta sul momento e
+  resta dove l'utente l'ha lasciato — ma una risposta alla tastiera.
 - **Il fuoco automatico nel campo vale solo dove la tastiera non costa niente**
   (`pointer: fine`). Su un telefono rimettercelo dopo una frase che non ha
   fatto match significa riaprire i tasti addosso alla risposta appena

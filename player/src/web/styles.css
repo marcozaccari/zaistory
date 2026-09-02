@@ -274,14 +274,26 @@ body.con-palco .dock {
   }
 
   /* Senza palco non c'e' niente da mettere nella prima colonna, e una colonna
-     vuota larga meta' finestra sarebbe solo un buco. */
+     vuota larga meta' finestra sarebbe solo un buco. Con la tastiera aperta
+     vale lo stesso: li' dentro resta la sola riga delle coordinate, e tenerle
+     una colonna intera sarebbe il buco di prima con dentro una frase. */
   body:not(.con-palco) .app,
-  body:not(.con-palco).palco-ridotto .app {
+  body:not(.con-palco).palco-ridotto .app,
+  body.tastiera .app {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "barra"
       "transcript"
       "dock";
+  }
+
+  /* La griglia qui sopra non ha piu' una casella «palco», e un figlio senza
+     casella se ne troverebbe una da solo, in mezzo alle altre. In due colonne
+     e con la tastiera aperta — un telefono coricato — l'altezza e' quello che
+     manca davvero: sparisce tutto, coordinate comprese, e torna al primo
+     tocco fuori dal campo. */
+  body.tastiera .palco {
+    display: none;
   }
 
   /* Qui il dock non toglie niente al palco: sono in due colonne diverse. */
@@ -1514,6 +1526,22 @@ body:not(.debug) #tabs button[data-debug] {
    meglio, non a leggere alla cieca. */
 body.palco-ridotto .palco {
   height: 25dvh;
+}
+
+/* Mentre si scrive, il palco si ritira alla sola riga delle coordinate.
+   Non e' il collasso della maniglia — quello e' una scelta sul momento, e
+   resta dove l'utente l'ha lasciato — ma una risposta alla tastiera: lo
+   schermo utile si dimezza, e fra guardare l'inquadratura e leggere cosa e'
+   appena successo, chi ha il dito sulla tastiera sta facendo la seconda.
+   Il tono e il luogo restano: sono le due cose che servono *mentre* si decide
+   cosa scrivere. */
+body.tastiera .palco {
+  height: auto;
+}
+
+body.tastiera .palco-corpo,
+body.tastiera .palco-maniglia {
+  display: none;
 }
 
 /* La figura e le facce, fianco a fianco. Le facce sono una colonna stretta
