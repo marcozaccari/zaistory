@@ -70,6 +70,7 @@ const SPECS: Readonly<Record<SpecName, Spec>> = {
       id: 'string',
       title: 'string',
       description: 'string',
+      cover: { obj: 'Background' },
       language: 'string',
       global_style: { obj: 'GlobalStyle' },
       player_voice: { obj: 'PlayerVoice' },

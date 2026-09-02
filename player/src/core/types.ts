@@ -253,10 +253,18 @@ export interface NarrationBeat {
   sound_effect_prompt?: string;
 }
 
+/**
+ * Un'inquadratura: cosa si vede, dove si e', chi c'e' dentro.
+ *
+ * La usano la scena — `Scene.background` — e la storia — `Story.cover`. Sono la
+ * stessa cosa a due scale, e quello che serve a generarle e' identico: un
+ * prompt, un luogo, un cast. Una definizione sola invece di due gemelle che poi
+ * divergono al primo campo aggiunto.
+ */
 export interface Background {
   image_prompt: string;
   image_prompt_en?: string;
-  /** L'inquadratura di base gia' prodotta per la scena. */
+  /** L'inquadratura gia' prodotta per questo nodo. */
   image?: ImageRef;
   ambient_sound_prompt?: string;
   place?: string;
@@ -297,6 +305,15 @@ export interface Story {
   id: string;
   title: string;
   description?: string;
+  /**
+   * La locandina: l'immagine che rappresenta la storia prima che cominci.
+   *
+   * Non e' l'inquadratura della prima scena, ed e' la differenza che conta:
+   * quella dice dove si comincia, questa dice **di cosa parla** — il
+   * protagonista, il luogo che la storia ha in testa, il tono. E' un
+   * `Background` come gli altri perche' si genera allo stesso modo.
+   */
+  cover?: Background;
   language?: string;
   global_style?: GlobalStyle;
   /** La prosa dei verbi del player, valida per tutta la storia. */
@@ -436,6 +453,24 @@ export function shotsOf(sc: Scene): Shot[] {
     });
   });
   return out;
+}
+
+/**
+ * La copertina come inquadratura, per chi tratta le inquadrature tutte uguali.
+ *
+ * Serve al linter e all'estrazione degli asset: sono due posti che ciclano su
+ * `shotsOf` scena per scena, e senza questa la copertina resterebbe fuori da
+ * tutti e due — nessun controllo sui suoi riferimenti, e un luogo usato solo
+ * da lei verrebbe segnalato come mai referenziato.
+ */
+export function coverShot(story: Story): Shot | undefined {
+  if (!story.cover?.image_prompt) return undefined;
+  return {
+    where: 'cover',
+    image_prompt: story.cover.image_prompt,
+    place: story.cover.place,
+    characters_in_frame: story.cover.characters_in_frame,
+  };
 }
 
 /** Tono da passare al resolver: quello locale se c'e', altrimenti il globale. */

@@ -403,6 +403,21 @@ class Extractor:
         })
 
     def collect_shots(self):
+        # La locandina per prima: e' un'inquadratura come le altre — stessi
+        # campi, stesse ancore, stesso scaffold — solo che inquadra la storia
+        # invece di una scena. Le si passa una pseudo-scena "cover" perche'
+        # `_add_shot` usa l'id della scena per il percorso del file e per i
+        # messaggi: inventare un secondo percorso per un job solo sarebbe due
+        # strade dove ne basta una.
+        cover = self.ir.get("cover") or {}
+        cover_prompt, cover_lang = pick_lang(cover, "image_prompt")
+        if cover_prompt:
+            self._add_shot(
+                "shot.cover", "cover", {"id": "cover", "title": self.ir.get("title")},
+                cover_prompt, cover.get("place"), cover.get("characters_in_frame"),
+                "cover", lang=cover_lang,
+            )
+
         for s_idx, scene in enumerate(self.ir.get("scenes", [])):
             bg = scene.get("background") or {}
             bg_place = bg.get("place")

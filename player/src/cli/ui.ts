@@ -179,6 +179,20 @@ export class TermUI implements PlayerUI {
     this.param('scenes', `${st.scenes.length}`);
     this.param('start_scene', st.start_scene);
 
+    // La locandina: un'inquadratura come le altre, solo che inquadra la storia
+    // invece di una scena. In terminale non si vede — come nessuna immagine —
+    // ma si vede *se c'e'*, che e' l'informazione utile quando si sta per
+    // pagare la generazione.
+    if (st.cover) {
+      this.out();
+      this.group('cover', [
+        ['image_prompt', st.cover.image_prompt, 'image'],
+        ['image', st.cover.image, 'image'],
+        ['place', st.cover.place, 'none'],
+        ['characters_in_frame', st.cover.characters_in_frame?.join(', '), 'none'],
+      ]);
+    }
+
     // `image_style_suffix` finisce in coda a ogni image_prompt e
     // `narrator_voice` vale per tutta la narrazione: sono prompt come gli
     // altri, solo che valgono una volta per storia invece che una per scena.

@@ -11,7 +11,7 @@
       "type": "string",
       "description": "Versione dello schema IR, per compatibilita' futura tra compilatore e player (semver).",
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
-      "examples": ["1.9.0"]
+      "examples": ["1.10.0"]
     },
     "generated_by": {
       "$ref": "#/$defs/Provenance"
@@ -23,6 +23,10 @@
     },
     "title": { "type": "string" },
     "description": { "type": "string" },
+    "cover": {
+      "$ref": "#/$defs/Background",
+      "description": "La locandina della storia: l'immagine che la rappresenta prima che cominci, come la copertina di un gioco o il manifesto di un film. E' un'inquadratura come tutte le altre — stesso oggetto, stessi campi — perche' quello che serve a generarla e' lo stesso: cosa si vede, in che luogo, con chi dentro. Non inquadra pero' un momento della storia ma la storia intera: e' il posto dove mettere il protagonista, il luogo che la storia ha in testa e il tono, non la scena di apertura. ambient_sound_prompt di solito non serve: una copertina non suona."
+    },
     "language": {
       "type": "string",
       "description": "Codice lingua ISO 639-1 dei testi/dialoghi.",
@@ -205,6 +209,28 @@
         "visual_prompt_en": {
           "type": "string",
           "description": "Stessa cosa in INGLESE, per la generazione. I modelli di immagini sono addestrati in inglese e un prompt italiano perde aderenza — misurato: uno style suffix in coda a un prompt italiano lungo viene proprio scartato. Il campo italiano resta il canonico: e' quello che il player mostra come testo in modalita' solo testo, ed e' quello su cui si ricade se questo manca."
+        }
+      }
+    },
+
+    "Background": {
+      "type": "object",
+      "description": "Un'inquadratura: cosa si vede, dove si e', chi c'e' dentro. La usano la scena (background) e la storia (cover) — sono la stessa cosa a due scale, e quello che serve a generarle e' identico, quindi la definizione e' una sola. place e characters_in_frame sono i riferimenti su cui il modulo assets aggancia la coerenza visiva.",
+      "required": ["image_prompt"],
+      "additionalProperties": false,
+      "properties": {
+        "image_prompt": { "type": "string", "description": "Descrizione di QUESTA inquadratura: taglio, luce, momento. Se c'e' un place, non ripeterne la descrizione: si sommano." },
+        "image_prompt_en": { "type": "string", "description": "Stessa cosa in INGLESE, per la generazione. I modelli di immagini sono addestrati in inglese e un prompt italiano perde aderenza — misurato: uno style suffix in coda a un prompt italiano lungo viene proprio scartato. Il campo italiano resta il canonico: e' quello che il player mostra come testo in modalita' solo testo, ed e' quello su cui si ricade se questo manca." },
+        "image": { "$ref": "#/$defs/ImageRef" },
+        "ambient_sound_prompt": { "type": "string" },
+        "place": {
+          "type": "string",
+          "description": "id di un Place di places[]: dice DOVE siamo, e garantisce che due scene nello stesso posto lo generino uguale."
+        },
+        "characters_in_frame": {
+          "type": "array",
+          "description": "id dei personaggi VISIBILI in questa inquadratura. Diverso da Scene.characters, che elenca chi e' presente nella scena (anche solo come voce): qui vanno solo quelli che si vedono, perche' e' su di loro che la generazione immagine si condiziona per mantenere i volti coerenti. Elencarne di troppi peggiora l'immagine quanto ometterli.",
+          "items": { "type": "string" }
         }
       }
     },
@@ -456,27 +482,7 @@
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z0-9_-]+$" },
         "title": { "type": "string", "description": "Titolo/etichetta interna della scena, per editor e debug." },
-        "background": {
-          "type": "object",
-          "description": "L'inquadratura di base della scena. Come ogni inquadratura puo' dichiarare dove si trova (place) e chi si vede (characters_in_frame): sono i riferimenti su cui il modulo assets aggancia la coerenza visiva.",
-          "required": ["image_prompt"],
-          "additionalProperties": false,
-          "properties": {
-            "image_prompt": { "type": "string", "description": "Descrizione di QUESTA inquadratura: taglio, luce, momento. Se c'e' un place, non ripeterne la descrizione: si sommano." },
-            "image_prompt_en": { "type": "string", "description": "Stessa cosa in INGLESE, per la generazione. I modelli di immagini sono addestrati in inglese e un prompt italiano perde aderenza — misurato: uno style suffix in coda a un prompt italiano lungo viene proprio scartato. Il campo italiano resta il canonico: e' quello che il player mostra come testo in modalita' solo testo, ed e' quello su cui si ricade se questo manca." },
-                        "image": { "$ref": "#/$defs/ImageRef" },
-            "ambient_sound_prompt": { "type": "string" },
-            "place": {
-              "type": "string",
-              "description": "id di un Place di places[]: dice DOVE siamo, e garantisce che due scene nello stesso posto lo generino uguale."
-            },
-            "characters_in_frame": {
-              "type": "array",
-              "description": "id dei personaggi VISIBILI in questa inquadratura. Diverso da Scene.characters, che elenca chi e' presente nella scena (anche solo come voce): qui vanno solo quelli che si vedono, perche' e' su di loro che la generazione immagine si condiziona per mantenere i volti coerenti. Elencarne di troppi peggiora l'immagine quanto ometterli.",
-              "items": { "type": "string" }
-            }
-          }
-        },
+        "background": { "$ref": "#/$defs/Background" },
         "look": {
           "type": "string",
           "description": "La stanza com'e' adesso: la risposta d'autore a 'guardati intorno' / 'dove mi trovo'. Rileggibile quante volte si vuole, non fa avanzare niente e non consuma un turno - e' un verbo del player, come l'inventario, non un'azione della scena, e per questo non sta in actions[] e non pesa sul loro numero. Distinta da narration[], che si legge una volta sola entrando, e da background.image_prompt, che e' un prompt di generazione e non prosa per il giocatore. Obbligatoria in pratica per ogni scena interactive: senza, un player a input libero non sa cosa rispondere alla domanda che il giocatore fa piu' spesso.",

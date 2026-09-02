@@ -1,5 +1,5 @@
 {
-  "ir_version": "1.9.0",
+  "ir_version": "1.10.0",
   "generated_by": {
     "compiler": "story-ir-compiler",
     "compiler_version": "1.0.0"
@@ -7,6 +7,15 @@
   "id": "nel-paese-dei-ciechi",
   "title": "Nel paese dei ciechi",
   "description": "Adattamento giocabile del racconto di H.G. Wells: un alpinista precipita in una valle andina dove tutti sono ciechi da quindici generazioni, e scopre che la vista non lo rende re.",
+  "cover": {
+    "image_prompt": "locandina verticale: Nunez in piedi sul ciglio della valle, l'unico con gli occhi aperti, il viso rivolto in basso verso il paese. Sotto di lui, piu' piccoli e di spalle, tre abitanti ciechi fermi con il viso alzato altrove; dietro di loro i muri lisci e senza finestre delle case. Cielo alto e vuoto, nessun testo",
+    "place": "valle",
+    "characters_in_frame": [
+      "nunez",
+      "yacob",
+      "pedro"
+    ]
+  },
   "language": "it",
   "global_style": {
     "image_style_suffix": "pittura digitale cinematografica, luce naturale contrastata, palette fredda di roccia e neve con improvvisi verdi di valle, grana fotografica, illustrazione editoriale",

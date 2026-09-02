@@ -10,7 +10,7 @@
  */
 
 import type { Condition, Effect, Intent, Scene, Story } from './types.js';
-import { NARRATORE, SCENE_CUTSCENE, SCENE_INTERACTIVE, displayName, findScene, isDidascalia, sceneHasExit, sceneType, shotsOf } from './types.js';
+import { NARRATORE, SCENE_CUTSCENE, SCENE_INTERACTIVE, coverShot, displayName, findScene, isDidascalia, sceneHasExit, sceneType, shotsOf, type Shot } from './types.js';
 import { verboDelPlayer } from './verbi.js';
 
 export type Level = 'info' | 'avviso' | 'errore';
@@ -669,10 +669,34 @@ class Linter {
     const places = new Set((this.story.places ?? []).map((p) => p.id));
     const usati = new Set<string>();
 
+    // La copertina: obbligatoria come i campi della 1.8.0 — opzionale nello
+    // schema, pretesa qui. Una storia senza locandina si apre su una pagina di
+    // testo, e non c'e' niente nell'IR che possa rimediare: la prima scena
+    // dice dove si comincia, non di cosa parla la storia.
+    if (!this.story.cover?.image_prompt) {
+      this.add('errore', '', "manca cover: la storia non ha una locandina, e nessun altro campo puo' farne le veci");
+    } else if (this.story.cover.ambient_sound_prompt) {
+      this.add('info', '', 'cover.ambient_sound_prompt: una copertina non suona, quel prompt non lo generera\' nessuno');
+    }
+
+    // La copertina passa dagli stessi controlli sui riferimenti, perche' e'
+    // un'inquadratura come le altre. Due differenze: chi puo' comparirci e'
+    // l'intera roster — non c'e' una scena intorno a cui appartenere, e la
+    // locandina e' anzi il posto del protagonista — e il controllo sui nomi
+    // citati nel prompt li' non si fa, perche' senza una scena a restringere
+    // il campo tornerebbe a gridare al lupo su ogni nome che e' una parola
+    // comune.
+    const cover = coverShot(this.story);
+    const inquadrature: Array<{ shot: Shot; presenti: Set<string>; nomiNelPrompt: boolean }> = [];
+    if (cover) inquadrature.push({ shot: cover, presenti: new Set(roster.keys()), nomiNelPrompt: false });
+
     for (const sc of this.story.scenes) {
       const presenti = new Set((sc.characters ?? []).map((c) => c.id));
+      for (const shot of shotsOf(sc)) inquadrature.push({ shot, presenti, nomiNelPrompt: true });
+    }
 
-      for (const shot of shotsOf(sc)) {
+    {
+      for (const { shot, presenti, nomiNelPrompt } of inquadrature) {
         if (shot.place) {
           if (places.has(shot.place)) usati.add(shot.place);
           else this.add('errore', shot.where, `place punta al luogo inesistente "${shot.place}"`);
@@ -696,7 +720,7 @@ class Linter {
         // essere parole comuni ("anziano", "il dottore") che ricorrono nei
         // prompt parlando di tutt'altro. Ristretto a chi in quella scena c'e'
         // davvero, l'avviso smette di gridare al lupo.
-        for (const id of presenti) {
+        for (const id of nomiNelPrompt ? presenti : []) {
           if (inquadrati.has(id)) continue;
           const nome = roster.get(id);
           if (!nome || !mentions(shot.image_prompt, id, nome)) continue;

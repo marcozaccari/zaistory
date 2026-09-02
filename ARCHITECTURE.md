@@ -53,9 +53,34 @@ storia».
 ## Il formato IR: decisioni chiave
 
 Schema: `engine-ir.schema.json` (JSON Schema draft 2020-12), versione
-corrente **1.9.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
+corrente **1.10.0**. Non importa che sia retrocompatibile fintanto che siamo in fase di prototipo.
 
-La 1.9.0 aggiunge una cosa sola: il campo opzionale **`image`** su ogni nodo
+La 1.10.0 aggiunge la **copertina**: `cover`, la locandina che rappresenta la
+storia prima che cominci — la copertina di un gioco, il manifesto di un film.
+Tre decisioni dentro un campo solo:
+
+- **È un `Background`, non un tipo nuovo.** Un'inquadratura è un'inquadratura a
+  qualunque scala: cosa si vede, in che luogo, con chi dentro. `Scene.background`
+  e `Story.cover` puntano quindi alla stessa definizione, e con lei si portano
+  dietro `place` e `characters_in_frame` — cioè gli stessi riferimenti su cui la
+  generazione aggancia volti e ambiente, senza una seconda strada da tenere
+  allineata. Due gemelle divergono al primo campo aggiunto; una definizione no.
+- **Non è l'inquadratura della prima scena.** Quella dice *dove si comincia*,
+  la copertina dice *di cosa parla la storia*: il protagonista, il luogo che la
+  storia ha in testa, la cosa che le sta di fronte. Sono due domande diverse, e
+  la seconda non ha nessun altro campo dell'IR che sappia rispondere.
+- **Opzionale nello schema, obbligatoria per il linter.** Stessa forma dei campi
+  della 1.8.0, e per la stessa ragione: lo schema resta permissivo perché è il
+  contratto, il linter è severo perché è il collaudo. Una storia senza locandina
+  si apre su una pagina di solo testo.
+
+  Lo stesso vale per i limiti pratici, che stanno nelle istruzioni di Stadio A e
+  non nello schema: al massimo quattro riferimenti in tutto (il luogo conta),
+  perché oltre quella soglia i modelli mediano fra i soggetti invece di tenerli
+  distinti; e niente testo dentro l'immagine, perché il titolo lo scrive il
+  player e uno generato esce storto e in una lingua a caso.
+
+La 1.9.0 aveva aggiunto una cosa sola: il campo opzionale **`image`** su ogni nodo
 che ha un prompt di immagine — personaggi, luoghi, oggetti, override di scena,
 `background` e i beat di `narration[]`. Porta l'**id** dell'immagine già
 prodotta e approvata, mai un percorso e mai il nome di un generatore, e **non
@@ -727,7 +752,8 @@ non sta nei prompt, la musica per tag invece che generata.
 Player minimale. Consuma **esclusivamente `story.ir.json`** — nessun manifest
 asset, nessun indice — e serve a giocare e testare una storia molto prima che
 esista la PWA. Nato puramente testuale; da IR 1.9.0 mostra anche le immagini
-che la storia ha già pubblicato, quando ci sono.
+che la storia ha già pubblicato, quando ci sono, e dalla 1.10.0 apre sulla
+locandina invece che su una pagina di testo.
 
 ### Le immagini nel player
 

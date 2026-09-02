@@ -192,6 +192,8 @@ def nodi_con_immagine(ir: dict):
     definitiva deve sparire anche dall'IR, altrimenti il player va a cercare
     un file che non c'e'.
     """
+    if isinstance(ir.get("cover"), dict):
+        yield ir["cover"]
     for chiave in ("characters", "places", "items"):
         for n in ir.get(chiave) or []:
             yield n

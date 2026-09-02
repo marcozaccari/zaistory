@@ -419,8 +419,32 @@ export class WebUI implements PlayerUI {
     const st = this.story;
     const cover = el('section', 'cover');
 
+    // La locandina, prima di tutto: e' la risposta all'unica domanda che ci si
+    // fa aprendo una storia che non si conosce — «di cosa parla?» — e nessun
+    // paragrafo la da' altrettanto in fretta. Con le immagini spente, o prima
+    // che sia stata generata, al suo posto restano i prompt: e' la stessa
+    // regola del palco, e per la stessa ragione.
+    const righeCover: PromptRow[] = [
+      ['image_prompt', st.cover?.image_prompt, 'image'],
+      ['place', luogoDoppio(st.cover?.place, findPlace(this.story, st.cover?.place ?? '')?.name), 'none'],
+      ['characters_in_frame', inFrameDoppio(this.story, st.cover?.characters_in_frame), 'none'],
+    ];
+    const locandina = this.immagini.figura(st.cover?.image, st.cover?.image_prompt, {
+      classe: 'locandina',
+      titolo: st.title,
+      righe: righeCover,
+    });
+    if (locandina) cover.append(locandina);
+
     cover.append(el('h1', undefined, st.title));
     if (st.description) cover.append(el('p', 'desc', st.description));
+    if (!locandina) {
+      const box = promptNudi(righeCover);
+      if (box) {
+        box.className = 'assets';
+        cover.append(box);
+      }
+    }
 
     const dl = el('dl', 'kv');
     const meta = (k: string, v?: string | Doppio) => {
@@ -1101,7 +1125,6 @@ export class WebUI implements PlayerUI {
     const righe: PromptRow[] = [[`items.${id}.visual_prompt`, item.visual_prompt, 'image']];
     const fig = this.immagini.figura(item.image, item.visual_prompt, {
       classe: 'figura-oggetto',
-      prompt: promptNudi(righe),
       titolo: item.name,
       righe,
     });

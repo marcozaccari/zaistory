@@ -2003,86 +2003,6 @@ body.palco-ridotto .volto .nome {
   border: 1px solid var(--line);
 }
 
-/* Il bottone che apre i prompt di questa immagine.
-
-   Sta appoggiato sull'angolo dell'inquadratura, non sotto: e' li' che dice
-   «questo testo e' di *questa* immagine», che e' il legame che serve quando
-   in una cutscene di nove beat le figure si susseguono. Visibile sempre e non
-   al passaggio del mouse — meta' del collaudo si fa dal telefono, dove il
-   mouse non passa mai — ma discreto, perche' in modalita' immagini la cosa da
-   guardare e' l'immagine. */
-.ritratto {
-  position: relative;
-}
-
-.prompt-toggle {
-  position: absolute;
-  right: 8px;
-  top: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 9px;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(15, 17, 22, 0.55);
-  color: #fff;
-  font: inherit;
-  font-size: 12px;
-  line-height: 1.4;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  opacity: 0.75;
-  backdrop-filter: blur(6px);
-  transition: opacity 0.12s ease, background-color 0.12s ease;
-}
-
-.prompt-toggle:hover,
-.prompt-toggle:focus-visible,
-.prompt-toggle.aperto {
-  opacity: 1;
-  background: rgba(15, 17, 22, 0.8);
-}
-
-/* Sul ritratto, che e' 88px, la pastiglia intera coprirebbe mezza faccia:
-   resta il solo triangolino, nell'angolo. */
-.ritratto .prompt-toggle {
-  right: 4px;
-  top: 4px;
-  gap: 0;
-  padding: 2px 5px;
-  font-size: 11px;
-}
-
-.ritratto .prompt-toggle span:not(.caret) {
-  display: none;
-}
-
-/* I prompt aperti: dentro la cornice dell'immagine, con il filo a sinistra
-   che hanno ovunque nel transcript. */
-.prompt-box {
-  padding: 9px 12px 4px;
-  line-height: 1.5;
-  background: var(--bg-soft);
-}
-
-/* Sotto un ritratto la scatola prende la larghezza del testo, non quella
-   della miniatura: 88px di colonna sarebbero una parola per riga. */
-.ritratto .prompt-box {
-  width: min(60vw, 420px);
-  padding: 7px 0 2px;
-  background: none;
-}
-
-.prompt-box .prompt {
-  display: block;
-  margin: 0 0 5px;
-  padding-left: 9px;
-  border-left: 2px solid var(--line);
-  font-size: 13px;
-  color: var(--fg-dim);
-}
-
 /* L'id sotto l'immagine e' un dato: si vede col debug, come ogni altro id. */
 .ritratto figcaption {
   padding: 4px 12px 6px;
@@ -2090,6 +2010,37 @@ body.palco-ridotto .volto .nome {
   font-size: 11px;
   line-height: 1.4;
   color: var(--fg-dim);
+}
+
+/* La locandina, in testa alla copertina. Larga quanto la colonna di lettura e
+   non di piu': e' un'immagine da guardare una volta, non il palco — e sopra a
+   un titolo che deve restare il titolo. Toccandola si apre grande con il suo
+   prompt, come tutte le altre. */
+.locandina {
+  display: block;
+  max-width: 100%;
+  margin: 0 0 14px;
+  line-height: 0;
+}
+
+.locandina img {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  cursor: zoom-in;
+}
+
+.locandina .manca {
+  margin: 0 0 10px;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--amber);
+  background: var(--bg-soft);
+  border-radius: 10px;
 }
 
 /* L'icona d'inventario di un oggetto che si sta guardando: piu' piccola di

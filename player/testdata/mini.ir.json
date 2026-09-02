@@ -1,5 +1,5 @@
 {
-  "ir_version": "1.8.0",
+  "ir_version": "1.10.0",
   "generated_by": {
     "compiler": "story-ir-compiler",
     "compiler_version": "1.0.0",
@@ -8,6 +8,13 @@
   "id": "mini-taverna",
   "title": "La chiave perduta (fixture)",
   "description": "Storia giocattolo usata dai test del player CLI: copre cutscene, dialogo con scelte, condizioni su flag e inventario, azione non ripetibile e scena finale.",
+  "cover": {
+    "image_prompt": "locandina: l'oste dietro il bancone della taverna, di sera, l'unica lampada accesa",
+    "place": "taverna",
+    "characters_in_frame": [
+      "oste"
+    ]
+  },
   "language": "it",
   "global_style": {
     "image_style_suffix": "acquerello scuro, atmosfera notturna",

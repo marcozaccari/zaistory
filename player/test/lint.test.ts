@@ -38,6 +38,7 @@ test('una storia rotta produce tutti i difetti attesi', () => {
     ['dialogo senza ingresso', 'avviso', 'goto_dialogue'],
     ['speaker fuori dalla roster globale', 'errore', 'lo speaker "voce"'],
     ['place verso un luogo inesistente', 'errore', 'luogo_inesistente'],
+    ['storia senza locandina', 'errore', 'manca cover'],
     ['characters_in_frame fuori dalla roster', 'errore', 'fantasma'],
     ['provenienza assente', 'avviso', 'generated_by'],
   ];

@@ -1,5 +1,5 @@
 {
-  "ir_version": "1.9.0",
+  "ir_version": "1.10.0",
   "generated_by": {
     "compiler": "story-ir-compiler",
     "compiler_version": "1.3.0",
@@ -8,6 +8,16 @@
   "id": "metal-head",
   "title": "Metal Head",
   "description": "Adattamento giocabile di Metal Head. Quattro atti, nessuna sconfitta possibile: qualunque cosa faccia il giocatore si arriva sempre allo stesso finale, e l'unico prezzo dell'errore e' rifare la strada.",
+  "cover": {
+    "image_prompt": "locandina verticale: Laura in primo piano con Tommy accanto, Mark mezzo passo dietro; tutti e tre fermi in un corridoio del magazzino, immobili, con le torce basse. Nel buio in fondo al corridoio la sagoma bassa di un Cane-robot, un solo LED acceso. Luce da lucernario sporco, i tre a fuoco e il fondo piatto, nessun testo",
+    "image_prompt_en": "vertical poster: Laura in the foreground with Tommy beside her, Mark half a step behind; all three standing still in a warehouse aisle, flashlights held low. Deep in the dark at the end of the aisle, the low silhouette of a robot dog with a single lit LED. Light from a dirty skylight, the three figures in focus and the background flat, no text",
+    "place": "magazzino_interno",
+    "characters_in_frame": [
+      "laura",
+      "mark",
+      "tommy"
+    ]
+  },
   "language": "it",
   "global_style": {
     "image_style_suffix": "illustrazione cel-shaded a colori piatti, contorni netti e marcati, palette limitata di colori smorzati e desaturati con un solo accento saturo, ombre a stacco netto, niente sfumature, niente texture fotografica, key art da videogioco",

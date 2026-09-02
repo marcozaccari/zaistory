@@ -31,6 +31,12 @@ Un singolo oggetto JSON con questa forma (i campi extra non sono ammessi):
   "id": "slug-storia",
   "title": "...",
   "language": "it",
+  "cover": {
+    "image_prompt": "...",
+    "image_prompt_en": "...",
+    "place": "id-di-un-luogo",
+    "characters_in_frame": ["id", "id"]
+  },
   "global_style": {
     "image_style_suffix": "...",
     "image_style_suffix_en": "...",
@@ -227,11 +233,35 @@ passare il blocco giusto allo Stadio B.
    contesto del ritorno. Non inventarle a raffica: una stanza di ritorno esiste
    se qualche azione ci manda il giocatore, non "per simmetria".
 
-7. **global_style.default_tone**: descrivi il tono con 3-6 aggettivi/frasi
+7. **cover — la locandina.** È l'immagine che rappresenta la storia prima che
+   cominci, come la copertina di un gioco o il manifesto di un film, ed è
+   obbligatoria: senza, una storia si apre su una pagina di solo testo e non
+   c'è nessun altro campo che possa farne le veci. Il linter la pretende.
+
+   Non è l'inquadratura della prima scena, ed è la differenza che conta:
+   quella dice **dove si comincia**, questa dice **di cosa parla la storia**.
+   Ci va il protagonista, il luogo che la storia ha in testa, e la cosa che le
+   sta di fronte — l'antagonista, la minaccia, la distanza da colmare. Un
+   momento che riassume la storia intera senza raccontarne il finale.
+
+   Ha la stessa forma di un `background`, campi compresi, perché è la stessa
+   cosa a una scala diversa: `image_prompt` (+ `_en`), `place` e
+   `characters_in_frame` puntano agli id che hai già dichiarato, e sono i
+   riferimenti su cui la generazione aggancia volti e luogo. Due vincoli
+   pratici: **al massimo quattro riferimenti in tutto** (il luogo conta),
+   perché oltre quella soglia i modelli mediano fra i soggetti invece di
+   tenerli distinti; e **niente testo nell'immagine** — il titolo lo scrive il
+   player, e un titolo generato esce storto e in una lingua a caso. Dillo nel
+   prompt.
+
+   `ambient_sound_prompt` qui non va messo: una copertina non suona, e nessuno
+   genererebbe quel prompt.
+
+8. **global_style.default_tone**: descrivi il tono con 3-6 aggettivi/frasi
    brevi (es. "cupo, laconico, con vena ironica") — verrà riusato per generare
    risposte di fallback quando il giocatore scrive input non riconosciuto.
 
-8. **state_flags_schema**: è una lista *previsionale*, basata su cosa intuisci
+9. **state_flags_schema**: è una lista *previsionale*, basata su cosa intuisci
    servirà per la logica della storia (porte chiuse, informazioni ottenute,
    cose già successe). Lo Stadio B può comunque introdurre flag aggiuntivi non
    previsti qui, se la logica di una scena lo richiede: questa lista è un aiuto
@@ -242,7 +272,7 @@ passare il blocco giusto allo Stadio B.
    (`turni_passati`, `attesa`). Le risorse non si contano e il tempo non
    esiste: un flag dice che qualcosa è successo, non quante volte.
 
-9. **items**: l'anagrafica degli oggetti che il giocatore può avere in
+10. **items**: l'anagrafica degli oggetti che il giocatore può avere in
    inventario — non tutto ciò che si vede nella storia, solo ciò che si porta
    via. Non è un elenco di id: ogni oggetto ha un `name` (come si chiama per il
    giocatore: "coltello da lavoro", non `coltello`), `aliases` (gli altri modi
@@ -257,7 +287,7 @@ passare il blocco giusto allo Stadio B.
    Come per i flag, lo Stadio B può aggiungerne: se una scena fa raccogliere
    qualcosa che qui non c'era, ne emette la scheda in `new_items`.
 
-10. **initial_inventory**: gli oggetti che il protagonista ha **già addosso
+11. **initial_inventory**: gli oggetti che il protagonista ha **già addosso
    quando la partita comincia**, prima della prima scena — lo zaino con dentro
    qualcosa, un'arma che porta da sempre, la lettera che ha in tasca dalla
    pagina uno. Vanno elencati anche in `items`. Ometti il campo se
@@ -268,7 +298,7 @@ passare il blocco giusto allo Stadio B.
    l'effetto voluto. Non trasformarlo in un oggetto da raccogliere nella prima
    scena solo perché così è più comodo compilare.
 
-11. **Personaggi**: nella roster globale va **chiunque parli**, anche una sola
+12. **Personaggi**: nella roster globale va **chiunque parli**, anche una sola
    volta — protagonisti, comprimari e voci di passaggio ("un anziano", "il
    terzo cieco", "una voce nel buio"). Non è un elenco dei personaggi
    importanti: è l'elenco dei parlanti, e serve al modulo assets, che assegna
@@ -298,7 +328,7 @@ passare il blocco giusto allo Stadio B.
    l'ancora su cui il modulo assets tiene coerente il suo aspetto, ed è quello
    che `characters_in_frame` referenzierà.
 
-12. **Luoghi**: in `places` va ogni ambientazione in cui la storia **torna piu'
+13. **Luoghi**: in `places` va ogni ambientazione in cui la storia **torna piu'
    di una volta** — la casa dove si svolgono tre scene, la piazza, la camera
    del consiglio, il crinale sopra il paese. Servono alla coerenza visiva: due
    scene ambientate nello stesso posto devono riferirsi allo stesso `Place`,
@@ -315,7 +345,7 @@ passare il blocco giusto allo Stadio B.
    dove si cammina all'indietro, le stanze in cui si ripassa sono ricorrenti
    per costruzione, anche se la sceneggiatura le descrive una volta sola.
 
-13. **`player_voice`: la prosa dei verbi del player.** Il player definitivo si
+14. **`player_voice`: la prosa dei verbi del player.** Il player definitivo si
    comanda a parole, e le due domande che il giocatore fa piu' spesso di tutte
    — «cosa ho nello zaino» e una frase che non corrisponde a niente — non
    passano da nessuna azione. Senza testo d'autore un player a parole risponde
@@ -346,11 +376,11 @@ passare il blocco giusto allo Stadio B.
    `generico` va scritto sempre: e' dove finisce tutto cio' che non si
    classifica, nonsense compreso.
 
-14. **La story map non porta la provenienza.** `generated_by` (compilatore,
+15. **La story map non porta la provenienza.** `generated_by` (compilatore,
    versione, modello) viene apposto in fase di assemblaggio, al passo 7 di
    `SKILL.md`: qui non serve e non va inventato.
 
-15. **Non includere MAI testo fuori dal JSON**: niente premessa, niente
+16. **Non includere MAI testo fuori dal JSON**: niente premessa, niente
    spiegazioni, niente code fence markdown. Rispondi con il solo oggetto JSON,
    che deve essere direttamente parsabile.
 

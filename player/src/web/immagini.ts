@@ -277,29 +277,12 @@ export class Immagini {
     };
     cornice.append(img);
     fig.append(cornice);
-    // Il testo che ha prodotto questa immagine, dentro la sua cornice: e' il
-    // modo di dire che i due sono la stessa cosa vista da due lati. Il bottone
-    // resta visibile sempre e non solo al passaggio del mouse — meta' del
-    // collaudo si fa dal telefono, dove il mouse non passa mai.
-    if (opzioni.prompt) {
-      const box = opzioni.prompt;
-      box.classList.add('prompt-box');
-      box.hidden = true;
-      const b = el('button', 'prompt-toggle');
-      b.type = 'button';
-      b.setAttribute('aria-expanded', 'false');
-      const etichetta = el('span', undefined, 'prompt');
-      const caret = el('span', 'caret', '▸');
-      b.append(caret, etichetta);
-      b.onclick = () => {
-        box.hidden = !box.hidden;
-        b.setAttribute('aria-expanded', String(!box.hidden));
-        b.classList.toggle('aperto', !box.hidden);
-        caret.textContent = box.hidden ? '▸' : '▾';
-      };
-      cornice.append(b);
-      fig.append(box);
-    }
+    // Niente bottone per aprire i prompt qui sotto. C'era, e faceva una cosa
+    // che l'immagine grande fa gia' meglio: allargandola i prompt si leggono
+    // per didascalia, accanto a cio' che descrivono e nel momento in cui
+    // servono — quando si sta decidendo se quell'asset va bene. Due strade per
+    // la stessa lettura sono una di troppo, e questa costava una pastiglia
+    // appoggiata sull'angolo di ogni figura.
     const sotto = el('figcaption', 'ir', id);
     fig.append(sotto);
     return fig;
@@ -313,9 +296,6 @@ export interface OpzioniFigura {
    * "normale" a cui ricadere, e un default silenzioso sarebbe una classe che
    * il CSS non conosce. */
   classe: string;
-  /** Le righe di prompt che questa immagine sostituisce, da tenere a
-   * disposizione dietro un bottone. */
-  prompt?: HTMLElement;
   /** Di cosa e' l'immagine: diventa il titolo della lente a schermo intero. */
   titolo?: string;
   /** Gli stessi prompt, dentro la lente: allargare un'immagine e' il modo di

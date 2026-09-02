@@ -145,6 +145,11 @@ Dove l'appunto manca del tutto, vale il resto di questo documento.
 - `background.ambient_sound_prompt`: suoni ambientali continui, non eventi
   puntuali (quelli vanno in `effect.play_sound_prompt` sulle azioni, o in
   `sound_effect_prompt` sui singoli beat di narrazione).
+- **La copertina non è affar tuo.** `cover` è la locandina dell'intera storia
+  e la scrive lo Stadio A, che ha davanti tutta la mappa: tu vedi una scena
+  sola, e una locandina fatta guardando una scena sola è l'inquadratura di
+  quella scena. Ha la stessa forma di un `background` — è la stessa cosa a
+  un'altra scala — ma non emetterla mai da qui.
 - Se un personaggio è presente, dagli un `visual_prompt` solo se serve un
   override rispetto a quello globale (es. "stessa oste, ma bagnato di pioggia
   in questa scena") — altrimenti lascia il campo characters[] della scena
