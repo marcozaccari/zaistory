@@ -2436,8 +2436,10 @@ body.debug .assets.only-debug {
   gap: 6px;
 }
 
-/* Una `<dl>` ripiegata resta una `<dl>`: torna a `grid`, ma con la spaziatura
-   sua e non con quella dei blocchi. */
-body.debug .kv.only-debug {
-  gap: 2px 10px;
+/* Una riga di `<dl>` che torna a vedersi non deve diventare una griglia per
+   conto suo: `display: grid` la farebbe uscire dalle due colonne della lista e
+   impilerebbe i due nomi del campo uno sotto l'altro. */
+body.debug .kv > dt.only-debug,
+body.debug .kv > dd.only-debug {
+  display: block;
 }

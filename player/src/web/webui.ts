@@ -446,35 +446,38 @@ export class WebUI implements PlayerUI {
     cover.append(this.slotPrompt);
     this.rileggiCopertina();
 
-    // Le note di compilazione — versione dell'IR, compilatore, id, lingua,
-    // quante scene, da dove parte — sono l'identita' del *file*, non della
-    // storia: servono a chi riapre un IR che non ha compilato adesso, e a chi
-    // gioca dicono soltanto che sta guardando dentro una macchina. Stanno nel
-    // documento e compaiono col debug, come tutta l'altra diagnostica.
-    const dl = el('dl', 'kv only-debug');
-    const meta = (k: string, v?: string | Doppio) => {
+    // Due gruppi, e la linea passa fra «di che storia si tratta» e «di che file
+    // si tratta». Versione e lingua restano a tutti: sono cose che riguardano
+    // la storia che si sta per giocare — in che lingua e' scritta, e con che
+    // versione del formato, che e' la sola cosa che spieghi perche' una build
+    // vecchia non la apra. Il resto — compilatore, id, quante scene, da dove
+    // parte — e' l'identita' del *file*: serve a chi riapre un IR che non ha
+    // compilato adesso, e a chi gioca dice soltanto che sta guardando dentro
+    // una macchina.
+    const dl = el('dl', 'kv');
+    const meta = (k: string, v?: string | Doppio, soloDebug = false) => {
       if (!v) return;
-      const dt = el('dt');
+      const cls = soloDebug ? 'only-debug' : undefined;
+      const dt = el('dt', cls);
       dt.append(el('span', 'umano', nomeCampo(k)), el('span', 'ir', k));
-      const dd = el('dd');
+      const dd = el('dd', cls);
       dd.append(valore(v));
       dl.append(dt, dd);
     };
     meta('ir_version', st.ir_version);
-    // La provenienza sta con gli altri dati d'identita' del file, non sotto il
-    // debug: e' la prima cosa da guardare quando due IR della stessa storia non
-    // coincidono.
+    meta('language', st.language);
+    // La provenienza e' la prima cosa da guardare quando due IR della stessa
+    // storia non coincidono — ed e' una domanda che si fa chi compila.
     if (st.generated_by) {
       const g = st.generated_by;
-      meta('generated_by', `${g.compiler} ${g.compiler_version}${g.model ? ` · ${g.model}` : ''}`);
+      meta('generated_by', `${g.compiler} ${g.compiler_version}${g.model ? ` · ${g.model}` : ''}`, true);
     }
-    meta('id', st.id);
-    meta('language', st.language);
-    meta('scenes', `${st.scenes.length}`);
+    meta('id', st.id, true);
+    meta('scenes', `${st.scenes.length}`, true);
     // La prima scena si chiama col suo titolo: l'id dice dove trovarla nel
     // JSON, e quello e' un servizio per chi ispeziona.
     const prima = st.scenes.find((s) => s.id === st.start_scene);
-    meta('start_scene', doppio(prima?.title || st.start_scene, st.start_scene));
+    meta('start_scene', doppio(prima?.title || st.start_scene, st.start_scene), true);
     cover.append(dl);
 
     const g = st.global_style;
