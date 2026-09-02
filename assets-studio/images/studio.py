@@ -1403,12 +1403,21 @@ document.getElementById('publish').onclick = async () => {
     `${(p.bytes/1048576).toFixed(1)} MB negli asset della storia`,
     `IR: ${p.copertura.con_immagine} nodi con immagine, ${p.copertura.senza_immagine} ancora senza`,
   ];
+  const attesa = p.in_attesa || [];
+  if (attesa.length) righe.push(
+    `${attesa.length} generate ma non ancora definitive: non si pubblicano ` +
+    `(${attesa.slice(0,3).join(', ')}${attesa.length > 3 ? '…' : ''})`);
   if (p.saltate.length) righe.push(`saltate: ${p.saltate.length} (${p.saltate[0][1]}…)`);
   if (p.rimosse.length) righe.push(`${p.rimosse.length} id tolti dall'IR`);
   if (p.orfane.length) righe.push(`${p.orfane.length} file negli asset non piu' referenziati`);
   if (p.errori.length) righe.push(`ERRORI: ${p.errori.map(e=>e[0]+' — '+e[1]).join('; ')}`);
   if (!n && !p.rimosse.length && !p.errori.length)
-    return alert('Niente da pubblicare: la storia e\' gia\' allineata.\n\n' + righe.join('\n'));
+    // «Gia' allineata» sarebbe una bugia se ci sono immagini generate in attesa
+    // di un giudizio: la storia non e' allineata, manca il ✓.
+    return alert(attesa.length
+      ? `Niente da pubblicare: le ${attesa.length} immagini generate non sono ancora `
+        + `marcate definitive, e la pubblicazione prende solo quelle.\n\n` + righe.join('\n')
+      : 'Niente da pubblicare: la storia e\' gia\' allineata.\n\n' + righe.join('\n'));
   if (!confirm(`Pubblico nella storia?\n\n${righe.join('\n')}\n\n` +
                `Ci vuole qualche secondo: ogni immagine viene convertita.\n\nProcedo?`)) return;
 

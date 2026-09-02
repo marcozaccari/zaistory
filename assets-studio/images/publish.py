@@ -263,10 +263,23 @@ def publish(storia: Storia, *, tutte=False, force=False, dry_run=False, prune=Fa
         "story": ir.get("id"), "dry_run": dry_run,
         "nuove": [], "invariate": [], "aggiornate": [],
         "saltate": [], "rimosse": [], "orfane": [], "errori": [],
+        "in_attesa": [],
         "bytes": 0,
     }
 
     scelti = list(jobs) if tutte else list(approvate)
+
+    # Generate ma non marcate definitive. Non entrano nemmeno fra le candidate
+    # — la selezione e' umana, ed e' una regola del progetto, non un difetto —
+    # ma proprio per questo vanno dette qui. «Ho generato, ho pubblicato, e nel
+    # player non c'e'» e' il sintomo, e senza questa riga il rapporto risponde
+    # «niente da fare, la storia e' gia' allineata»: che e' falso, e manda a
+    # cercare il guasto dalla parte sbagliata.
+    if not tutte:
+        rapporto["in_attesa"] = [
+            jid for jid, j in jobs.items()
+            if jid not in approvate and (storia.work / j["file"]).is_file()
+        ]
     da_pubblicare: dict[str, dict] = {}
 
     for job_id in scelti:
@@ -394,6 +407,14 @@ def stampa(r: dict):
     print(("(prova) " if r["dry_run"] else "") + f"storia: {r['story']}")
     print(f"  pubblicate: {len(r['nuove'])} nuove, {len(r['aggiornate'])} aggiornate, "
           f"{len(r['invariate'])} invariate  ({r['bytes'] / 1048576:.1f} MB in totale)")
+    attesa = r.get("in_attesa") or []
+    if attesa:
+        print(f"  generate ma non definitive: {len(attesa)} — non si pubblicano finche' "
+              f"non le si marca nello studio")
+        for v in attesa[:8]:
+            print(f"    {v}")
+        if len(attesa) > 8:
+            print(f"    … e altre {len(attesa) - 8}")
     elenco("saltate", r["saltate"])
     elenco("errori", r["errori"])
     elenco("id tolti dall'IR", r["rimosse"])
