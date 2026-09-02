@@ -1124,6 +1124,21 @@ body.debug .assets.only-debug {
     padding: 0 14px;
     font-size: 22px;
   }
+
+  /* La barra in testa respira. Su telefono ogni pixel che prende lo toglie
+     alla storia; qui l'altezza non e' contesa, e una testata schiacciata
+     contro il bordo dello schermo sembra solo stretta. */
+  .topbar {
+    padding: 12px 16px;
+  }
+
+  .topbar .titles strong {
+    font-size: 16px;
+  }
+
+  .topbar .titles span {
+    font-size: 12px;
+  }
 }
 
 /* Le chip delle azioni con un resolver a input libero: restano nel DOM ma si
@@ -2034,9 +2049,12 @@ body:not(.debug) .palco-riga .tono::first-letter {
 
   /* In colonna l'altezza non e' contesa: la riga delle coordinate puo'
      respirare invece di stare dentro un quinto della fascia. */
+  /* Il tono e' la frase che si legge per prima entrando in una scena, e su
+     schermo largo a dodici pixel era la riga piu' piccola della pagina. */
   .palco-riga {
     max-height: calc(6 * 1.4em + 16px);
-    padding: 8px 12px;
+    padding: 10px 14px;
+    font-size: 14px;
   }
 
   /* Le facce crescono: in colonna sul bordo di un telefono ogni pixel di
@@ -2055,7 +2073,7 @@ body:not(.debug) .palco-riga .tono::first-letter {
   }
 
   .volto .nome {
-    font-size: 11px;
+    font-size: 13px;
   }
 
   /* Da ridotto la colonna si stringe, non si abbassa: le facce restano
