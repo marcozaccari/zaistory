@@ -284,6 +284,7 @@ export class Palco {
       ['place', inq.luogo ? doppio(inq.luogo.nome, `${inq.luogo.id} — ${inq.luogo.nome}`) : undefined, 'none'],
       ['characters_in_frame', this.nomiInCampo(inq.inCampo), 'none'],
     ];
+
     this.riga.replaceChildren();
     for (const r of righe) {
       if (r[1]) this.riga.append(promptRow(r as [string, string, PromptRow[2], boolean?]));
@@ -291,10 +292,22 @@ export class Palco {
     this.riga.hidden = this.riga.childElementCount === 0;
   }
 
-  /** Chi e' in campo, coi nomi del cast quando li si conosce. */
+  /**
+   * Chi e' in campo, coi nomi del cast quando li si conosce.
+   *
+   * Torna `undefined` quando le facce lo dicono gia': una riga «in campo ·
+   * Laura, Mark» sotto due ritratti accesi e un terzo spento e' la stessa cosa
+   * scritta due volte, e la seconda occupa la striscia che serve al tono.
+   * Resta invece quando qualcuno in campo **non** ha una faccia — un
+   * personaggio nominato dall'inquadratura ma assente da `scene.characters`:
+   * li' la riga e' l'unico posto dove quel nome compare, e la sua presenza e'
+   * anche il modo di accorgersi dell'incoerenza nell'IR.
+   */
   private nomiInCampo(ids?: string[]) {
     if (!ids?.length) return undefined;
     const nome = (id: string) => this.cast.find((v) => v.id === id)?.nome ?? id;
+    const senzaFaccia = ids.filter((id) => !this.cast.some((v) => v.id === id));
+    if (this.cast.length > 0 && senzaFaccia.length === 0) return undefined;
     return doppio(ids.map(nome).join(', '), ids.join(', '));
   }
 

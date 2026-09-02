@@ -212,7 +212,12 @@ button {
     "palco"
     "transcript"
     "dock";
-  height: 100dvh;
+  /* L'altezza e' quella del *viewport visuale*, cioe' quello che resta scoperto
+     dalla tastiera di sistema: `main.ts` la scrive qui a ogni suo cambiamento.
+     Con `100dvh` la tastiera saliva **sopra** il dock invece di spingerlo su,
+     e la riga in cui si scrive — l'interfaccia del gioco — finiva dietro ai
+     tasti. `100dvh` resta come ricaduta per i browser senza `visualViewport`. */
+  height: var(--altezza-app, 100dvh);
 }
 
 /* Ogni fascia dice in quale riga sta, invece di lasciarlo decidere all'ordine
@@ -816,7 +821,7 @@ body.debug .assets.only-debug {
 .choice {
   display: block;
   width: 100%;
-  padding: 13px 14px;
+  padding: 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--bg-soft);
@@ -857,10 +862,15 @@ body.debug .assets.only-debug {
   margin-right: 8px;
 }
 
+/* «continua» e «inizia» si toccano decine di volte per partita, spesso al buio
+   e con il pollice: sono i due bottoni che devono essere piu' grandi di tutti,
+   non della stessa taglia di una voce di dialogo. */
 .choice.continue {
+  padding: 18px 14px;
   text-align: center;
   border-color: var(--accent);
   color: var(--accent);
+  font-size: 17px;
   font-weight: 600;
 }
 
@@ -896,7 +906,7 @@ body.debug .assets.only-debug {
 .riga-input .campo {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 13px 14px;
+  padding: 15px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--bg-soft);
@@ -917,14 +927,22 @@ body.debug .assets.only-debug {
   outline: none;
 }
 
+/* Il bersaglio del pollice, non il segno: il triangolino era grande quanto una
+   riga di testo, e su un telefono si mancava. Cinquantasei pixel di lato sono
+   la misura sotto la quale un tocco comincia a sbagliare bersaglio, e il segno
+   dentro cresce con lui — piccolo dentro un bottone grande sembra disattivato. */
 .riga-input .invia {
   flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  min-width: 56px;
   padding: 0 18px;
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   background: var(--accent);
   color: var(--bg);
-  font-size: 16px;
+  font-size: 22px;
+  line-height: 1;
 }
 
 /* Le chip delle azioni con un resolver a input libero: restano nel DOM ma si
@@ -1493,8 +1511,10 @@ body.palco-ridotto .palco {
 
 .palco-tela {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 0;
   padding: 8px;
 }
@@ -1616,9 +1636,12 @@ body.palco-ridotto .volto .nome {
   /* In `em` e non in percentuale: la percentuale si misura su una riga di
      griglia alta `auto`, cioe' su niente, e il risultato era il tono tagliato
      a meta' della sua prima riga — esattamente il campo che questa striscia
-     esiste per non far sparire. Quattro righe bastano a un tono lungo; oltre,
-     si scorre, e la figura sopra non si rimpicciolisce piu'. */
-  max-height: 6em;
+     esiste per non far sparire. Quattro righe piene bastano a un tono lungo;
+     oltre, si scorre, e la figura sopra non si rimpicciolisce piu'. La misura
+     e' un multiplo esatto dell'interlinea piu' il padding: un massimo tondo
+     taglierebbe l'ultima riga a meta', che e' il modo peggiore di dire «c'e'
+     dell'altro». */
+  max-height: calc(4 * 1.4em + 12px);
   overflow-y: auto;
 }
 
@@ -1732,7 +1755,7 @@ body.palco-ridotto .volto .nome {
   /* In colonna l'altezza non e' contesa: la riga delle coordinate puo'
      respirare invece di stare dentro un quinto della fascia. */
   .palco-riga {
-    max-height: 9em;
+    max-height: calc(6 * 1.4em + 16px);
     padding: 8px 12px;
   }
 

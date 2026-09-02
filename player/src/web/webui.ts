@@ -90,6 +90,11 @@ export interface WebUIOptions {
   onUpdate: () => void;
   /** Se presente, la partita e' guidata da uno script di playthrough. */
   script?: ScriptDriver;
+  /** Lo script non arriva da una traccia incollata ma dalla partita che questa
+   * pagina stava giocando prima di essere ricaricata. Cambia solo cosa si
+   * legge quando non combacia: «la traccia» e' una cosa che si e' incollata,
+   * una ripresa e' una cosa che si credeva di avere ancora. */
+  ripresa?: boolean;
   /** La seconda uscita del player: la stessa storia, recitata. Arriva da
    * fuori perche' le sue impostazioni sopravvivono alla partita — si
    * ricomincia senza dover riscegliere la voce. */
@@ -120,6 +125,7 @@ export class WebUI implements PlayerUI {
   private dock: HTMLElement;
   private onUpdate: () => void;
   private script?: ScriptDriver;
+  private ripresa: boolean;
   private ascolto: Ascolto;
   private immagini: Immagini;
   private palco: Palco;
@@ -179,6 +185,7 @@ export class WebUI implements PlayerUI {
     this.dock = o.dock;
     this.onUpdate = o.onUpdate;
     this.script = o.script;
+    this.ripresa = o.ripresa ?? false;
     this.ascolto = o.ascolto;
     this.immagini = o.immagini;
     this.palco = o.palco;
@@ -197,9 +204,34 @@ export class WebUI implements PlayerUI {
     this.libero = new InputLibero(this.story, r);
   }
 
+  /**
+   * Vero dove si scrive con una tastiera vera e non con quella di sistema.
+   *
+   * E' la differenza fra «il fuoco nel campo non costa niente» e «il fuoco nel
+   * campo si mangia meta' schermo». Si chiede al puntatore e non alla
+   * larghezza: un tablet con la tastiera attaccata e' un telefono per
+   * larghezza e un computer per come ci si scrive.
+   */
+  private get tastieraFisica(): boolean {
+    return window.matchMedia('(pointer: fine)').matches;
+  }
+
+  /**
+   * Chiude la tastiera di sistema.
+   *
+   * Togliere dal DOM un campo che ha il fuoco non basta: il browser resta con
+   * i tasti aperti su un elemento che non esiste piu', e da li' non si chiude
+   * piu' con niente. Va tolto il fuoco **prima**, esplicitamente.
+   */
+  private chiudiTastiera(): void {
+    const a = document.activeElement;
+    if (a instanceof HTMLElement && this.dock.contains(a)) a.blur();
+  }
+
   /** Interrompe l'attesa in corso (usata quando si ricomincia o si cambia IR). */
   cancel(): void {
     this.dead = true;
+    this.chiudiTastiera();
     this.ascolto.taci();
     this.abort?.(new QuitError());
     this.abort = undefined;
@@ -251,7 +283,13 @@ export class WebUI implements PlayerUI {
       this.landing = node;
       this.wantLanding = false;
     }
-    this.scrollEnd();
+    // Sotto script non si insegue niente: nessuno sta leggendo mentre la
+    // traccia scorre, e ognuno di questi inseguimenti costa una misura del
+    // documento. Su una ripresa di centotrentacinque passi sono piu' di mille
+    // rimisurazioni per arrivare esattamente dove si arriva comunque alla
+    // fine, con il primo turno vero. Riprendere una partita lunga passa da due
+    // secondi a poco piu' di uno.
+    if (!this.script) this.scrollEnd();
   }
 
   /**
@@ -912,6 +950,7 @@ export class WebUI implements PlayerUI {
         this.dbg(`resolver: ${e.via ?? '-'}${e.why ? ` · ${e.why}` : ''}`);
         this.ultimoInput = '';
         this.abort = undefined;
+        this.chiudiTastiera();
         clear(this.dock);
         resolve({ actionId: e.actionId });
         return;
@@ -944,14 +983,32 @@ export class WebUI implements PlayerUI {
 
       this.ultimoInput = '';
       campo.value = '';
-      campo.focus({ preventScroll: true });
+      // Il fuoco torna al campo **solo dove non c'e' una tastiera di sistema**.
+      // Su un telefono rimetterlo li' significa riaprire i tasti addosso alla
+      // risposta appena arrivata, che e' proprio la riga da leggere per capire
+      // come riscrivere la frase: la tastiera si richiama con un tocco, e
+      // quello e' un gesto che si fa quando si e' finito di leggere.
+      if (this.tastieraFisica) campo.focus({ preventScroll: true });
       this.scrollEnd();
     };
+
+    // Quando la tastiera si apre o si chiude, il viewport visuale cambia
+    // altezza e la riga che si stava leggendo finisce sotto ai tasti. Non basta
+    // rimpicciolire l'app (lo fa `main.ts`): la lettura va anche riportata al
+    // punto giusto, dopo che il browser ha finito di muovere le cose.
+    const suViewport = () => {
+      if (document.activeElement === campo) this.scrollEnd();
+    };
+    campo.onfocus = () => {
+      window.visualViewport?.addEventListener('resize', suViewport);
+      this.scrollEnd();
+    };
+    campo.onblur = () => window.visualViewport?.removeEventListener('resize', suViewport);
 
     // Il fuoco automatico solo dove non fa danni: su un telefono aprirebbe la
     // tastiera a ogni scena, mangiandosi meta' schermo proprio mentre c'e' da
     // leggere.
-    if (window.matchMedia('(pointer: fine)').matches) {
+    if (this.tastieraFisica) {
       requestAnimationFrame(() => campo.focus({ preventScroll: true }));
     }
     return form;
@@ -1087,14 +1144,26 @@ export class WebUI implements PlayerUI {
     }
     this.push(card);
     this.ascolto.finale(o.reason);
+    // L'unico punto in cui la partita finisce senza che nessuno chieda piu'
+    // niente: senza questo, una ripresa che arriva fino al finale — dove
+    // `push` non insegue il fondo perche' e' sotto script — lascerebbe la
+    // vista sulla copertina, cioe' all'altro capo di mille blocchi.
+    this.scrollEnd();
     this.onUpdate();
   }
 
   // -------------------------------------------------------------- interni
 
-  /** Vero finche' la partita e' guidata da una traccia. */
+  /**
+   * Vero finche' la partita e' guidata da una traccia **incollata**.
+   *
+   * Una ripresa non conta, per quanto tecnicamente sia lo stesso meccanismo:
+   * il marchio in barra serve a dire «quello che stai guardando non l'hai
+   * giocato tu adesso», e riaprire la propria partita e' esattamente il caso
+   * opposto.
+   */
   get sottoTraccia(): boolean {
-    return !!this.script;
+    return !!this.script && !this.ripresa;
   }
 
   /**
@@ -1115,9 +1184,22 @@ export class WebUI implements PlayerUI {
     try {
       return passo();
     } catch (err) {
+      const era = this.ripresa;
       this.script = undefined;
+      this.ripresa = false;
       if (err instanceof ScriptEndedError) {
-        this.entry('notice', 'La traccia finisce qui: da adesso giochi tu.');
+        // Una ripresa che finisce non ha finito niente: e' arrivata dove si
+        // era rimasti, che e' tutto quello che doveva fare. Dirlo con «la
+        // traccia finisce qui» farebbe cercare una traccia che nessuno ha
+        // incollato.
+        if (!era) this.entry('notice', 'La traccia finisce qui: da adesso giochi tu.');
+      } else if (era) {
+        this.entry('problem', `[! ripresa] ${err instanceof Error ? err.message : String(err)}`);
+        this.entry(
+          'notice',
+          "La partita di prima non combacia piu' con questa storia — probabilmente e' stata " +
+            'ricompilata da allora. Riparti da qui.',
+        );
       } else {
         // Un passo che non corrisponde a niente, non una traccia finita: quasi
         // sempre un salvataggio di una versione precedente della storia. Il
@@ -1140,6 +1222,7 @@ export class WebUI implements PlayerUI {
       clear(this.dock);
       render((cmd) => {
         this.abort = undefined;
+        this.chiudiTastiera();
         clear(this.dock);
         resolve(cmd);
       });

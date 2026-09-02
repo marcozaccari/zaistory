@@ -794,7 +794,12 @@ che la storia ha già pubblicato, quando ci sono.
   dire niente. Chi l'inquadratura dichiara in `characters_in_frame` si **marca**
   invece di comparire — gli altri restano spenti, e un'inquadratura che non
   dichiara nessuno non spegne nessuno, perché «non dichiarato» non vuol dire
-  «non c'è».
+  «non c'è». Quando le facce lo dicono già, la riga `characters_in_frame`
+  sparisce dalla striscia: è la stessa cosa scritta due volte, e la seconda
+  occupa lo spazio che serve al tono. Resta invece se qualcuno in campo **non**
+  ha una faccia — nominato dall'inquadratura ma assente da `scene.characters`:
+  lì è l'unico posto dove quel nome compare, e vederlo è anche il modo di
+  accorgersi dell'incoerenza nell'IR.
 - **Il palco c'è sempre, anche senza immagini.** In solo testo — immagini spente
   o storia non ancora illustrata — al posto della figura c'è l'`image_prompt` e
   al posto delle facce le iniziali, e allargarle porta comunque ai prompt. Un
@@ -849,6 +854,25 @@ che la storia ha già pubblicato, quando ci sono.
 - **Il testo resta una colonna di lettura** anche quando ce n'è lo spazio: a
   centoventi caratteri l'occhio perde il capo tornando a sinistra. Su schermo
   largo quello che avanza va nei margini, non nella lunghezza delle righe.
+- **L'app è alta quanto il viewport *visuale*, non quanto la finestra.**
+  `100dvh` misura la finestra, e la tastiera di sistema non la rimpicciolisce:
+  sale sopra la pagina. Il risultato era che i tasti coprivano il dock, cioè
+  proprio la riga in cui si scrive cosa fare — l'interfaccia del gioco.
+  `visualViewport` misura quello che si vede davvero, e l'app ci si adatta: il
+  dock resta appoggiato al bordo dei tasti e il transcript si accorcia sopra di
+  lui. `100dvh` resta come ricaduta dove `visualViewport` non c'è.
+- **Il fuoco automatico nel campo vale solo dove la tastiera non costa niente**
+  (`pointer: fine`). Su un telefono rimettercelo dopo una frase che non ha
+  fatto match significa riaprire i tasti addosso alla risposta appena
+  arrivata — cioè proprio la riga da leggere per capire come riscriverla. La
+  tastiera si richiama con un tocco, e quello è un gesto che si fa quando si è
+  finito di leggere. Simmetricamente, togliere dal DOM un campo che ha il fuoco
+  non basta a chiudere la tastiera: il fuoco va tolto **prima**, esplicitamente,
+  o i tasti restano aperti su un elemento che non esiste più.
+- **«continua», «inizia» e il bottone di invio sono i bersagli più grandi del
+  player.** Si toccano decine di volte per partita, spesso al buio e col
+  pollice: non possono avere la taglia di una voce di dialogo. Il segno dentro
+  cresce con loro — piccolo dentro un bottone grande sembra disattivato.
 - **La scelta compare solo quando c'è qualcosa da scegliere**: la storia ha
   immagini pubblicate e il player sa dove cercarle. Altrimenti al suo posto c'è
   una riga che dice quale dei due pezzi manca. Un interruttore che non cambia
@@ -1048,6 +1072,30 @@ Vite sono soli strumenti di build).
   la traccia continua a crescere mentre si gioca: si ricopia dal pannello e si
   risalva. Il marchio «traccia» nella barra sparisce quando la traccia finisce,
   perché da quel momento non è più una partita rigiocata.
+
+- **Ricaricare la pagina non butta via la partita.** La stessa traccia va in
+  `localStorage` a ogni mossa (`player/src/web/ripresa.ts`, una chiave per
+  storia) e viene rigiocata all'avvio. Non è un secondo formato di salvataggio:
+  è quello che già c'era, scritto in un posto invece che negli appunti — il
+  codice da copiare e la ripresa automatica sono la stessa cosa in due posti
+  diversi. Serve perché su un telefono ricaricare non è quasi mai un gesto
+  deliberato: è il browser che scarica la scheda per fare spazio, è un ritorno
+  all'app dopo mezz'ora. Tornare alla copertina è il modo più rapido di far
+  smettere di collaudare una storia lunga.
+
+  Tre dettagli che non sono ovvi. Il marchio «traccia» **non** compare su una
+  ripresa: serve a dire «quello che stai guardando non l'hai giocato tu
+  adesso», e riaprire la propria partita è il caso opposto. «Ricomincia»
+  dimentica la partita salvata prima di farne partire una nuova, altrimenti
+  tornerebbe al ricaricamento successivo. E le impostazioni si riprendono con
+  lei **tranne il backend del resolver**: riaprire una pagina non deve poter
+  far partire il download di un modello, che è una cosa che si chiede.
+
+  Sotto script il transcript non insegue il fondo a ogni blocco: nessuno sta
+  leggendo mentre la traccia scorre, e ognuno di quegli inseguimenti costa una
+  misura del documento. Su una ripresa di centotrentacinque passi erano più di
+  mille rimisurazioni per arrivare dove si arriva comunque col primo turno
+  vero — due secondi contro uno.
 
 - **Le diagnostiche stanno sotto il debug; chi gioca legge sempre testo
   d'autore.** *(cambio di rotta rispetto alla decisione precedente, ed è giusto

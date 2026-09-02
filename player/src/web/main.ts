@@ -34,6 +34,7 @@ import {
 import { CONFIG_DEFAULT, caricaEmbedder, type ConfigEmbedder } from './embedder.js';
 import { ASCOLTO_DEFAULT, Ascolto, type ImpostazioniAscolto } from './ascolto.js';
 import { Immagini, baseDegliAsset } from './immagini.js';
+import { dimenticaRipresa, leggiRipresa, salvaRipresa } from './ripresa.js';
 import { Palco } from './palco.js';
 import { Voce } from './voce.js';
 import { PLAYER_VERSION } from '../version.js';
@@ -302,6 +303,10 @@ function ricomincia(): void {
   const s = session;
   if (!s) return;
   closePanel();
+  // La partita salvata se ne va **prima** che la nuova cominci: chi ha appena
+  // confermato «ricomincia» non deve ritrovarsi quella di prima al prossimo
+  // ricaricamento della pagina.
+  dimenticaRipresa(s.story);
   start(s.story, s.findings);
 }
 
@@ -362,10 +367,20 @@ function refreshHeader(): void {
   meta.append(el('span', 'umano', umano.join(' · ')), el('span', 'ir', ir.join(' · ')));
 }
 
-/** Stato e scena sono cambiati: si aggiornano insieme la barra e il pannello. */
+/**
+ * Stato e scena sono cambiati: si aggiornano insieme la barra e il pannello, e
+ * la partita finisce nel deposito del browser.
+ *
+ * Qui e non altrove perche' questo e' l'unico punto per cui passano *tutti* i
+ * cambiamenti di stato: un salvataggio agganciato ai singoli gestori
+ * dimenticherebbe esattamente il caso che non si e' pensato.
+ */
 function refresh(): void {
   refreshHeader();
   refreshPanel();
+  if (session) {
+    salvaRipresa(session.story, session.engine.trace(), configPlayerSerializzabile(configCorrente()));
+  }
 }
 
 function openPanel(): void {
@@ -415,7 +430,7 @@ for (const b of [btnDebug, btnDebugPannello]) {
 
 // ---------------------------------------------------------------- partita
 
-function start(story: Story, findings: Finding[], script?: ScriptDriver): void {
+function start(story: Story, findings: Finding[], script?: ScriptDriver, ripresa = false): void {
   session?.ui.cancel();
   clear(transcript);
   clear(dock);
@@ -435,6 +450,7 @@ function start(story: Story, findings: Finding[], script?: ScriptDriver): void {
     dock,
     onUpdate: refresh,
     script,
+    ripresa,
     ascolto,
     immagini,
     palco,
@@ -478,7 +494,16 @@ function showLoader(): void {
 function load(data: unknown | string): void {
   try {
     const story = typeof data === 'string' ? parseStory(data) : validateStory(data);
-    start(story, lintStory(story));
+
+    // La partita di prima, se questa pagina ne aveva una. Le impostazioni si
+    // riprendono con lei — meno il backend del resolver, che vale un download
+    // e va chiesto: `leggiConfigPlayer` lo legge, e qui lo si rimette su
+    // quello che c'e' adesso.
+    const salv = leggiRipresa(story);
+    if (salv?.config) {
+      applicaConfig({ ...leggiConfigPlayer(salv.config, configCorrente()), resolver: nomeResolver });
+    }
+    start(story, lintStory(story), salv?.partita ? new ScriptDriver([...salv.partita.trace]) : undefined, true);
   } catch (err) {
     loader.hidden = false;
     app.hidden = true;
@@ -542,6 +567,34 @@ if (embedded) {
       loaderErr.hidden = false;
       loaderErr.textContent = `Non riesco a scaricare ${fromUrl}: ${err.message}`;
     });
+}
+
+/**
+ * L'app alta quanto lo spazio che la tastiera lascia scoperto.
+ *
+ * `100dvh` misura la finestra, e la tastiera di sistema non la rimpicciolisce:
+ * sale **sopra** la pagina. Il risultato era che i tasti coprivano il dock,
+ * cioe' proprio la riga in cui si scrive cosa fare — l'interfaccia del gioco —
+ * e per rivederla bisognava chiudere la tastiera, scrivere di nuovo, e cosi'
+ * via. `visualViewport` invece misura quello che si vede davvero, e l'app ci si
+ * adatta: il dock resta appoggiato al bordo dei tasti e il transcript si
+ * accorcia sopra di lui.
+ *
+ * `scrollTo(0, 0)` insieme: quando la tastiera si apre iOS scorre il viewport
+ * di layout per portare il campo in vista, e siccome la pagina non scorre —
+ * l'altezza e' fissa e a scorrere e' il transcript dentro di se' — quello
+ * scorrimento sposta tutta l'applicazione lasciando una striscia bianca in
+ * cima.
+ */
+const vv = window.visualViewport;
+if (vv) {
+  const adatta = () => {
+    document.documentElement.style.setProperty('--altezza-app', `${vv.height}px`);
+    if (window.scrollY !== 0) window.scrollTo(0, 0);
+  };
+  vv.addEventListener('resize', adatta);
+  vv.addEventListener('scroll', adatta);
+  adatta();
 }
 
 /**
