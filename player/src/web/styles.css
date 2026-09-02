@@ -2336,6 +2336,32 @@ figcaption.ir {
   color: rgba(255, 255, 255, 0.55);
 }
 
+/* La lente nuda: nient'altro che l'immagine. Vale per la locandina e fuori dal
+   debug — si apre per guardarla, non per giudicarla, e una locandina con il
+   titolo stampato sopra e un paragrafo di prompt sotto e' esattamente cio' che
+   una locandina non e'. Col debug il testo torna, perche' li' anche lei e' un
+   asset da decidere.
+
+   Anche l'immagine si riprende lo spazio che la didascalia le toglieva: senza
+   niente sotto, `max-height` non ha piu' ragione di stare centocinquanta pixel
+   sotto lo schermo. */
+body:not(.debug) .lightbox.nuda .lightbox-titolo,
+body:not(.debug) .lightbox.nuda .lightbox-cap {
+  display: none;
+}
+
+/* E il velo diventa opaco. Il resto delle lenti lascia intravedere la pagina
+   sotto — e' un modo di ricordare che la storia e' ancora li' — ma sotto una
+   locandina la pagina e' il titolo e la descrizione, cioe' testo che traspare
+   dietro l'immagine. Su un manifesto non ci va, nemmeno in trasparenza. */
+body:not(.debug) .lightbox.nuda {
+  background: #08090c;
+}
+
+body:not(.debug) .lightbox.nuda .lightbox-img {
+  max-height: calc(100vh - 24px);
+}
+
 /* Senza immagine la lente e' solo testo: si legge dall'alto invece di stare
    incollata al fondo dello schermo. */
 .lightbox-img[hidden] ~ .lightbox-cap {

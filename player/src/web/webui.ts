@@ -580,6 +580,10 @@ export class WebUI implements PlayerUI {
       classe: 'locandina',
       titolo: st.title,
       righe,
+      // A chi gioca la copertina si apre nuda: e' una locandina, si guarda. I
+      // prompt e il titolo tornano col debug, dove anche lei e' un asset da
+      // decidere.
+      soloImmagine: true,
     });
     fig.replaceChildren(...(locandina ? [locandina] : []));
 

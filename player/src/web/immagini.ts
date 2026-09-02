@@ -140,6 +140,16 @@ export interface Lente {
   /** I prompt che descrivono cio' che si sta guardando, col nome che hanno
    * nell'IR. */
   righe?: PromptRow[];
+  /**
+   * A schermo intero non si mostra altro che l'immagine — fuori dal debug.
+   *
+   * E' il caso della locandina, e di nessun altro: le altre immagini si aprono
+   * grandi *per essere giudicate*, e il prompt accanto e' meta' del giudizio.
+   * Una copertina no: si apre per guardarla, e un titolo stampato sopra e un
+   * paragrafo di prompt sotto sono esattamente cio' che una locandina non ha.
+   * Col debug tornano, perche' li' anche la copertina e' un asset da decidere.
+   */
+  soloImmagine?: boolean;
 }
 
 /**
@@ -176,6 +186,9 @@ export function apriGrande(lente: Lente): void {
   popup.didascalia.replaceChildren(...(box ? [box] : []));
   popup.didascalia.hidden = !box;
 
+  // La scelta la fa il CSS, non questo codice: accendere il debug mentre la
+  // lente e' aperta deve bastare a far comparire il testo, senza riaprirla.
+  popup.root.classList.toggle('nuda', !!lente.soloImmagine);
   popup.root.hidden = false;
   document.body.classList.add('con-lightbox');
   popup.root.querySelector<HTMLElement>('.lightbox-close')?.focus({ preventScroll: true });
@@ -263,7 +276,8 @@ export class Immagini {
     img.tabIndex = 0;
     img.setAttribute('role', 'button');
     img.title = 'guardala a schermo intero';
-    const guarda = () => apriGrande({ src, titolo: opzioni.titolo, righe: opzioni.righe });
+    const guarda = () =>
+      apriGrande({ src, titolo: opzioni.titolo, righe: opzioni.righe, soloImmagine: opzioni.soloImmagine });
     img.onclick = guarda;
     img.onkeydown = (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -303,4 +317,7 @@ export interface OpzioniFigura {
   /** Gli stessi prompt, dentro la lente: allargare un'immagine e' il modo di
    * guardarla per decidere se va bene, e li' il prompt serve accanto. */
   righe?: PromptRow[];
+  /** A schermo intero, fuori dal debug, non si mostra altro che l'immagine.
+   * Vedi `Lente.soloImmagine`: e' la locandina, e nient'altro. */
+  soloImmagine?: boolean;
 }
