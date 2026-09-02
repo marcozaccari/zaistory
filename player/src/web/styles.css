@@ -300,6 +300,18 @@ body.con-palco .dock {
   body.con-palco .dock {
     max-height: 52dvh;
   }
+
+  /* Con l'altezza che non e' piu' contesa, le chip tornano comode e il segno
+     torna grande: la misura ridotta serve al telefono, non e' un ripensamento
+     sull'aspetto. */
+  .choice {
+    padding: 13px 14px;
+  }
+
+  .choice .segno {
+    width: 18px;
+    font-size: 32px;
+  }
 }
 
 .topbar {
@@ -830,10 +842,14 @@ body.debug .assets.only-debug {
   overflow-y: auto;
 }
 
+/* Mobile-first anche qui: su telefono l'altezza e' la risorsa scarsa, e ogni
+   pixel che una chip non prende e' una riga di storia in piu' sopra di lei.
+   Su schermo largo di altezza ce n'e', e i bottoni tornano piu' comodi (in
+   fondo al foglio, con il resto del layout a due colonne). */
 .choice {
   display: block;
   width: 100%;
-  padding: 13px 14px;
+  padding: 10px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--bg-soft);
@@ -896,9 +912,9 @@ body.debug .assets.only-debug {
    scatola alta zero e' anche larga quanto le pare. */
 .choice .segno {
   display: inline-block;
-  width: 18px;
+  width: 16px;
   margin-right: 5px;
-  font-size: 32px;
+  font-size: 26px;
   line-height: 0;
   vertical-align: middle;
 }

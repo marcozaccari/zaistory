@@ -328,15 +328,25 @@ export class WebUI implements PlayerUI {
     this.wantLanding = true;
   }
 
-  private scrollEnd(): void {
+  /**
+   * `inFondo` scavalca l'atterraggio e va all'ultima riga.
+   *
+   * Serve in un caso solo, ed e' il momento in cui si prende la penna in mano:
+   * col fuoco nel campo la domanda non e' piu' «cos'e' successo?» — a cui
+   * risponde l'inizio del blocco nuovo — ma «cosa scrivo adesso?», a cui
+   * risponde l'ultima cosa letta. Atterrare in cima a un turno lungo lascia
+   * proprio quella fuori dallo schermo.
+   */
+  private scrollEnd(inFondo = false): void {
     const go = () => {
       if (this.anchor === 'top') {
         this.transcript.scrollTop = 0;
         return;
       }
-      this.transcript.scrollTop = this.landing
-        ? this.landing.offsetTop - this.transcript.offsetTop
-        : this.transcript.scrollHeight;
+      this.transcript.scrollTop =
+        this.landing && !inFondo
+          ? this.landing.offsetTop - this.transcript.offsetTop
+          : this.transcript.scrollHeight;
     };
     go();
     requestAnimationFrame(go);
@@ -1004,7 +1014,7 @@ export class WebUI implements PlayerUI {
     // rimpicciolire l'app (lo fa `main.ts`): la lettura va anche riportata al
     // punto giusto, dopo che il browser ha finito di muovere le cose.
     const suViewport = () => {
-      if (document.activeElement === campo) this.scrollEnd();
+      if (document.activeElement === campo) this.scrollEnd(true);
     };
     campo.onfocus = () => {
       window.visualViewport?.addEventListener('resize', suViewport);
@@ -1016,10 +1026,10 @@ export class WebUI implements PlayerUI {
       // fare: la figura si toglie e le coordinate restano. Torna da sola
       // appena il campo perde il fuoco.
       if (!this.tastieraFisica) document.body.classList.add('tastiera');
-      this.scrollEnd();
+      this.scrollEnd(true);
       // Una seconda volta a layout rifatto: la riga da leggere e' quella in
       // fondo, e dove sia lo si sa solo dopo che il palco si e' ritirato.
-      requestAnimationFrame(() => this.scrollEnd());
+      requestAnimationFrame(() => this.scrollEnd(true));
     };
     campo.onblur = () => {
       window.visualViewport?.removeEventListener('resize', suViewport);
