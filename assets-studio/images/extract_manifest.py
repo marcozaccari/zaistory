@@ -445,11 +445,21 @@ class Extractor:
         self.collect_anchors()
         self.collect_shots()
 
+        # La copertina in testa a tutto, prima ancora delle ancore. E' la prima
+        # immagine che si guarda di una storia — la locandina — e nello studio
+        # e' anche quella che si decide per prima: dice se lo stile globale
+        # funziona, e se non funziona non ha senso guardare le altre ottantotto.
+        # Sepolta dopo ventiquattro ancore ci si arriva scorrendo.
+        copertina = [j for j in self.shots if j["kind"] == "cover"]
+        inquadrature = [j for j in self.shots if j["kind"] != "cover"]
+
         jobs = []
+        if level in ("all", "shots"):
+            jobs += copertina
         if level in ("all", "anchors"):
             jobs += list(self.anchors.values())
         if level in ("all", "shots"):
-            jobs += self.shots
+            jobs += inquadrature
 
         if sample:
             jobs = self._sample(jobs, sample)
