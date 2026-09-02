@@ -879,14 +879,14 @@ body.debug .assets.only-debug {
    viene disegnato fuori dalla sua scatola. Cosi' il carattere puo' essere piu'
    grande del testo che lo accompagna — molto piu' grande — senza che il
    bottone si alzi di un pixel. Il triangolino di per se' occupa poco meno di
-   meta' del corpo in cui e' scritto, quindi a quaranta pixel resta comodamente
+   meta' del corpo in cui e' scritto, quindi a trentadue pixel resta comodo
    dentro un bottone alto cinquanta. La larghezza e' esplicita perche' una
    scatola alta zero e' anche larga quanto le pare. */
 .choice .segno {
   display: inline-block;
-  width: 22px;
-  margin-right: 4px;
-  font-size: 40px;
+  width: 18px;
+  margin-right: 5px;
+  font-size: 32px;
   line-height: 0;
   vertical-align: middle;
 }
@@ -958,7 +958,7 @@ body.debug .assets.only-debug {
   border-radius: var(--radius);
   background: var(--accent);
   color: var(--bg);
-  font-size: 40px;
+  font-size: 32px;
   line-height: 0;
 }
 
