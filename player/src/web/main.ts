@@ -523,6 +523,14 @@ for (const b of [btnFont, btnFontPannello]) {
   b.addEventListener('click', () => {
     const i = FONT_VALIDI.indexOf(font);
     impostaFont(FONT_VALIDI[(i + 1) % FONT_VALIDI.length]);
+    // Dal piede del menu il giro chiude il pannello, e non e' un'incoerenza con
+    // gli altri due che lo lasciano aperto: quelli si giudicano dal bottone —
+    // acceso o spento e' scritto li' — mentre un carattere si giudica solo
+    // leggendoci, e su telefono il pannello copre per intero la pagina su cui
+    // si sta decidendo. Chiudere e' il gesto che fa vedere la scelta; restare
+    // aperti vorrebbe dire toccare al buio e poi chiudere per controllare.
+    // Il bottone in barra non chiude niente perche' li' la pagina si vede gia'.
+    if (b === btnFontPannello) closePanel();
     // La partita non si tocca: e' una scelta su come si guarda, e finisce nelle
     // impostazioni insieme alle immagini e alla voce.
     refresh();
