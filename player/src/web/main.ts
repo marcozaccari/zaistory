@@ -95,13 +95,15 @@ function impostaFont(f: Font): void {
  * decidendo.
  */
 function aggiornaFontUI(): void {
-  clear(btnFont);
-  const segno = icona('font');
-  if (segno) btnFont.append(segno);
-  btnFont.append(el('span', 'nome', font));
   const etichetta = `carattere: ${font}`;
-  btnFont.setAttribute('aria-label', etichetta);
-  btnFont.title = etichetta;
+  for (const b of [btnFont, btnFontPannello]) {
+    clear(b);
+    const segno = icona('font');
+    if (segno) b.append(segno);
+    b.append(el('span', 'nome', font));
+    b.setAttribute('aria-label', etichetta);
+    b.title = etichetta;
+  }
 }
 
 // L'attributo si scrive subito, prima di qualsiasi partita: senza, comparirebbe
@@ -508,18 +510,24 @@ for (const b of document.querySelectorAll<HTMLButtonElement>('#tabs button')) {
   b.addEventListener('click', () => selezionaTab(b.dataset.tab as Tab));
 }
 
-// Il carattere della prosa: non un interruttore ma un giro. Non ha una copia
-// nel piede del menu come gli altri due, ed e' voluto — quelli sono a due stati
-// e da chiusi non si sa in quale siano, questo il suo stato ce l'ha scritto
-// sopra, e in barra si legge senza aprire niente.
+// Il carattere della prosa: non un interruttore ma un giro. Sta in due posti
+// come il debug e le immagini — in barra sotto il pollice mentre si gioca, e
+// nel piede del menu. Su telefono verticale il secondo e' l'unico che resta:
+// li' la barra tiene solo il titolo, e i comandi si vanno a cercare nel menu.
+// Che sia un giro e non un interruttore non cambia niente per la copia: il
+// nome del carattere corrente e' scritto su tutti e due i bottoni, quindi
+// anche da menu chiuso non c'e' uno stato nascosto da indovinare.
 const btnFont = $<HTMLButtonElement>('#btn-font');
-btnFont.addEventListener('click', () => {
-  const i = FONT_VALIDI.indexOf(font);
-  impostaFont(FONT_VALIDI[(i + 1) % FONT_VALIDI.length]);
-  // La partita non si tocca: e' una scelta su come si guarda, e finisce nelle
-  // impostazioni insieme alle immagini e alla voce.
-  refresh();
-});
+const btnFontPannello = $<HTMLButtonElement>('#btn-font-panel');
+for (const b of [btnFont, btnFontPannello]) {
+  b.addEventListener('click', () => {
+    const i = FONT_VALIDI.indexOf(font);
+    impostaFont(FONT_VALIDI[(i + 1) % FONT_VALIDI.length]);
+    // La partita non si tocca: e' una scelta su come si guarda, e finisce nelle
+    // impostazioni insieme alle immagini e alla voce.
+    refresh();
+  });
+}
 aggiornaFontUI();
 
 // Due bottoni per lo stesso interruttore: quello in barra, sempre a portata di

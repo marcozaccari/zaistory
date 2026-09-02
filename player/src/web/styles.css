@@ -475,6 +475,21 @@ body.con-palco .dock {
   vertical-align: 0;
 }
 
+/* Telefono in verticale: la barra in testa tiene solo il menu e il titolo.
+   Tre bottoni piu' il titolo su una riga larga quanto un pollice lasciavano
+   al nome della storia e alla scena una fessura in cui non ci stava niente,
+   e i puntini di sospensione mangiavano proprio la parte che dice dove si e'.
+   Non spariscono per davvero: gli stessi tre comandi stanno nel piede del
+   menu, che e' dove su telefono si va a cercarli. Coricando il telefono la
+   larghezza torna e i bottoni con lei. */
+@media (max-width: 639px) and (orientation: portrait) {
+  .topbar #btn-immagini,
+  .topbar #btn-font,
+  .topbar #btn-debug {
+    display: none;
+  }
+}
+
 /* ------------------------------------------------------------ transcript */
 
 .transcript {
