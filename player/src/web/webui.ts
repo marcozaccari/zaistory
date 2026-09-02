@@ -470,9 +470,12 @@ export class WebUI implements PlayerUI {
     // chiesto — la stessa ragione per cui non sta piu' nemmeno in barra.
     meta('scenes', `${st.scenes.length}`, true);
     // La prima scena si chiama col suo titolo: l'id dice dove trovarla nel
-    // JSON, e quello e' un servizio per chi ispeziona.
+    // JSON, e quello e' un servizio per chi ispeziona. Ed e' un servizio per
+    // chi ispeziona anche il resto: a chi gioca, sapere da quale scena si parte
+    // un istante prima di partirci non dice niente che il tocco su «inizia» non
+    // stia per dire meglio.
     const prima = st.scenes.find((s) => s.id === st.start_scene);
-    meta('start_scene', doppio(prima?.title || st.start_scene, st.start_scene));
+    meta('start_scene', doppio(prima?.title || st.start_scene, st.start_scene), true);
     cover.append(dl);
 
     const g = st.global_style;
@@ -1200,6 +1203,10 @@ export class WebUI implements PlayerUI {
       classe: 'figura-oggetto',
       titolo: item.name,
       righe,
+      // A schermo intero c'e' l'oggetto, il suo nome e la sua descrizione: la
+      // riga e' una sola e il campo si capisce da cio' che si sta guardando,
+      // quindi premetterle «aspetto» e' etichettare l'unica cosa in pagina.
+      senzaEtichette: true,
     });
     if (fig) this.push(fig);
   }

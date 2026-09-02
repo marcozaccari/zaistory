@@ -384,12 +384,17 @@ function refreshHeader(): void {
   // interessa a che punto e' — e, se sta rigiocando una traccia, che la sta
   // rigiocando. La versione dell'IR e il conto del linter sono informazioni
   // sul *file*, non sulla storia: stanno col debug.
-  // A chi gioca la barra non dice ne' quante scene ha la storia ne' di quanti
-  // passaggi e' fatta quella corrente. Sono due misure del *file*, e sapere
-  // che mancano due beat alla fine di una scena, o che si e' alla 41esima di
-  // 43, e' un anticipo su come andra' a finire che nessuno ha chiesto. Restano
-  // col debug, dove servono per sapere dove si e' mentre si collauda.
+  // A chi gioca la barra dice **dove si e'**, non a che punto della lista.
+  // Il titolo della scena e' un nome d'autore e appartiene alla storia; il suo
+  // numero e i passaggi che le restano sono misure del file, e sapere che si e'
+  // alla 41esima di 43 e' un anticipo su come andra' a finire che nessuno ha
+  // chiesto. Quelli restano col debug, dove servono per sapere dove si e'
+  // mentre si collauda.
+  //
+  // Una scena senza titolo non fa comparire l'id al suo posto: quello e' una
+  // chiave per cercare nel JSON, non un nome da leggere.
   const umano: string[] = [];
+  if (ui.scene?.title) umano.push(`Scena: ${ui.scene.title}`);
 
   const ir = [`IR ${story.ir_version}`, dove];
   if (ui.beatCorrente && ui.beatTotali) ir.push(`beat ${ui.beatCorrente}/${ui.beatTotali}`);

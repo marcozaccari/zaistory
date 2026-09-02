@@ -150,6 +150,15 @@ export interface Lente {
    * Col debug tornano, perche' li' anche la copertina e' un asset da decidere.
    */
   soloImmagine?: boolean;
+  /**
+   * Le righe si mostrano senza il nome del campo — fuori dal debug.
+   *
+   * Serve dove la riga e' una sola e il campo si capisce da cio' che si sta
+   * guardando: un oggetto tirato fuori dallo zaino ha una descrizione e basta,
+   * e premetterle «aspetto» e' etichettare l'unica cosa in pagina. Col debug
+   * il nome torna, perche' li' e' il campo dell'IR che si sta ispezionando.
+   */
+  senzaEtichette?: boolean;
 }
 
 /**
@@ -189,6 +198,7 @@ export function apriGrande(lente: Lente): void {
   // La scelta la fa il CSS, non questo codice: accendere il debug mentre la
   // lente e' aperta deve bastare a far comparire il testo, senza riaprirla.
   popup.root.classList.toggle('nuda', !!lente.soloImmagine);
+  popup.root.classList.toggle('senza-etichette', !!lente.senzaEtichette);
   popup.root.hidden = false;
   document.body.classList.add('con-lightbox');
   popup.root.querySelector<HTMLElement>('.lightbox-close')?.focus({ preventScroll: true });
@@ -277,7 +287,13 @@ export class Immagini {
     img.setAttribute('role', 'button');
     img.title = 'guardala a schermo intero';
     const guarda = () =>
-      apriGrande({ src, titolo: opzioni.titolo, righe: opzioni.righe, soloImmagine: opzioni.soloImmagine });
+      apriGrande({
+        src,
+        titolo: opzioni.titolo,
+        righe: opzioni.righe,
+        soloImmagine: opzioni.soloImmagine,
+        senzaEtichette: opzioni.senzaEtichette,
+      });
     img.onclick = guarda;
     img.onkeydown = (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -320,4 +336,7 @@ export interface OpzioniFigura {
   /** A schermo intero, fuori dal debug, non si mostra altro che l'immagine.
    * Vedi `Lente.soloImmagine`: e' la locandina, e nient'altro. */
   soloImmagine?: boolean;
+  /** A schermo intero, fuori dal debug, i prompt si leggono senza il nome del
+   * campo. Vedi `Lente.senzaEtichette`. */
+  senzaEtichette?: boolean;
 }

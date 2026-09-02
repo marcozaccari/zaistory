@@ -95,6 +95,7 @@ export function nomeCampo(campo: string): string {
   const noto = NOMI[campo];
   if (noto) return noto;
   if (/^places\..+\.visual_prompt$/.test(campo)) return 'aspetto del luogo';
+  if (/^items\..+\.visual_prompt$/.test(campo)) return 'aspetto';
   if (/^characters\./.test(campo)) return 'personaggio';
   if (/^places\./.test(campo)) return 'luogo';
   return campo;

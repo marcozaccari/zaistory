@@ -2350,6 +2350,14 @@ body:not(.debug) .lightbox.nuda .lightbox-cap {
   display: none;
 }
 
+/* Una riga sola, e il campo si capisce da cio' che si sta guardando: il nome
+   del campo davanti alla descrizione di un oggetto e' un'etichetta appiccicata
+   all'unica cosa in pagina. Col debug torna, perche' li' quel nome e' proprio
+   cio' che si sta ispezionando. */
+body:not(.debug) .lightbox.senza-etichette .lightbox-cap .label {
+  display: none;
+}
+
 /* E il velo diventa opaco. Il resto delle lenti lascia intravedere la pagina
    sotto — e' un modo di ricordare che la storia e' ancora li' — ma sotto una
    locandina la pagina e' il titolo e la descrizione, cioe' testo che traspare
