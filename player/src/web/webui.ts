@@ -446,12 +446,17 @@ export class WebUI implements PlayerUI {
     cover.append(this.slotPrompt);
     this.rileggiCopertina();
 
-    const dl = el('dl', 'kv');
-    const meta = (k: string, v?: string | Doppio, soloDebug = false) => {
+    // Le note di compilazione — versione dell'IR, compilatore, id, lingua,
+    // quante scene, da dove parte — sono l'identita' del *file*, non della
+    // storia: servono a chi riapre un IR che non ha compilato adesso, e a chi
+    // gioca dicono soltanto che sta guardando dentro una macchina. Stanno nel
+    // documento e compaiono col debug, come tutta l'altra diagnostica.
+    const dl = el('dl', 'kv only-debug');
+    const meta = (k: string, v?: string | Doppio) => {
       if (!v) return;
-      const dt = el('dt', soloDebug ? 'only-debug' : undefined);
+      const dt = el('dt');
       dt.append(el('span', 'umano', nomeCampo(k)), el('span', 'ir', k));
-      const dd = el('dd', soloDebug ? 'only-debug' : undefined);
+      const dd = el('dd');
       dd.append(valore(v));
       dl.append(dt, dd);
     };
@@ -465,17 +470,11 @@ export class WebUI implements PlayerUI {
     }
     meta('id', st.id);
     meta('language', st.language);
-    // Quante scene ha la storia e' una misura del file, non della storia: a chi
-    // gioca dice solo quanto manca alla fine, che e' un anticipo che nessuno ha
-    // chiesto — la stessa ragione per cui non sta piu' nemmeno in barra.
-    meta('scenes', `${st.scenes.length}`, true);
+    meta('scenes', `${st.scenes.length}`);
     // La prima scena si chiama col suo titolo: l'id dice dove trovarla nel
-    // JSON, e quello e' un servizio per chi ispeziona. Ed e' un servizio per
-    // chi ispeziona anche il resto: a chi gioca, sapere da quale scena si parte
-    // un istante prima di partirci non dice niente che il tocco su «inizia» non
-    // stia per dire meglio.
+    // JSON, e quello e' un servizio per chi ispeziona.
     const prima = st.scenes.find((s) => s.id === st.start_scene);
-    meta('start_scene', doppio(prima?.title || st.start_scene, st.start_scene), true);
+    meta('start_scene', doppio(prima?.title || st.start_scene, st.start_scene));
     cover.append(dl);
 
     const g = st.global_style;

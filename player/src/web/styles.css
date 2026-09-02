@@ -920,35 +920,6 @@ body.debug .dock .piega.solo-debug {
   gap: 8px;
 }
 
-/* Contenuti che stanno nel documento ma si guardano solo ispezionando. A
-   differenza di `.dbg` non hanno un aspetto proprio: sono normali, solo
-   nascosti. */
-.only-debug {
-  display: none;
-}
-
-body.debug .only-debug {
-  display: grid;
-  gap: 10px;
-}
-
-/* Dentro una `<dl>` la griglia e' quella della lista: una riga che si
-   ridichiara `display: grid` esce dalle sue due colonne e si mette per conto
-   suo. */
-body.debug .kv > dt.only-debug {
-  display: block;
-}
-
-body.debug .kv > dd.only-debug {
-  display: block;
-}
-
-/* I campi visivi nel registro: stessa spaziatura degli altri prompt appesi a
-   un beat, non quella dei blocchi di copertina. */
-body.debug .assets.only-debug {
-  gap: 6px;
-}
-
 /* ------------------------------------------------------------------ dock */
 
 .dock {
@@ -2431,3 +2402,37 @@ body:not(.debug) .lightbox.nuda .lightbox-img {
 
 /* Un'immagine dichiarata nell'IR e non arrivata: si dice, come ogni altro
    buco. Il player non mette segnaposto muti. */
+
+/* ------------------------------------------------ cio' che accende il debug
+
+   `.only-debug` marca cio' che sta nel documento ma si guarda solo
+   ispezionando. A differenza di `.dbg` non ha un aspetto proprio: e' normale,
+   solo nascosto.
+
+   **Sta in fondo al foglio, e deve restarci.** E' un interruttore di
+   visibilita', e a parita' di specificita' vince l'ultima regola scritta: a
+   meta' pagina, qualunque `display` dichiarato piu' sotto lo scavalca senza
+   dirlo. E' successo con `.kv`, che si ridichiara `grid` quattrocento righe
+   dopo e riaccendeva le note di compilazione a chi gioca. Ultimo, non lo
+   scavalca nessuno. */
+
+.only-debug {
+  display: none;
+}
+
+body.debug .only-debug {
+  display: grid;
+  gap: 10px;
+}
+
+/* I campi visivi nel registro: stessa spaziatura degli altri prompt appesi a
+   un beat, non quella dei blocchi di copertina. */
+body.debug .assets.only-debug {
+  gap: 6px;
+}
+
+/* Una `<dl>` ripiegata resta una `<dl>`: torna a `grid`, ma con la spaziatura
+   sua e non con quella dei blocchi. */
+body.debug .kv.only-debug {
+  gap: 2px 10px;
+}
