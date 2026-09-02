@@ -299,12 +299,21 @@ export class Palco {
    */
   private disegnaRiga(inq: Inquadratura): void {
     const righe: PromptRow[] = [
-      ['scene_tone', inq.tono, 'none'],
       ['place', inq.luogo ? doppio(inq.luogo.nome, `${inq.luogo.id} — ${inq.luogo.nome}`) : undefined, 'none'],
       ['characters_in_frame', this.nomiInCampo(inq.inCampo), 'none'],
     ];
 
     this.riga.replaceChildren();
+    // Il tono per primo e con una classe sua. Non e' un campo come gli altri e
+    // non si legge come un campo: fuori dal debug perde il nome «tono» e prende
+    // la maiuscola, cioe' torna a essere la frase che l'autore ha scritto —
+    // «Silenzio tra tre persone che si conoscono da troppo tempo». Etichettarla
+    // la fa sembrare un dato, ed e' l'unica riga del palco che dato non e'.
+    if (inq.tono) {
+      const tono = promptRow(['scene_tone', inq.tono, 'none']);
+      tono.classList.add('tono');
+      this.riga.append(tono);
+    }
     for (const r of righe) {
       if (r[1]) this.riga.append(promptRow(r as [string, string, PromptRow[2], boolean?]));
     }

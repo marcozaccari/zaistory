@@ -1912,6 +1912,19 @@ body.palco-ridotto .volto .nome {
   overflow-y: auto;
 }
 
+/* Fuori dal debug il tono si legge come una frase e non come un campo: niente
+   nome davanti, e la maiuscola all'inizio. E' l'unica riga del palco che non e'
+   un dato ma prosa d'autore — la chiave con cui si legge tutto quello che
+   scorre sotto — e presentarla etichettata la fa sembrare un parametro. Col
+   debug il nome torna, come per ogni altro campo dell'IR. */
+body:not(.debug) .palco-riga .tono .label {
+  display: none;
+}
+
+body:not(.debug) .palco-riga .tono::first-letter {
+  text-transform: uppercase;
+}
+
 /* --- La tela senza immagine ----------------------------------------------- */
 
 /* Solo testo: al posto della figura ci sono i prompt che la produrranno. Non
