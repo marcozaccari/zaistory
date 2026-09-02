@@ -63,17 +63,26 @@
   --voce-look: #c4bfb3;
   --voce-player: #7d8593;
   --voce-macchina: #828b9b;
-  --voce-barra: #b7b2a7;
 
-  /* Il tono: un oro spento, appena piu' chiaro della prosa — 9,5:1 contro 8:1.
-     E' l'unica riga della pagina che vada letta *prima* delle altre, ed e' la
-     chiave con cui si legge tutto il resto; il margine e' sottile apposta,
-     perche' in una striscia di coordinate grigie basta poco a farla vincere e
-     un giallo pieno la faceva gridare sopra la scena che deve solo introdurre.
+  /* Dove si e' e com'e': il nome della scena che separa il transcript e il tono
+     sotto l'inquadratura. Si chiamava `--voce-barra` finche' la riga in barra
+     era la sua terza occorrenza; adesso quella e' passata all'oro e il nome
+     dice il ruolo che resta. Un grigio caldo, della famiglia della prosa e non
+     di quella della macchina: le scrive l'autore, non il compilatore. */
+  --voce-scena: #b7b2a7;
+
+  /* L'oro della storia: un oro spento, appena piu' chiaro della prosa — 9,5:1
+     contro 8:1. Segna cio' che appartiene al racconto e non alla macchina che
+     lo serve, che e' la meta' calda della regola dei due colori: il nome della
+     scena in barra, i filetti della prosa d'autore, il nome di una faccia
+     aperta, gli oggetti che si hanno in mano.
      Piu' giallo e meno saturo di `--amber`, che qui e' il colore degli avvisi
-     del linter e di un'immagine che manca: una chiave di lettura non deve
-     leggersi come un'avvertenza. */
-  --voce-tono: #d1b86a;
+     del linter e di un'immagine che manca: cio' che e' della storia non deve
+     leggersi come un'avvertenza.
+     Si chiamava `--voce-tono` perche' il tono della scena era il primo posto
+     dove comparve; adesso quello sta nel grigio caldo qui sopra e il nome dice
+     la regola invece del primo caso. */
+  --voce-storia: #d1b86a;
 
   /* Lo stesso oro, spento: i nomi d'autore che il player scrive — chi parla,
      chi c'e' in campo, cosa si ha in mano. Sotto la prosa, e va bene cosi': un
@@ -747,7 +756,7 @@ body:not(.debug) .via {
   font-size: 13px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--voce-barra);
+  color: var(--voce-scena);
 }
 
 /* Titolo e id restano insieme e vanno a capo insieme; la pastiglia del tipo
@@ -917,9 +926,13 @@ body.debug .umano {
 
 /* In barra il pezzo umano e' il nome della scena: dove si e'. Non e' un dato
    sul file come quello che gli sta accanto col debug acceso, ed e' l'unica
-   riga della barra che appartenga alla storia. */
+   riga della barra che appartenga alla storia — e per la regola dei due colori
+   quello che appartiene alla storia va in oro. Sotto un titolo bianco e in
+   mezzo a dei bottoni grigi era l'unica cosa della testata a non avere un
+   colore suo, e si leggeva come una didascalia del titolo invece che come
+   l'informazione. */
 .topbar .titles span .umano {
-  color: var(--voce-barra);
+  color: var(--voce-storia);
 }
 
 .prompt .label .umano {
@@ -2047,7 +2060,7 @@ body.palco-ridotto .volto .nome {
    virare all'azzurro dei bottoni come faceva prima. */
 .volto:hover .nome,
 .volto:focus-visible .nome {
-  color: var(--voce-tono);
+  color: var(--voce-storia);
 }
 
 /* --- La riga delle coordinate --------------------------------------------- */
@@ -2087,9 +2100,13 @@ body.palco-ridotto .volto .nome {
    debug il nome torna, come per ogni altro campo dell'IR. */
 /* Il tono e' l'unica riga del palco che sia prosa d'autore, e ha una voce sua:
    sta in mezzo a dei campi ma non e' un campo, ed e' la chiave con cui si legge
-   tutto quello che scorre sotto. */
+   tutto quello che scorre sotto. Il grigio caldo la tiene dalla parte di chi
+   scrive — le coordinate accanto stanno nel grigio freddo della macchina — e
+   il carattere della prosa e il corsivo dicono il resto. L'oro se n'e' andato
+   in barra: due ori a mezzo schermo di distanza, uno sopra l'altro, si
+   contendevano lo stesso primo sguardo. */
 .palco-riga .tono {
-  color: var(--voce-tono);
+  color: var(--voce-scena);
 }
 
 body:not(.debug) .palco-riga .tono .label {
@@ -2749,12 +2766,12 @@ body[data-font="macchina"] .entry.line:not(.didascalia) {
 .entry.narration,
 .entry.beat {
   padding-left: 14px;
-  border-left: 2px solid color-mix(in srgb, var(--voce-tono) 30%, transparent);
+  border-left: 2px solid color-mix(in srgb, var(--voce-storia) 30%, transparent);
 }
 
 .entry.look {
   padding-left: 14px;
-  border-left: 2px dotted color-mix(in srgb, var(--voce-tono) 30%, transparent);
+  border-left: 2px dotted color-mix(in srgb, var(--voce-storia) 30%, transparent);
 }
 
 /* --- L'azzurro e' l'interfaccia, il giallo e' la storia --------------------
@@ -2813,5 +2830,5 @@ body[data-font="macchina"] .entry.line:not(.didascalia) {
    `description` prende lo stesso giallo pur non essendo toccabile: e' lo stesso
    oggetto, e a distinguerli basta il bordo spento. */
 .chips.inventario .chip {
-  color: var(--voce-tono);
+  color: var(--voce-storia);
 }
