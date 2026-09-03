@@ -97,7 +97,10 @@ Ordine della ricostruzione (in `ARCHITECTURE.md`, «Stato del lavoro»):
    **mappa** è la mappa dell'atto: solo i suoi luoghi, mai quelli degli altri —
    l'uscita che cambia atto resta percorribile ma non è una destinazione da
    mappa — con le chiuse e le irraggiungibili sotto il debug e le visitate che
-   non si rivisitano sempre visibili, spente, sotto un filo. 45 test.
+   non si rivisitano sempre visibili, spente, sotto un filo. E **«ascoltare» su
+   una persona è parlarle**: sta in due famiglie da sempre, ma a sceglierne una
+   è il complemento — e il complemento lo guarda il turno, che è l'unico a
+   sapere chi c'è in scena; su una cosa resta percezione. 48 test.
 4. ~~**il modulo assets**~~ — fatto: estrazione sulla nuova gerarchia (oggetti
    d'ambiente e cutscene di passaggio compresi), studio, pubblicazione,
    **`rebind.py`**, gli script di avvio e i tre selftest, che ora girano sulla

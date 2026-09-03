@@ -63,6 +63,17 @@ export interface ParseInput {
    * verrebbe mai letta — ma a **spareggiare**: vedi `open` più sotto.
    */
   ok?: (c?: import('./types.js').Condition) => boolean;
+  /**
+   * Quale famiglia intendeva il verbo, quando ne ha più d'una.
+   *
+   * **Ascoltare** è percezione se l'oggetto è un rumore e comunicazione se è
+   * una persona: «ascolto il motore» e «ascolto Tommy» sono lo stesso verbo e
+   * due gesti diversi, e a deciderlo non è il verbo ma il complemento. Il
+   * parser il complemento lo pesa, ma non sa **chi c'è in scena** — quello lo
+   * sa il turno, che infatti è chi passa questo suggerimento. Vale solo per
+   * scegliere fra le famiglie che il verbo ha davvero: non ne aggiunge una.
+   */
+  intentHint?: Intent;
 }
 
 /** Le superfici lessicali di un'entità qualunque, cercata per id fra oggetti
@@ -85,11 +96,19 @@ export function parse(input: ParseInput): Resolution {
   const ok = input.ok ?? (() => true);
   const all = roots(phrase);
   const verbi = findVerbs(all);
-  const intents = new Set<Intent>(verbi.map((v) => v.intent));
+  let intents = new Set<Intent>(verbi.map((v) => v.intent));
   // L'intenzione con cui si risponde quando non si capisce è la prima: è il
   // verbo con cui il giocatore ha aperto la frase, ed è quello che il rifiuto
   // d'autore deve raccogliere.
-  const intent: Intent = verbi[0]?.intent ?? 'generic';
+  let intent: Intent = verbi[0]?.intent ?? 'generic';
+  // Il complemento ha già deciso quale delle famiglie del verbo sia quella
+  // giusta: le altre non sono più in gioco. Senza restringere non basterebbe —
+  // dove esistono due azioni sullo stesso personaggio, una da guardare e una da
+  // sentire, resterebbero pari e la frase finirebbe in un «non ho capito».
+  if (input.intentHint && intents.has(input.intentHint)) {
+    intents = new Set<Intent>([input.intentHint]);
+    intent = input.intentHint;
+  }
 
   // Il complemento è la frase meno TUTTI i verbi. Toglierli evita che un verbo
   // faccia punteggio contro il nome di un'entità che gli somiglia.

@@ -65,7 +65,7 @@ import {
   visibleProps,
 } from './engine.js';
 import { bestAffinity, roots } from './lexical.js';
-import { classifyIntent, isEarlyQuestion, systemQuestion } from './verbs.js';
+import { classifyIntent, findVerbs, isEarlyQuestion, systemQuestion } from './verbs.js';
 import { parse, type Resolution } from './parser.js';
 
 /** Quanto deve somigliare la frase al nome di una cosa che è qui perché la
@@ -283,12 +283,17 @@ export class Session {
 
     const pl = currentPlace(this.idx, this.state);
     const ph = currentPhase(pl, this.state);
+    // «Ascolto Tommy» è parlargli, «ascolto il motore» è tendere l'orecchio: a
+    // deciderlo è il complemento, e chi sa se il complemento è una persona che
+    // è qui è il turno, non il parser.
+    const aPersona = this.rivoltoAPersona(phrase);
     const res = parse({
       idx: this.idx,
       phrase,
       actions: candidateActions(this.idx, pl, ph, this.state),
       exits: knownExits(pl, this.state),
       ok: this.state.ok,
+      intentHint: aPersona ? 'communication' : undefined,
     });
 
     if (res.kind === 'action') {
@@ -305,9 +310,13 @@ export class Session {
       return this.flush();
     }
 
-    if (this.answerNamedEntity(phrase)) return this.flush();
+    // Rivolgersi a qualcuno non è guardarlo: se nessuna azione risponde, la
+    // risposta è il rifiuto per intenzione — «le parole restano in gola» — e
+    // non la descrizione di com'è fatto in faccia, che è quello che si legge
+    // quando lo si guarda.
+    if (!aPersona && this.answerNamedEntity(phrase)) return this.flush();
 
-    this.fallback(res.kind === 'ambiguous' ? res.intent : res.intent);
+    this.fallback(res.intent);
     const muto = this.flush();
     muto.noMatch = true;
     return muto;
@@ -334,9 +343,20 @@ export class Session {
     if (q && isEarlyQuestion(q)) return 'sistema';
 
     const { actions, exits } = this.candidates();
-    const res = parse({ idx: this.idx, phrase: text, actions, exits, ok: this.state.ok });
+    // Le stesse regole di `input`, o la previsione direbbe una cosa e il turno
+    // ne farebbe un'altra.
+    const aPersona = this.rivoltoAPersona(text);
+    const res = parse({
+      idx: this.idx,
+      phrase: text,
+      actions,
+      exits,
+      ok: this.state.ok,
+      intentHint: aPersona ? 'communication' : undefined,
+    });
     if (res.kind === 'action' || res.kind === 'exit') return 'risolta';
     if (q) return 'sistema';
+    if (aPersona) return 'muto';
     return this.findNamedEntity(text) ? 'nominata' : 'muto';
   }
 
@@ -676,6 +696,26 @@ export class Session {
       about: { kind: found.kind, id: found.entity.id },
     });
     return true;
+  }
+
+  /**
+   * La frase è rivolta a una persona con un verbo che potrebbe non esserlo?
+   *
+   * **Ascoltare** e **sentire** stanno in due famiglie: si ascolta un rumore e
+   * si ascolta qualcuno, e sono due gesti diversi con la stessa parola. Il
+   * vocabolario le tiene tutte e due perché a distinguerle non è il verbo — è
+   * il complemento, e il complemento si guarda qui, dove si sa chi c'è in
+   * scena. Con una persona davanti vince il parlare: «ascolto Tommy» è quello
+   * che uno scrive quando vuole sentire cosa ha da dire, non quando vuole
+   * sapere che faccia ha.
+   *
+   * Un verbo che sta in una famiglia sola non passa di qui: «guardo Tommy»
+   * resta guardare anche se Tommy è lì che parla.
+   */
+  private rivoltoAPersona(phrase: string): boolean {
+    const famiglie = new Set(findVerbs(roots(phrase)).map((v) => v.intent));
+    if (!famiglie.has('perception') || !famiglie.has('communication')) return false;
+    return this.findNamedEntity(phrase)?.kind === 'character';
   }
 
   /** La cosa che è qui e che la frase nomina, se ce n'è una. Separata da

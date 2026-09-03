@@ -63,6 +63,8 @@ Regole:
 
 - se c'è più di un complemento oggetto viene considerato solo il primo.
 
+- i verbi di **percezione acustica** (ascolta, senti, origlia, presta orecchio) stanno qui solo finché il complemento non è un personaggio: con una persona diventano "parla". Vedi la regola nell'azione Parla.
+
 Hint: generando descrizioni anche di oggetti non interagibili migliora la giocabilità; più dettagli ambientali osservabili aumenta l'immersività.
 
 #### Azione Usa (manipolazione)
@@ -86,6 +88,8 @@ Regole:
 - può essere usato come verbo singolo solo se c'è un solo dialogo in scena o soltanto un personaggio con cui parlare.
 
 - se c'è più di un complemento oggetto viene considerato solo il primo.
+
+- **il complemento decide, non il verbo** — la stessa regola di "vai". I verbi di **percezione acustica** (ascolta, senti, origlia, presta orecchio) sono comunicazione quando il complemento è un personaggio in scena, e percezione quando è un luogo o un oggetto: "ascolto Tommy" è rivolgersi a lui, "ascolto il motore" è tendere l'orecchio. Ne segue che se lì non c'è niente da dirsi la risposta è il fallback di comunicazione, non la descrizione del personaggio: rivolgersi a qualcuno non è guardarlo.
 
 #### Azione Vai (movimento)
 

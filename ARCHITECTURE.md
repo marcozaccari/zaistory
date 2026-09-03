@@ -985,6 +985,18 @@ viene interpellato.
    `colpisc` sta a `colp` come `corridoi` sta a `corr` — ma **cosa avanza**: da
    un verbo avanza un pezzo di coniugazione, da un sostantivo avanza il resto
    della parola.
+
+   E una terza, che viene dalle specifiche e non dal lessico: **ascoltare una
+   persona è parlarle.** I verbi di percezione acustica stanno in due famiglie,
+   e a sceglierne una è il complemento (`SPECS.md`, azione Parla). Il parser il
+   complemento lo pesa ma non sa chi c'è in scena, quindi la scelta non può
+   farla lui: gliela passa il turno, come suggerimento, e il parser la usa per
+   **restringere** le famiglie del verbo a quella — mai per aggiungerne una che
+   il verbo non ha. Senza restringere non basterebbe: dove un personaggio ha
+   due azioni, una da guardare e una da sentire, resterebbero pari e la frase
+   finirebbe in un «non ho capito». Nello stesso caso salta anche il passo
+   della cosa nominata: se nessuna azione risponde, la risposta è il rifiuto
+   per intenzione e non la descrizione di com'è fatto in faccia.
 2. **ibrido** — lessicale + vettori, con i vettori solo dove il lessicale tace.
    **È la modalità con cui si gioca** quando i vettori si vogliono.
 3. **vettori** — solo vettori, nessun lessicale. Non è una modalità di gioco:

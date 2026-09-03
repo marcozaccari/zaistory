@@ -509,3 +509,29 @@ test('aprire un dialogo lo segna come ascoltato', () => {
   s.input("parlo con l'oste");
   assert.equal(s.state.dialogueSeen(dialogueKey(pl, ph, 'd_start')), true);
 });
+
+/**
+ * «Ascoltare» sta in due famiglie, e a sceglierne una è il complemento.
+ *
+ * Su una persona è parlare: «ascolto Tommy» è quello che si scrive per sentire
+ * cosa ha da dire, non per sapere che faccia ha. Su tutto il resto resta
+ * percezione — «ascolto il motore» è tendere l'orecchio.
+ */
+test('«ascolto» rivolto a una persona è parlarle', () => {
+  const s = fresh();
+  assert.equal(s.preview("ascolto l'oste"), 'risolta');
+  const r = s.input("ascolto l'oste");
+  assert.ok(r.choices?.length, 'doveva aprirsi il dialogo con l’oste');
+});
+
+test('«ascolto» su una cosa resta percezione', () => {
+  const s = fresh();
+  const r = s.input('ascolto il bancone');
+  assert.match(texts(r), /bicchieri/, 'doveva rispondere l’azione che guarda il bancone');
+});
+
+test('guardare una persona resta guardarla', () => {
+  const s = fresh();
+  const r = s.input("guardo l'oste");
+  assert.equal(r.choices, undefined, 'guardare qualcuno non apre un dialogo');
+});
