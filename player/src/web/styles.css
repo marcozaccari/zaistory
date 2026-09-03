@@ -1208,6 +1208,25 @@ body.debug .dock .piega.solo-debug {
   display: flex;
   gap: 8px;
   align-items: stretch;
+  /* Senza, su telefono l'ultimo cassetto finiva fuori dallo schermo a destra.
+     La riga e' una cella di griglia, e una cella nasce con `min-width: auto`:
+     non scende sotto il proprio contenuto minimo, e il contenuto minimo di un
+     `<input>` e' la sua larghezza intrinseca — venti caratteri buoni, che il
+     `min-width: 0` del campo non tocca. La cella si allargava oltre la colonna
+     e i bottoni uscivano con lei; azzerandolo, a stringersi torna a essere il
+     campo, che e' l'unica cosa in quella riga che possa permetterselo. */
+  min-width: 0;
+}
+
+/* Campo e invio, attaccati: sono la stessa cosa in due pezzi — quello che si
+   scrive e il gesto che lo manda — e fra loro non ci va lo stesso spazio che li
+   divide dai cassetti. Una scatola sola che si stringe per prima quando lo
+   schermo e' stretto. */
+.riga-input .campo-invia {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
 }
 
 .riga-input .campo {
@@ -1215,7 +1234,8 @@ body.debug .dock .piega.solo-debug {
   min-width: 0;
   padding: 13px 14px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius) 0 0 var(--radius);
+  border-right: 0;
   background: var(--bg-soft);
   color: var(--fg);
   /* 16px o piu': sotto questa soglia iOS ingrandisce la pagina appena il
@@ -1239,22 +1259,34 @@ body.debug .dock .piega.solo-debug {
   outline: none;
 }
 
-/* Il segno, non il bersaglio: il bottone era gia' alto quanto il campo — cioe'
-   della misura giusta — ed e' il triangolino dentro a essere piccolo. Cresce
-   lui e basta, l'ingombro resta quello di prima: l'altezza gliela da' il campo
-   accanto (`align-items: stretch`), e `line-height: 0` impedisce al carattere
-   di reclamarne di piu'. */
+/* Il segno, non il bersaglio: il bottone e' alto quanto il campo — cioe' della
+   misura giusta — ed e' il segno dentro a dover essere leggibile. L'altezza
+   gliela da' il campo accanto (`align-items: stretch`), e `line-height: 0`
+   impedisce al carattere di reclamarne di piu'. */
 .riga-input .invia {
   flex: 0 0 auto;
   display: grid;
   place-items: center;
   padding: 0 14px;
   border: 1px solid var(--accent);
-  border-radius: var(--radius);
+  border-radius: 0 var(--radius) var(--radius) 0;
   background: var(--accent);
   color: var(--bg);
   font-size: 32px;
   line-height: 0;
+}
+
+/* Il segno d'invio si misura in pixel e non in `em` come gli altri: gli altri
+   accompagnano un'etichetta e devono restare della taglia di quel testo, qui
+   accanto non c'e' testo — c'e' un campo alto quaranta pixel, ed e' con quello
+   che il segno deve stare in proporzione. Il margine destro che l'`.icona`
+   porta con se' va tolto, o dentro un bottone centrato spinge tutto a
+   sinistra. */
+.riga-input .invia .icona {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  vertical-align: 0;
 }
 
 /* Schermo largo: il puntatore e' preciso e il bersaglio non deve essere grande.
@@ -1392,6 +1424,29 @@ body.debug .choice.solo-debug {
   border-radius: 10px;
   font-family: inherit;
   font-size: 13px;
+}
+
+/* La figura dell'oggetto dentro la sua pastiglia. Piccola e quadrata: e' un
+   segno per riconoscere la cosa in mezzo alle altre — le cose che si hanno in
+   mano si riconoscono prima da come sono fatte che da come si chiamano — non
+   una figura da guardare. Quella grande resta nel trascritto, dove la si tira
+   fuori per guardarla davvero. Il padding a sinistra si stringe: l'immagine ha
+   gia' un bordo suo, e il respiro della pastiglia intorno la fa sembrare
+   staccata da quello che nomina. */
+.chips.inventario .chip.con-figura {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding-left: 6px;
+}
+
+.chips.inventario .chip .mini {
+  display: block;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  object-fit: cover;
+  background: var(--bg-soft);
 }
 
 .chip.oggetto:hover,
@@ -2470,6 +2525,14 @@ figcaption.ir {
   text-align: center;
 }
 
+/* Spenta: la copertina e' gia' quello che il menu sta coprendo. La figura
+   resta — dice comunque di che storia si tratta — ma non promette un tocco che
+   non porterebbe da nessuna parte. */
+.locandina-menu.spenta img {
+  cursor: default;
+  opacity: 0.45;
+}
+
 /* La stessa porta, dove la locandina non c'e': una storia senza immagini, o le
    immagini spente dalla barra. Squadrato e largo quanto la colonna come
    «ricomincia» che gli sta sotto — sono la stessa famiglia di cose che si
@@ -2487,6 +2550,16 @@ figcaption.ir {
 .btn.copertina:focus-visible {
   border-color: var(--accent);
   color: var(--fg);
+}
+
+.btn.copertina:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn.copertina:disabled:hover {
+  border-color: var(--line);
+  color: var(--fg-dim);
 }
 
 .locandina-menu .manca {

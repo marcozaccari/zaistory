@@ -313,9 +313,10 @@ export class Transcript {
    *
    * Il momento in cui serve è esattamente questo: quando si tira fuori la cosa
    * dallo zaino — o ci si avvicina a quella che sta nella stanza — per
-   * guardarla. Nell'elenco delle chip no: lì l'oggetto è una voce di menu, e
-   * dieci miniature in fila sono un inventario da gioco di ruolo, non la
-   * risposta a «cosa ho in mano».
+   * guardarla. Nel cassetto dell'inventario la stessa figura c'è, ma in
+   * miniatura dentro la pastiglia: lì serve a **riconoscere** l'oggetto in
+   * mezzo agli altri, qui a guardarlo. Sono due mestieri diversi, ed è per
+   * questo che le misure sono diverse.
    *
    * I **personaggi** non passano di qui: la loro faccia sta sul palco, dove
    * risponde alla domanda per tutta la scena invece che una volta sola nella

@@ -71,9 +71,16 @@ Ordine della ricostruzione (in `ARCHITECTURE.md`, «Stato del lavoro»):
    flusso col nome di chi la dice, l'invio sul «continua» ed Esc sui cassetti, e
    la traccia che scarta i tentativi a vuoto e nomina le battute; e la porta
    per la **copertina** in cima al menu — la locandina in miniatura dove c'è,
-   un bottone dove no — che rimette la stessa schermata col bottone che dice
-   «torna a giocare», mettendo da parte trascritto e dock interi e
-   rimettendoli dov'erano. 43 test.
+   un bottone dove no, spenta finché la copertina è quella che si sta già
+   guardando — che rimette la stessa schermata col bottone che dice «torna a
+   giocare», mettendo da parte trascritto e dock interi e rimettendoli
+   dov'erano; e con una partita salvata la copertina d'apertura dice «continua
+   a giocare», perché ricaricare non la butta via. Infine il dock: **campo e
+   invio attaccati** in un pezzo solo, i due cassetti staccati, e la riga che
+   su telefono verticale non esce più a destra (era una cella di griglia che
+   non scendeva sotto la larghezza intrinseca dell'`input`); nel cassetto degli
+   oggetti la **miniatura** accanto al nome, e in quello della mappa il titolo
+   «luoghi». 43 test.
 4. ~~**il modulo assets**~~ — fatto: estrazione sulla nuova gerarchia (oggetti
    d'ambiente e cutscene di passaggio compresi), studio, pubblicazione,
    **`rebind.py`**, gli script di avvio e i tre selftest, che ora girano sulla

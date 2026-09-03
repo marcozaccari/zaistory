@@ -48,6 +48,12 @@ const SEGNI: Record<string, string[]> = {
   // distinguerlo da una scatola alla taglia di un bottone, e la riga della
   // tasca a distinguerlo da una borsa.
   bag: ['M6 9h12v11H6z', 'M9 9V6.5a3 3 0 016 0V9', 'M9 14h6'],
+  // La freccia di ritorno a capo: manda quello che si e' scritto. E' il segno
+  // stampato sul tasto che fa la stessa cosa, ed e' l'unica ragione per cui
+  // sta qui — il triangolo di prima diceva «vai avanti», che e' quello che
+  // dicono anche «inizia» e «continua», e sotto il campo la domanda non e'
+  // dove si va ma cosa succede alla frase che si e' scritta.
+  enter: ['M20 6v6a2 2 0 01-2 2H6', 'M9.5 10.5L6 14l3.5 3.5'],
   // Tre cursori: lo stile globale, cioe' le regolazioni che valgono ovunque.
   style: ['M4 7h10', 'M18 7h2', 'M4 17h4', 'M12 17h8', 'M16 5v4', 'M8 15v4'],
   // Una A con la sua traversa e la riga di base: il carattere. E' l'unico segno

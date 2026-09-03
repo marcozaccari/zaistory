@@ -248,7 +248,13 @@ class Game {
     this.transcript.cover();
 
     clear(this.dock);
-    const go = this.bottone('inizia', 'choice continue start');
+    // Ricaricare non butta via la partita, e il bottone lo deve dire: con una
+    // partita salvata premerlo la rigioca fino al punto in cui si era. «Inizia»
+    // prometterebbe di ricominciare da capo — l'unica cosa che qui non succede
+    // — e chi ha appena ricaricato per sbaglio non ha modo di sapere, prima di
+    // premerlo, che quello che ha fatto finora è ancora lì.
+    const ripresa = !!localStorage.getItem(this.key);
+    const go = this.bottone(ripresa ? 'continua a giocare' : 'inizia', 'choice continue start');
     go.addEventListener('click', () => {
       void (async () => {
         await premi(go);
@@ -282,22 +288,35 @@ class Game {
    * dalla barra — resta un bottone. La copertina esiste comunque, ed è il posto
    * in cui sta scritto di cosa parla la storia: senza porta ci si arriverebbe
    * solo ricaricando la pagina.
+   *
+   * **Se la copertina è già lì la porta è spenta**, e non è una sottigliezza:
+   * quello che il menu copre in quel momento è proprio la copertina. Prima di
+   * «inizia» premerla avrebbe scambiato quel bottone con «torna a giocare» per
+   * rimetterlo subito dopo; a partita in corso avrebbe rimesso in scena quello
+   * che c'era già.
    */
   private portaCopertina(): HTMLElement {
     const st = this.session.idx.story;
-    const id = st.cover?.image;
-    return this.miniaturaCopertina(id) ?? this.bottoneCopertina();
+    const viva = !this.inCopertina;
+    return this.miniaturaCopertina(st.cover?.image, viva) ?? this.bottoneCopertina(viva);
   }
 
-  private bottoneCopertina(): HTMLButtonElement {
+  /** La copertina è quello che si sta guardando adesso: quella d'apertura,
+   * prima di «inizia», o quella rivista a partita cominciata. */
+  private get inCopertina(): boolean {
+    return !this.iniziata || this.transcript.sospeso;
+  }
+
+  private bottoneCopertina(viva = true): HTMLButtonElement {
     const b = el('button', 'btn copertina', 'rivedi la copertina');
     b.type = 'button';
-    b.onclick = () => void premi(b).then(() => this.rivediCopertina());
+    b.disabled = !viva;
+    if (viva) b.onclick = () => void premi(b).then(() => this.rivediCopertina());
     return b;
   }
 
   /** La miniatura, quando c'è un'immagine da metterci. */
-  private miniaturaCopertina(id: string | undefined): HTMLElement | undefined {
+  private miniaturaCopertina(id: string | undefined, viva = true): HTMLElement | undefined {
     const st = this.session.idx.story;
     if (!id || !this.images.usable) return undefined;
 
@@ -305,27 +324,34 @@ class Game {
     // Un id dichiarato e un file che non arriva sono due cose diverse: qui la
     // porta resta, in forma di bottone. Sparire lascerebbe la copertina
     // irraggiungibile per un asset che non è stato pubblicato.
-    const img = this.images.element(id, st.title, () => fig.replaceWith(this.bottoneCopertina()));
+    const img = this.images.element(id, st.title, () => fig.replaceWith(this.bottoneCopertina(viva)));
     if (!img) return undefined;
     // Non pigra, e non è un dettaglio: sotto di lei c'è «ricomincia», e
     // un'immagine che arriva un istante dopo l'apertura del menu lo fa scendere
     // sotto il dito che stava per premere altro. Il file è già in cache — la
     // copertina l'ha appena mostrato — quindi eager qui non scarica niente.
     img.loading = 'eager';
-    // Un bottone intorno a un'immagine i lettori di schermo lo annunciano due
-    // volte: resta un'immagine, e si comporta da comando. Stessa regola delle
-    // figure che aprono la lente.
-    img.tabIndex = 0;
-    img.setAttribute('role', 'button');
-    img.setAttribute('aria-label', 'rivedi la copertina');
-    img.title = 'rivedi la copertina';
-    img.onclick = () => this.rivediCopertina();
-    img.onkeydown = (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        this.rivediCopertina();
-      }
-    };
+    // Spenta non è nemmeno un comando: niente fuoco da tastiera, niente ruolo
+    // da annunciare, niente titolo che prometta qualcosa. Resta la figura, che
+    // dice comunque di che storia si tratta.
+    if (viva) {
+      // Un bottone intorno a un'immagine i lettori di schermo lo annunciano due
+      // volte: resta un'immagine, e si comporta da comando. Stessa regola delle
+      // figure che aprono la lente.
+      img.tabIndex = 0;
+      img.setAttribute('role', 'button');
+      img.setAttribute('aria-label', 'rivedi la copertina');
+      img.title = 'rivedi la copertina';
+      img.onclick = () => this.rivediCopertina();
+      img.onkeydown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.rivediCopertina();
+        }
+      };
+    } else {
+      fig.classList.add('spenta');
+    }
     fig.append(img, el('figcaption', 'ir', id));
     return fig;
   }
@@ -344,8 +370,12 @@ class Game {
    * stato in cui il dock può trovarsi, e quello è già scritto una volta.
    */
   private rivediCopertina(): void {
+    // La porta è già spenta dov'è inutile; qui si tiene comunque, perché
+    // «rimettere la copertina sopra la copertina» è la cosa che questo metodo
+    // non deve mai fare — la partita da parte la seconda volta sarebbe la
+    // copertina stessa, e il ritorno non troverebbe più niente.
+    if (this.inCopertina) return;
     this.panel.close();
-    if (this.transcript.sospeso) return;
 
     this.dockDaParte = { nodi: [...this.dock.childNodes], palco: this.stage.visible };
     this.transcript.sospendi();
@@ -644,17 +674,28 @@ class Game {
       }
     });
 
-    const send = el('button', 'invia', '▸');
+    // Il segno del tasto che fa la stessa cosa: chi scrive manda con invio, e
+    // il bottone è quell'invio per chi ha il pollice invece della tastiera.
+    const send = el('button', 'invia');
     send.type = 'submit';
     send.setAttribute('aria-label', 'esegui');
+    const segnoInvio = icona('enter');
+    if (segnoInvio) send.append(segnoInvio);
+    else send.append(document.createTextNode('▸'));
 
     // I due cassetti, accanto al campo: sono le scorciatoie che saltano la
     // digitazione — «vai» e «guarda quello che ho» — e per questo stanno qui e
     // non in barra, dove vivono le impostazioni.
     const zaino = this.bottoneCassetto('bag', 'cosa hai in mano', () => this.apriInventario());
-    const mappa = this.bottoneCassetto('map', 'dove andare', () => this.apriMappa());
+    const mappa = this.bottoneCassetto('map', 'i luoghi', () => this.apriMappa());
 
-    row.append(input, send, zaino, mappa);
+    // Campo e invio sono un pezzo solo, e stanno in una scatola loro: il
+    // triangolo esegue quello che c'è scritto accanto, i due cassetti no. Con
+    // tutti e quattro nella stessa fila e lo stesso spazio in mezzo, l'invio
+    // sembrava il primo di tre bottoni invece della fine della riga.
+    const campo = el('div', 'campo-invia');
+    campo.append(input, send);
+    row.append(campo, zaino, mappa);
     row.onsubmit = (e) => {
       e.preventDefault();
       const v = input.value.trim();
@@ -794,18 +835,31 @@ class Game {
         // Un oggetto senza descrizione non è toccabile: non c'è niente da
         // leggere e il player non lo inventa. Il linter intanto lo segnala, che
         // è il posto dove quel buco va risolto.
-        if (!it.description && !it.description_variants?.length) {
-          box.append(el('span', 'chip', displayName(it)));
-          continue;
+        const leggibile = !!(it.description || it.description_variants?.length);
+        const chip = leggibile ? el('button', 'chip oggetto') : el('span', 'chip');
+
+        // La figura dell'oggetto, dove esiste. Il nome resta e non si sposta:
+        // la miniatura è un aiuto a riconoscere la cosa in mezzo alle altre, e
+        // le cose che si hanno in mano si riconoscono prima da come sono fatte
+        // che da come si chiamano. L'`alt` è vuoto apposta — il nome è la riga
+        // accanto, e ripeterlo lo farebbe leggere due volte.
+        const mini = this.images.usable ? this.images.element(it.image, '') : undefined;
+        if (mini) {
+          mini.className = 'mini';
+          chip.classList.add('con-figura');
+          chip.append(mini);
         }
-        const b = el('button', 'chip oggetto', displayName(it));
-        b.type = 'button';
-        b.onclick = async () => {
-          await premi(b);
-          this.chiudiCassetti();
-          void this.lookAt(it.id);
-        };
-        box.append(b);
+        chip.append(document.createTextNode(displayName(it)));
+
+        if (chip instanceof HTMLButtonElement) {
+          chip.type = 'button';
+          chip.onclick = async () => {
+            await premi(chip);
+            this.chiudiCassetti();
+            void this.lookAt(it.id);
+          };
+        }
+        box.append(chip);
       }
       corpo.append(box);
     }
