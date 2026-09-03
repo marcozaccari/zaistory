@@ -2435,15 +2435,21 @@ figcaption.ir {
 }
 
 /* La stessa locandina in cima al menu, in miniatura. Dopo «inizia» il
-   trascritto si svuota e la copertina se ne va con lui: questa e' l'unica
-   traccia che resta della figura con cui la storia si presenta, e si tocca per
-   riaprirla grande.
+   trascritto si svuota e la copertina se ne va con lui: questa e' la porta per
+   tornarci — si tocca, e la schermata d'apertura torna dov'era.
 
    Piccola e in mezzo, non a tutta colonna: il menu e' un pannello di comandi e
    lei non e' un comando — deve dire «questa e' la storia che stai giocando» e
    poi togliersi di mezzo, sopra al filo che introduce «ricomincia». */
+/* Lo spazio se lo prende prima di avere l'immagine: sotto c'e' «ricomincia», e
+   una figura che si gonfia a caricamento finito lo fa scivolare sotto il dito
+   di chi stava premendo. */
 .locandina-menu {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
   margin: 0;
   line-height: 0;
   text-align: center;
@@ -2457,11 +2463,30 @@ figcaption.ir {
   margin: 0 auto;
   border-radius: 10px;
   border: 1px solid var(--line);
-  cursor: zoom-in;
+  cursor: pointer;
 }
 
 .locandina-menu figcaption.ir {
   text-align: center;
+}
+
+/* La stessa porta, dove la locandina non c'e': una storia senza immagini, o le
+   immagini spente dalla barra. Squadrato e largo quanto la colonna come
+   «ricomincia» che gli sta sotto — sono la stessa famiglia di cose che si
+   toccano — ma sopra il filo, perche' non butta via niente: porta e riporta. */
+.btn.copertina {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--fg-dim);
+}
+
+.btn.copertina:hover,
+.btn.copertina:focus-visible {
+  border-color: var(--accent);
+  color: var(--fg);
 }
 
 .locandina-menu .manca {

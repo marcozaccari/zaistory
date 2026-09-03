@@ -34,10 +34,10 @@ export interface PanelHooks {
   restart: () => void;
   version: string;
   imagesWhy: string;
-  /** La locandina in piccolo, o niente dove non c'è un'immagine da mostrare.
-   * Si chiede a ogni disegno perché le immagini si spengono dalla barra a
-   * partita in corso. */
-  coverThumb: () => HTMLElement | undefined;
+  /** La porta per la copertina: la locandina in piccolo dove c'è, un bottone
+   * dove non c'è. Si chiede a ogni disegno perché le immagini si spengono dalla
+   * barra a partita in corso, e con loro la miniatura. */
+  coverLink: () => HTMLElement;
   /** La modalità ascolto e il modo di regolarla a partita in corso. */
   listen: Listen;
   onAscolto: (imp: ImpostazioniAscolto) => void;
@@ -141,11 +141,11 @@ export class Panel {
    * aprire un'impostazione per guardare la storia.
    */
   private principale(): void {
-    // La locandina, in piccolo. Dopo «inizia» la copertina non è più nel
-    // trascritto, e questo è l'unico modo di rivedere la figura con cui la
-    // storia si presenta: si tocca e si apre grande, come stando sopra.
-    const thumb = this.hooks.coverThumb();
-    if (thumb) this.body.append(thumb);
+    // La copertina, prima di tutto. Dopo «inizia» non è più nel trascritto, e
+    // questa è la porta per tornarci: si tocca e la schermata d'apertura torna
+    // dov'era, col suo bottone per rientrare nella partita. La forma la decide
+    // chi ce la mette — la locandina in miniatura dove c'è, un bottone dove no.
+    this.body.append(this.hooks.coverLink());
 
     // Un filo più marcato di quelli che dividono le sezioni: sotto c'è l'unico
     // bottone del player che possa buttare via qualcosa di irrecuperabile, e

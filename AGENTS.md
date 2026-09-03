@@ -69,9 +69,11 @@ Ordine della ricostruzione (in `ARCHITECTURE.md`, «Stato del lavoro»):
    condizione, effetto e il segno di quali sbloccano; e poi il cassetto
    dell'inventario accanto a quello della mappa, la battuta scelta che entra nel
    flusso col nome di chi la dice, l'invio sul «continua» ed Esc sui cassetti, e
-   la traccia che scarta i tentativi a vuoto e nomina le battute; e la
-   **locandina in miniatura** in cima al menu, che dopo «inizia» — quando la
-   copertina non è più nel trascritto — è l'unico modo di riguardarla. 43 test.
+   la traccia che scarta i tentativi a vuoto e nomina le battute; e la porta
+   per la **copertina** in cima al menu — la locandina in miniatura dove c'è,
+   un bottone dove no — che rimette la stessa schermata col bottone che dice
+   «torna a giocare», mettendo da parte trascritto e dock interi e
+   rimettendoli dov'erano. 43 test.
 4. ~~**il modulo assets**~~ — fatto: estrazione sulla nuova gerarchia (oggetti
    d'ambiente e cutscene di passaggio compresi), studio, pubblicazione,
    **`rebind.py`**, gli script di avvio e i tre selftest, che ora girano sulla

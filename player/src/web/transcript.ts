@@ -30,6 +30,8 @@ import { promptGroup, promptNudi, promptRow, valore, type PromptRow } from './pr
 
 export class Transcript {
   private root = byId('transcript');
+  /** Quello che c'è scritto, mentre al suo posto si guarda la copertina. */
+  private daParte?: { nodi: ChildNode[]; scorrimento: number };
 
   constructor(private readonly idx: StoryIndex, private readonly images: Images) {}
 
@@ -91,7 +93,15 @@ export class Transcript {
     // che la produrranno, ma sotto la descrizione: sopra il titolo, un muro di
     // testo lo seppellirebbe.
     const righe = this.righeCopertina();
-    const locandina = this.locandina();
+    const locandina = this.images.figure(st.cover?.image, {
+      classe: 'locandina',
+      titolo: st.title,
+      righe,
+      // A chi gioca la copertina si apre nuda: è una locandina, si guarda. Il
+      // titolo e i prompt tornano col debug, dove anche lei è un asset da
+      // decidere.
+      soloImmagine: true,
+    });
     if (locandina) box.append(locandina);
 
     box.append(el('h1', undefined, st.title));
@@ -155,28 +165,6 @@ export class Transcript {
       ['place', this.nomeLuogo(st.cover?.place), 'none'],
       ['characters_in_frame', this.nomiInCampo(st.cover?.characters_in_frame), 'none'],
     ];
-  }
-
-  /**
-   * La locandina, con addosso la classe che le si vuol dare.
-   *
-   * Ne esiste una seconda, piccola, in cima al menu: dopo «inizia» il
-   * trascritto si svuota e la copertina se ne va con lui, e la locandina è
-   * l'unico pezzo che si possa voler riguardare a partita cominciata. È la
-   * stessa figura, non una copia — si apre nella stessa lente, con gli stessi
-   * prompt.
-   */
-  locandina(classe = 'locandina'): HTMLElement | undefined {
-    const st = this.idx.story;
-    return this.images.figure(st.cover?.image, {
-      classe,
-      titolo: st.title,
-      righe: this.righeCopertina(),
-      // A chi gioca la copertina si apre nuda: è una locandina, si guarda. Il
-      // titolo e i prompt tornano col debug, dove anche lei è un asset da
-      // decidere.
-      soloImmagine: true,
-    });
   }
 
   /**
@@ -369,6 +357,36 @@ export class Transcript {
   }
 
   clear(): void {
+    this.daParte = undefined;
     this.root.replaceChildren();
+  }
+
+  /**
+   * Mette da parte quello che c'è scritto, e poi lo rimette dov'era.
+   *
+   * Serve a una cosa sola: rivedere la copertina a partita cominciata. Sono i
+   * nodi veri, non una copia — il trascritto **è** la memoria della partita, e
+   * ricostruirlo da capo vorrebbe dire rigiocarla. Torna anche lo scorrimento:
+   * si stava leggendo un punto preciso, e riprendere dal fondo dopo aver
+   * guardato una figura è perdere il segno.
+   */
+  sospendi(): void {
+    if (this.daParte) return;
+    this.daParte = { nodi: [...this.root.childNodes], scorrimento: this.root.scrollTop };
+    this.root.replaceChildren();
+  }
+
+  riprendi(): void {
+    const d = this.daParte;
+    if (!d) return;
+    this.daParte = undefined;
+    this.root.replaceChildren(...d.nodi);
+    this.root.scrollTop = d.scorrimento;
+  }
+
+  /** C'è qualcosa da parte, cioè: al posto della partita si sta guardando
+   * altro. */
+  get sospeso(): boolean {
+    return !!this.daParte;
   }
 }

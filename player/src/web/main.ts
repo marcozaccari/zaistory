@@ -175,6 +175,9 @@ class Game {
    * stato iniziale da prima che qualcuno la giochi, ma il giocatore lì non c'è
    * ancora. */
   private iniziata = false;
+  /** Il dock messo da parte mentre si guarda la copertina, e se il palco era
+   * acceso. Il trascritto se lo tiene da sé. */
+  private dockDaParte?: { nodi: ChildNode[]; palco: boolean };
   private key: string;
 
   /** Il secondo interprete, quando è acceso. Parte spento: il lessicale è
@@ -197,7 +200,7 @@ class Game {
       restart: () => this.restart(),
       version: VERSION,
       imagesWhy: images.available ? '' : images.why,
-      coverThumb: () => this.transcript.locandina('locandina-menu'),
+      coverLink: () => this.portaCopertina(),
       listen: this.listen,
       onAscolto: (imp) => {
         this.impAscolto = imp;
@@ -235,6 +238,7 @@ class Game {
 
   begin(): void {
     this.transcript.clear();
+    this.dockDaParte = undefined;
     this.listen.ricomincia();
     this.iniziata = false;
     this.header();
@@ -261,6 +265,114 @@ class Game {
       })();
     });
     this.dock.append(go);
+  }
+
+  /**
+   * La porta per la copertina, in cima al menu.
+   *
+   * Dove c'è la locandina è la locandina stessa, in miniatura: è l'unica
+   * immagine del player che non apra la lente, ed è deliberato. La copertina
+   * non è una figura da giudicare: è una **schermata** — la locandina, di cosa
+   * parla la storia, con che stile è fatta, che versione del formato chiede — e
+   * dopo «inizia» non c'è più, perché il trascritto riparte dal primo turno.
+   * Portare lì è più di quello che farebbe la lente, che dell'intera schermata
+   * rimetterebbe solo la figura.
+   *
+   * Dove la locandina non c'è — una storia senza immagini, o le immagini spente
+   * dalla barra — resta un bottone. La copertina esiste comunque, ed è il posto
+   * in cui sta scritto di cosa parla la storia: senza porta ci si arriverebbe
+   * solo ricaricando la pagina.
+   */
+  private portaCopertina(): HTMLElement {
+    const st = this.session.idx.story;
+    const id = st.cover?.image;
+    return this.miniaturaCopertina(id) ?? this.bottoneCopertina();
+  }
+
+  private bottoneCopertina(): HTMLButtonElement {
+    const b = el('button', 'btn copertina', 'rivedi la copertina');
+    b.type = 'button';
+    b.onclick = () => void premi(b).then(() => this.rivediCopertina());
+    return b;
+  }
+
+  /** La miniatura, quando c'è un'immagine da metterci. */
+  private miniaturaCopertina(id: string | undefined): HTMLElement | undefined {
+    const st = this.session.idx.story;
+    if (!id || !this.images.usable) return undefined;
+
+    const fig = el('figure', 'locandina-menu');
+    // Un id dichiarato e un file che non arriva sono due cose diverse: qui la
+    // porta resta, in forma di bottone. Sparire lascerebbe la copertina
+    // irraggiungibile per un asset che non è stato pubblicato.
+    const img = this.images.element(id, st.title, () => fig.replaceWith(this.bottoneCopertina()));
+    if (!img) return undefined;
+    // Non pigra, e non è un dettaglio: sotto di lei c'è «ricomincia», e
+    // un'immagine che arriva un istante dopo l'apertura del menu lo fa scendere
+    // sotto il dito che stava per premere altro. Il file è già in cache — la
+    // copertina l'ha appena mostrato — quindi eager qui non scarica niente.
+    img.loading = 'eager';
+    // Un bottone intorno a un'immagine i lettori di schermo lo annunciano due
+    // volte: resta un'immagine, e si comporta da comando. Stessa regola delle
+    // figure che aprono la lente.
+    img.tabIndex = 0;
+    img.setAttribute('role', 'button');
+    img.setAttribute('aria-label', 'rivedi la copertina');
+    img.title = 'rivedi la copertina';
+    img.onclick = () => this.rivediCopertina();
+    img.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.rivediCopertina();
+      }
+    };
+    fig.append(img, el('figcaption', 'ir', id));
+    return fig;
+  }
+
+  /**
+   * La copertina, rivista a partita cominciata.
+   *
+   * È la stessa schermata dell'inizio, nello stesso posto: non una scheda di
+   * menu che la riassume. Cambia solo il bottone in fondo — «torna a giocare»
+   * invece di «inizia» — perché è cambiato quello che c'è dietro.
+   *
+   * La partita non si tocca. Il trascritto e il dock escono dal documento
+   * interi e ci rientrano interi, con i loro ascoltatori: «continua» a metà di
+   * un blocco, le battute di un dialogo aperto, il campo con dentro quello che
+   * si stava scrivendo. Rifarli da capo vorrebbe dire sapere ricostruire ogni
+   * stato in cui il dock può trovarsi, e quello è già scritto una volta.
+   */
+  private rivediCopertina(): void {
+    this.panel.close();
+    if (this.transcript.sospeso) return;
+
+    this.dockDaParte = { nodi: [...this.dock.childNodes], palco: this.stage.visible };
+    this.transcript.sospendi();
+    clear(this.dock);
+    // Il palco dice *dove si è*, e guardando la copertina non si è da nessuna
+    // parte: è la stessa ragione per cui a inizio partita è spento.
+    this.stage.hide();
+
+    this.transcript.cover();
+    const b = this.bottone('torna a giocare', 'choice continue start');
+    b.addEventListener('click', () => void premi(b).then(() => this.tornaAGiocare()));
+    this.dock.append(b);
+  }
+
+  private tornaAGiocare(): void {
+    const d = this.dockDaParte;
+    if (!d) return;
+    this.dockDaParte = undefined;
+    this.transcript.riprendi();
+    this.dock.replaceChildren(...d.nodi);
+    // Il palco torna com'era, e solo se c'era: `setContext` non ridisegna
+    // l'inquadratura della fase — quella è ferma da quando ci si è entrati — ma
+    // rimette la riga, il cast e il palco stesso.
+    if (d.palco) {
+      const s = this.session.snapshot();
+      this.stage.setContext(s.place, s.phase);
+    }
   }
 
   private restart(): void {
