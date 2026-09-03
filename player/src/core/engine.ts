@@ -145,6 +145,26 @@ export function isPureObservation(a: Action): boolean {
 }
 
 /**
+ * Come si chiama un dialogo nella memoria dello stato.
+ *
+ * Per luogo e per fase, non per solo nodo: il nodo d'ingresso è un id dentro
+ * l'albero della sua fase, e due fasi possono chiamare `start` la stessa cosa
+ * senza che sia la stessa conversazione.
+ */
+export function dialogueKey(pl: Place | undefined, ph: Phase | undefined, node: string): string {
+  return `${pl?.id ?? '—'}/${ph?.id ?? '—'}/${node}`;
+}
+
+/** Un'azione che non fa altro che aprire un dialogo: la conversazione è tutto
+ * quello che c'è dentro. */
+function onlyOpensDialogue(a: Action): boolean {
+  const e = a.effect;
+  return (
+    !!e.goto_dialogue && !e.set_flag && !e.unset_flag && !e.add_inventory && !e.remove_inventory && !e.goto_place
+  );
+}
+
+/**
  * Qui non resta più niente da fare?
  *
  * Definizione precisa, ed è la sola che regge: ogni azione disponibile è già
@@ -152,6 +172,15 @@ export function isPureObservation(a: Action): boolean {
  * prima metà la regola non scatterebbe mai dove serve — l'azione che apre un
  * dialogo resta disponibile anche dopo averlo ascoltato, e riascoltarlo non è
  * qualcosa che *resta da fare*.
+ *
+ * Terza voce, e conta quanto le altre due: **un dialogo già ascoltato è fatto,
+ * da qualunque porta ci si fosse entrati.** Su una storia vera le porte sulla
+ * stessa conversazione sono spesso tre — «ascolta il discorso», «parla con
+ * Mark», «parla con Tommy» — perché il giocatore possa arrivarci con le parole
+ * che gli vengono; contandole a una a una, per vedersi offrire l'uscita doveva
+ * riaprire tre volte la stessa scena. Vale solo dove l'azione non fa nient'altro
+ * che aprirla: se posa anche un flag o un oggetto, quella è roba sua e la porta
+ * accanto non gliel'ha applicata.
  */
 export function nothingLeftToDo(
   idx: StoryIndex,
@@ -160,7 +189,12 @@ export function nothingLeftToDo(
   st: GameState,
 ): boolean {
   const acts = availableActions(idx, pl, ph, st);
-  return acts.every((a) => st.executed(a.id) || isPureObservation(a));
+  return acts.every(
+    (a) =>
+      st.executed(a.id) ||
+      isPureObservation(a) ||
+      (onlyOpensDialogue(a) && st.dialogueSeen(dialogueKey(pl, ph, a.effect.goto_dialogue!))),
+  );
 }
 
 // -------------------------------------------------------------- uscite

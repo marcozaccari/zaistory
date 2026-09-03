@@ -53,6 +53,7 @@ import {
   candidateActions,
   currentPhase,
   currentPlace,
+  dialogueKey,
   enterPlace,
   exitLabel,
   knownExits,
@@ -425,12 +426,17 @@ export class Session {
   // ------------------------------------------------------------ dialogo
 
   private openDialogue(nodeId: string): void {
-    const ph = currentPhase(currentPlace(this.idx, this.state), this.state);
+    const pl = currentPlace(this.idx, this.state);
+    const ph = currentPhase(pl, this.state);
     const tree = ph?.dialogue;
     if (!tree) {
       this.push({ kind: 'problem', text: 'questa fase non ha nessun dialogo da aprire' });
       return;
     }
+    // Si segna il nodo **chiesto**, non quello a cui si è finiti: è con quello
+    // che le azioni nominano la conversazione, ed è per id che si riconosce
+    // che due porte danno sulla stessa stanza.
+    this.state.markDialogue(dialogueKey(pl, ph, nodeId));
     const startId = tree.nodes[nodeId] ? nodeId : tree.start;
     this.dialogue = { node: startId };
     this.playDialogueFrom(startId);

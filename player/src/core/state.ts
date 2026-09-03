@@ -62,6 +62,13 @@ export class GameState {
   /** Le transizioni già viste, per non rifar guardare una cutscene di
    * passaggio a ogni attraversamento. */
   private seenTransitions = new Set<string>();
+  /** I dialoghi già aperti, per nodo d'ingresso.
+   *
+   * Non è la stessa cosa di `executed`: lì la chiave è l'azione, qui la
+   * conversazione. Le porte che danno sulla stessa stanza possono essere tre —
+   * «ascolta il discorso», «parla con Mark», «parla con Tommy» — ma la stanza
+   * resta una, e averla attraversata una volta significa averla vista. */
+  private seenDialogues = new Set<string>();
 
   consumed(actionId: string): boolean {
     return this.consumedIds.has(actionId);
@@ -80,6 +87,12 @@ export class GameState {
   }
   markTransition(key: string): void {
     this.seenTransitions.add(key);
+  }
+  dialogueSeen(key: string): boolean {
+    return this.seenDialogues.has(key);
+  }
+  markDialogue(key: string): void {
+    this.seenDialogues.add(key);
   }
 
   hasItem(item: string): boolean {

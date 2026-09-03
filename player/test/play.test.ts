@@ -11,7 +11,7 @@ import { test } from 'node:test';
 
 import { LoadError, parseStory } from '../src/core/load.js';
 import { Session } from '../src/core/turn.js';
-import { currentPhase, currentPlace } from '../src/core/engine.js';
+import { currentPhase, currentPlace, dialogueKey, nothingLeftToDo } from '../src/core/engine.js';
 import { classifyIntent, systemQuestion } from '../src/core/verbs.js';
 import { lint } from '../src/core/lint.js';
 import { coverage } from '../src/core/coverage.js';
@@ -473,4 +473,39 @@ test('il fallback scelto dai vettori resta testo d’autore', async () => {
   );
   const r = s.input('tocco tutto quello che vedo', { chooseFallback: () => scelto });
   assert.match(texts(r), new RegExp(scelto!.slice(0, 20).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+});
+
+/**
+ * Due porte sulla stessa conversazione sono una cosa sola da fare.
+ *
+ * Su una storia vera le azioni che aprono lo stesso dialogo sono spesso tre —
+ * «ascolta il discorso», «parla con Mark», «parla con Tommy» — perché il
+ * giocatore ci arrivi con le parole che gli vengono. Contandole a una a una,
+ * per vedersi offrire l'uscita bisognava riaprire tre volte la stessa scena.
+ */
+test('un dialogo già ascoltato è fatto, da qualunque porta ci si sia entrati', () => {
+  const idx = parseStory(RAW);
+  const st = new GameState();
+  const porta = (id: string) => ({ id, verb: 'talk', target: undefined, effect: { goto_dialogue: 'nodo' } });
+  const ph = { id: 'fase', actions: [porta('a'), porta('b')] } as unknown as Parameters<typeof nothingLeftToDo>[2];
+  const pl = { id: 'luogo', phases: [ph] } as unknown as Parameters<typeof nothingLeftToDo>[1];
+
+  assert.equal(nothingLeftToDo(idx, pl, ph, st), false, 'nessuna delle due è stata fatta');
+  st.markDialogue(dialogueKey(pl, ph, 'nodo'));
+  assert.equal(nothingLeftToDo(idx, pl, ph, st), true, 'la conversazione è una sola, ed è stata ascoltata');
+
+  // Ma solo dove l'azione non fa nient'altro: quello che posa un flag è roba
+  // sua, e la porta accanto non gliel'ha applicata.
+  const conFlag = { id: 'c', verb: 'talk', effect: { goto_dialogue: 'nodo', set_flag: 'x' } };
+  const ph2 = { id: 'fase', actions: [porta('a'), conFlag] } as unknown as typeof ph;
+  assert.equal(nothingLeftToDo(idx, pl, ph2, st), false);
+});
+
+test('aprire un dialogo lo segna come ascoltato', () => {
+  const s = fresh();
+  const pl = currentPlace(s.idx, s.state);
+  const ph = currentPhase(pl, s.state);
+  assert.equal(s.state.dialogueSeen(dialogueKey(pl, ph, 'd_start')), false);
+  s.input("parlo con l'oste");
+  assert.equal(s.state.dialogueSeen(dialogueKey(pl, ph, 'd_start')), true);
 });

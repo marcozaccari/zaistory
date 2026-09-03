@@ -87,7 +87,10 @@ Ordine della ricostruzione (in `ARCHITECTURE.md`, «Stato del lavoro»):
    guarda, si torna indietro e se ne prova un'altra. Stanno sulla stessa riga
    dell'ispezione, che ora **si tocca e si gioca**: nella traccia quell'azione
    va con il suo id (`azione <id>`, l'unico comando del player che non sia una
-   frase, ed è il prezzo per restare rigiocabile). 43 test.
+   frase, ed è il prezzo per restare rigiocabile). E una regola del core: **un
+   dialogo già ascoltato è fatto, da qualunque porta ci si sia entrati** — le
+   azioni che aprono la stessa conversazione sono spesso tre, e il consiglio
+   dell'uscita le contava a una a una. 45 test.
 4. ~~**il modulo assets**~~ — fatto: estrazione sulla nuova gerarchia (oggetti
    d'ambiente e cutscene di passaggio compresi), studio, pubblicazione,
    **`rebind.py`**, gli script di avvio e i tre selftest, che ora girano sulla
