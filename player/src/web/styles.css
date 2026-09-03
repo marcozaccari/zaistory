@@ -2434,6 +2434,47 @@ figcaption.ir {
   }
 }
 
+/* La stessa locandina in cima al menu, in miniatura. Dopo «inizia» il
+   trascritto si svuota e la copertina se ne va con lui: questa e' l'unica
+   traccia che resta della figura con cui la storia si presenta, e si tocca per
+   riaprirla grande.
+
+   Piccola e in mezzo, non a tutta colonna: il menu e' un pannello di comandi e
+   lei non e' un comando — deve dire «questa e' la storia che stai giocando» e
+   poi togliersi di mezzo, sopra al filo che introduce «ricomincia». */
+.locandina-menu {
+  display: block;
+  margin: 0;
+  line-height: 0;
+  text-align: center;
+}
+
+.locandina-menu img {
+  display: block;
+  width: 100%;
+  max-width: 170px;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  cursor: zoom-in;
+}
+
+.locandina-menu figcaption.ir {
+  text-align: center;
+}
+
+.locandina-menu .manca {
+  margin: 0;
+  padding: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  text-align: left;
+  color: var(--amber);
+  background: var(--bg-soft);
+  border-radius: 10px;
+}
+
 /* L'icona d'inventario di un oggetto che si sta guardando: piu' piccola di
    un'inquadratura, perche' e' una cosa che si tiene in mano e non un posto in
    cui si e'.

@@ -197,6 +197,7 @@ class Game {
       restart: () => this.restart(),
       version: VERSION,
       imagesWhy: images.available ? '' : images.why,
+      coverThumb: () => this.transcript.locandina('locandina-menu'),
       listen: this.listen,
       onAscolto: (imp) => {
         this.impAscolto = imp;

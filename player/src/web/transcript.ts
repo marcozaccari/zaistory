@@ -90,20 +90,8 @@ export class Transcript {
     // paragrafo la dà altrettanto in fretta. Senza immagini restano i prompt
     // che la produrranno, ma sotto la descrizione: sopra il titolo, un muro di
     // testo lo seppellirebbe.
-    const righe: PromptRow[] = [
-      ['image_prompt', st.cover?.image_prompt, 'image'],
-      ['place', this.nomeLuogo(st.cover?.place), 'none'],
-      ['characters_in_frame', this.nomiInCampo(st.cover?.characters_in_frame), 'none'],
-    ];
-    const locandina = this.images.figure(st.cover?.image, {
-      classe: 'locandina',
-      titolo: st.title,
-      righe,
-      // A chi gioca la copertina si apre nuda: è una locandina, si guarda. Il
-      // titolo e i prompt tornano col debug, dove anche lei è un asset da
-      // decidere.
-      soloImmagine: true,
-    });
+    const righe = this.righeCopertina();
+    const locandina = this.locandina();
     if (locandina) box.append(locandina);
 
     box.append(el('h1', undefined, st.title));
@@ -157,6 +145,38 @@ export class Transcript {
     if (dettagli.childElementCount) box.append(dettagli);
 
     this.add(box);
+  }
+
+  /** I prompt che hanno prodotto — o che produrranno — la locandina. */
+  private righeCopertina(): PromptRow[] {
+    const st = this.idx.story;
+    return [
+      ['image_prompt', st.cover?.image_prompt, 'image'],
+      ['place', this.nomeLuogo(st.cover?.place), 'none'],
+      ['characters_in_frame', this.nomiInCampo(st.cover?.characters_in_frame), 'none'],
+    ];
+  }
+
+  /**
+   * La locandina, con addosso la classe che le si vuol dare.
+   *
+   * Ne esiste una seconda, piccola, in cima al menu: dopo «inizia» il
+   * trascritto si svuota e la copertina se ne va con lui, e la locandina è
+   * l'unico pezzo che si possa voler riguardare a partita cominciata. È la
+   * stessa figura, non una copia — si apre nella stessa lente, con gli stessi
+   * prompt.
+   */
+  locandina(classe = 'locandina'): HTMLElement | undefined {
+    const st = this.idx.story;
+    return this.images.figure(st.cover?.image, {
+      classe,
+      titolo: st.title,
+      righe: this.righeCopertina(),
+      // A chi gioca la copertina si apre nuda: è una locandina, si guarda. Il
+      // titolo e i prompt tornano col debug, dove anche lei è un asset da
+      // decidere.
+      soloImmagine: true,
+    });
   }
 
   /**
