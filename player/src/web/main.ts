@@ -25,13 +25,27 @@
 
 import './styles.css';
 
-import type { Resolution, Session as SessionType, TurnResult } from '../core/index.js';
-import { LoadError, Session, VectorResolver, displayName, loadStory, parseStory, systemQuestion } from '../core/index.js';
-import { byId, clear, el, premi, show, staScrivendo } from './dom.js';
+import type { Resolution, Session as SessionType, TurnEvent, TurnResult } from '../core/index.js';
+import {
+  LoadError,
+  Session,
+  VectorResolver,
+  describeCondition,
+  describeEffect,
+  displayName,
+  isPureObservation,
+  loadStory,
+  parseStory,
+  placeImage,
+  systemQuestion,
+  verbLabel,
+} from '../core/index.js';
+import { byId, clear, el, piega, premi, show, staScrivendo } from './dom.js';
 import { CONFIG_DEFAULT, caricaEmbedder, type ConfigEmbedder } from './embedder.js';
 import { Fonts } from './fonts.js';
 import { icona } from './icons.js';
 import { Images, hasPublishedImages } from './images.js';
+import { lenteAperta } from './lightbox.js';
 import type { Origin } from './images.js';
 import { ASCOLTO_DEFAULT, Listen, type ImpostazioniAscolto } from './listen.js';
 import { Panel } from './panel.js';
@@ -146,13 +160,21 @@ function startGame(raw: unknown, origin: Origin): void {
 
 class Game {
   private dock = byId('dock');
-  private transcript = new Transcript();
+  /** Assegnato nel costruttore e non qui: gli serve `images`, che è un
+   * parametro, e l'ordine fra parametri e campi non è una cosa su cui
+   * appoggiarsi. */
+  private transcript: Transcript;
   private stage: Stage;
   private panel: Panel;
   private listen: Listen;
   private trace: string[] = [];
   private choices: { index: number; text: string }[] = [];
   private ended = false;
+  /** La partita è cominciata davvero. Sulla copertina non si è ancora in
+   * nessun luogo, e la barra in testa non deve nominarne uno: la storia ha uno
+   * stato iniziale da prima che qualcuno la giochi, ma il giocatore lì non c'è
+   * ancora. */
+  private iniziata = false;
   private key: string;
 
   /** Il secondo interprete, quando è acceso. Parte spento: il lessicale è
@@ -165,14 +187,14 @@ class Game {
 
   constructor(private session: SessionType, private images: Images) {
     this.key = `zaistory:${session.idx.story.id}`;
-    this.stage = new Stage(session.idx, images, (src, cap) => this.fullscreen(src, cap));
+    this.transcript = new Transcript(session.idx, images);
+    this.stage = new Stage(session.idx, images);
     this.listen = new Listen(session.idx, voce);
     this.listen.configura(this.impAscolto);
     this.panel = new Panel(session, {
       trace: () => this.trace.join('\n'),
       resume: (t) => void this.replay(t.split('\n')),
       restart: () => this.restart(),
-      lookAt: (id) => void this.lookAt(id),
       version: VERSION,
       imagesWhy: images.available ? '' : images.why,
       listen: this.listen,
@@ -211,12 +233,14 @@ class Game {
   // ------------------------------------------------------------ copertina
 
   begin(): void {
-    const story = this.session.idx.story;
     this.transcript.clear();
     this.listen.ricomincia();
+    this.iniziata = false;
+    this.header();
 
-    if (story.cover) this.stage.frame(story.cover);
-    this.transcript.cover(story.title, story.description, story.global_style);
+    // La locandina sta nella copertina, non sul palco: il palco dice *dove si
+    // è*, e prima di «inizia» non si è da nessuna parte.
+    this.transcript.cover();
 
     clear(this.dock);
     const go = this.bottone('inizia', 'choice continue start');
@@ -226,6 +250,7 @@ class Game {
         // Il primo suono di una pagina deve venire da un gesto: la copertina
         // si recita qui, non al caricamento, o il browser la zittisce.
         this.listen.copertina();
+        this.iniziata = true;
         const saved = localStorage.getItem(this.key);
         if (saved) await this.replay(saved.split('\n'));
         else {
@@ -275,18 +300,33 @@ class Game {
 
   private async feed(line: string, silent = false): Promise<void> {
     if (this.ended) return;
+    // Una battuta si scrive «battuta 2» nella traccia e «2» sulla tastiera: il
+    // secondo è la scorciatoia sotto le dita, il primo è quello che si rilegge
+    // in un salvataggio, dove una colonna di cifre nude non dice di che cosa
+    // fossero il numero.
+    const m = /^battuta\s+([1-9]\d*)$/i.exec(line.trim());
+    const n = m ? Number(m[1]) : Number(line);
+    const scelta = Number.isInteger(n) && n > 0 && this.session.inDialogue;
+    // Sulla pagina va la battuta, non il numero: il numero dice quale casella
+    // si è premuta, non cosa si è detto.
+    const battuta = scelta ? this.choices.find((c) => c.index === n - 1)?.text : undefined;
+
     if (!silent) {
-      this.transcript.echo(line);
+      if (battuta) this.transcript.chosen(battuta);
+      else this.transcript.echo(line);
       // La voce di prima si ferma: senza, un tocco veloce lascerebbe indietro
       // la risposta al turno precedente, che continuerebbe a parlare sopra
       // quella nuova.
       this.listen.taci();
     }
-    this.trace.push(line);
 
-    const n = Number(line);
-    const scelta = Number.isInteger(n) && n > 0 && this.session.inDialogue;
     const res = scelta ? this.session.choose(n - 1) : await this.turno(line);
+    // Nella traccia va solo quello che ha mosso la storia. Una frase che ha
+    // ricevuto il ripiego per intenzione non ha fatto succedere niente, e
+    // rigiocandola non farebbe succedere niente un'altra volta: tenerla
+    // significa allungare il salvataggio con i tentativi andati a vuoto, e
+    // farli rileggere tutti a chi lo riprende.
+    if (!res.noMatch) this.trace.push(scelta ? `battuta ${n}` : line);
     // «Guardati intorno» è il contrappeso del collapse acustico: a schermo la
     // composizione resta scritta e si rilegge, all'orecchio si riapre
     // chiedendola. Vedi `listen.ts`.
@@ -335,15 +375,60 @@ class Game {
     // l'inquadratura di base della fase cancellerebbe a ogni turno lo stacco
     // appena fatto.
     this.stage.setContext(snap.place, snap.phase);
-    for (const e of res.events) if (e.beat) this.stage.frame(e.beat, snap.place?.id);
-
-    this.transcript.events(res.events);
     this.choices = res.choices ?? [];
-    if (!silent) {
-      if (riosserva) this.listen.riosserva(snap.place, snap.phase);
-      this.listen.turno(res.events, snap.place, snap.phase);
-    }
     this.header();
+    if (!silent && riosserva) this.listen.riosserva(snap.place, snap.phase);
+
+    // Rigiocando non si aspetta nessuno: venti tocchi su «continua» per tornare
+    // al punto in cui si era non sono un ritmo, sono un pedaggio.
+    this.mostra(res, silent ? [res.events] : blocchi(res.events), 0, silent, snap);
+  }
+
+  /**
+   * Un blocco del turno, e il tocco che porta al successivo.
+   *
+   * Due persone che parlano fra loro sono due battute, non un muro: arrivano
+   * una alla volta, ciascuna con la sua comparsa, e a scandirle è «continua».
+   * Vale identico per i beat di una narrazione. Il tocco sta **fra** i blocchi
+   * e non dopo l'ultimo: là quello che viene dopo — le scelte del dialogo, la
+   * riga in cui si scrive — è già pronto da mostrare, e un tocco che non porta
+   * niente di nuovo sullo schermo è solo un tocco in più.
+   */
+  private mostra(
+    res: TurnResult,
+    blocchi: TurnEvent[][],
+    i: number,
+    silent: boolean,
+    snap: ReturnType<SessionType['snapshot']>,
+  ): void {
+    const blocco = blocchi[i] ?? [];
+    this.transcript.events(blocco);
+    for (const e of blocco) if (e.beat) this.stage.frame(e.beat, snap.place?.id);
+    if (!silent) this.listen.turno(blocco, snap.place, snap.phase);
+
+    if (i + 1 < blocchi.length) {
+      this.transcript.sep();
+      clear(this.dock);
+      const b = this.bottone('continua', 'choice continue');
+      // Una volta sola: l'invio tenuto premuto, o un doppio tocco, salterebbero
+      // due blocchi in un colpo — cioè una battuta che nessuno ha letto.
+      let fatto = false;
+      const vai = () => {
+        if (fatto) return;
+        fatto = true;
+        void this.premi(b, () => this.mostra(res, blocchi, i + 1, silent, snap));
+      };
+      b.addEventListener('click', vai);
+      this.dock.append(b);
+      // A schermo spento «continua» è proprio il tocco impossibile da trovare:
+      // se la voce sta leggendo, finita la frase si prosegue da soli.
+      if (this.listen.attiva && this.impAscolto.avanzamento) {
+        voce.quandoFinisce(() => {
+          if (this.dock.contains(b)) vai();
+        });
+      }
+      return;
+    }
 
     if (res.ended) {
       this.ended = true;
@@ -371,10 +456,10 @@ class Game {
     const s = this.session.snapshot();
     const story = this.session.idx.story;
     const umano: string[] = [];
-    if (s.place) umano.push(displayName(s.place));
+    if (this.iniziata && s.place) umano.push(displayName(s.place));
 
     const meta = [`zaistory ${story.zaistory_version}`, story.id];
-    if (s.place) meta.push(`${s.place.id}/${s.phase?.id ?? '—'}`);
+    if (this.iniziata && s.place) meta.push(`${s.place.id}/${s.phase?.id ?? '—'}`);
 
     const box = byId('story-meta');
     clear(box);
@@ -450,15 +535,13 @@ class Game {
     send.type = 'submit';
     send.setAttribute('aria-label', 'esegui');
 
-    const mappa = el('button', 'mappa-apri');
-    mappa.type = 'button';
-    mappa.title = 'dove andare';
-    mappa.setAttribute('aria-label', 'dove andare');
-    const segno = icona('map');
-    if (segno) mappa.append(segno);
-    mappa.addEventListener('click', () => this.apriMappa());
+    // I due cassetti, accanto al campo: sono le scorciatoie che saltano la
+    // digitazione — «vai» e «guarda quello che ho» — e per questo stanno qui e
+    // non in barra, dove vivono le impostazioni.
+    const zaino = this.bottoneCassetto('bag', 'cosa hai in mano', () => this.apriInventario());
+    const mappa = this.bottoneCassetto('map', 'dove andare', () => this.apriMappa());
 
-    row.append(input, send, mappa);
+    row.append(input, send, zaino, mappa);
     row.onsubmit = (e) => {
       e.preventDefault();
       const v = input.value.trim();
@@ -468,10 +551,153 @@ class Game {
     };
     this.dock.append(row);
 
+    const ispezione = this.ispezione();
+    if (ispezione) this.dock.append(ispezione);
+
     // Il fuoco automatico vale solo dove la tastiera non costa niente: su un
     // telefono rimettercelo dopo una frase che non ha fatto match significa
     // riaprire i tasti addosso alla risposta appena arrivata.
     if (matchMedia('(pointer: fine)').matches) input.focus();
+  }
+
+  /**
+   * L'ispezione del luogo, sotto il debug.
+   *
+   * L'interfaccia è la riga di testo; **le chip sono uno strumento** e si
+   * vedono solo ispezionando. Non è una questione di gusto: un elenco che
+   * mostra le azioni utili risolve gli enigmi al posto del giocatore, e finché
+   * resta acceso non si può giudicare quanto una storia compilata sia davvero
+   * difficile.
+   *
+   * Tre cose, nell'ordine in cui ci si fanno le domande collaudando: **con che
+   * gesto** si può agire qui, **su cosa**, e **cosa cambia** ciascuna azione.
+   * L'ultima è quella che conta di più: un luogo dove nessuna azione sblocca
+   * niente è un vicolo cieco, e così si vede a colpo d'occhio invece che
+   * giocandoci contro.
+   *
+   * Nasce chiusa. Aperto il debug, quello che si guarda è quasi sempre il
+   * trascritto — cosa ha capito il parser, quale fallback è uscito — e una fase
+   * con otto azioni coprirebbe mezzo schermo sopra la riga in cui si scrive.
+   * Il conto accanto al titolo risponde già a metà della domanda.
+   */
+  private ispezione(): HTMLElement | undefined {
+    const st = this.session.state;
+    const { actions } = this.session.candidates();
+    if (!actions.length) return undefined;
+
+    // Le candidate comprendono quelle la cui condizione non è soddisfatta: si
+    // elencano lo stesso, perché la domanda che ci si fa collaudando è quasi
+    // sempre *perché* una non compare.
+    const aperte = actions.filter((a) => st.ok(a.condition));
+    const { root, corpo } = piega('azioni', actions.length);
+    root.classList.add('solo-debug');
+
+    const chips = (voci: string[]) => {
+      const riga = el('div', 'chips');
+      for (const v of voci) riga.append(el('span', 'chip', v));
+      return riga;
+    };
+
+    const verbi = [...new Set(aperte.map((a) => a.verb))];
+    if (verbi.length) corpo.append(chips(verbi.map(verbLabel)));
+
+    // Su cosa si agisce: le tre specie insieme, perché al parser non importa
+    // quale sia — quello che conta è che il complemento nomini qualcosa che è
+    // qui.
+    const bersagli = new Set<string>();
+    for (const a of aperte) {
+      for (const t of [a.target, a.second_target]) {
+        const nome = this.nomeBersaglio(t);
+        if (nome) bersagli.add(nome);
+      }
+    }
+    if (bersagli.size) corpo.append(chips([...bersagli]));
+
+    for (const a of actions) {
+      const ok = st.ok(a.condition);
+      const riga = el('div', 'act');
+      const testa = el('div', 'head');
+      testa.append(el('span', `mark ${ok ? 'on' : 'off'}`, ok ? '●' : '×'));
+      testa.append(
+        el('span', undefined, [verbLabel(a.verb), this.nomeBersaglio(a.target), this.nomeBersaglio(a.second_target)]
+          .filter(Boolean)
+          .join(' · ')),
+      );
+      // Un'azione che non muove niente si può rileggere per sempre; una che
+      // sblocca è quella che fa avanzare la storia, ed è l'unica cosa che si
+      // cerca quando una fase sembra ferma.
+      if (!isPureObservation(a)) testa.append(el('span', 'why', 'sblocca'));
+      if (st.executed(a.id)) testa.append(el('span', 'why', 'già fatta'));
+      riga.append(testa);
+      riga.append(
+        el('span', 'meta', `${a.id} · condizione: ${describeCondition(a.condition)} · effetto: ${describeEffect(a.effect)}`),
+      );
+      corpo.append(riga);
+    }
+    return root;
+  }
+
+  /** Come si chiama un bersaglio per chi legge. Il protagonista non è un
+   * bersaglio: è chi guarda. */
+  private nomeBersaglio(id: string | undefined): string | undefined {
+    const idx = this.session.idx;
+    if (!id || id === idx.story.protagonist) return undefined;
+    const e = idx.props.get(id) ?? idx.characters.get(id) ?? idx.items.get(id);
+    return e ? displayName(e) : id;
+  }
+
+  private bottoneCassetto(segno: string, etichetta: string, apri: () => void): HTMLButtonElement {
+    const b = el('button', 'cassetto-apri');
+    b.type = 'button';
+    b.title = etichetta;
+    b.setAttribute('aria-label', etichetta);
+    const i = icona(segno);
+    if (i) b.append(i);
+    else b.append(document.createTextNode(etichetta));
+    b.addEventListener('click', apri);
+    return b;
+  }
+
+  /**
+   * L'inventario: i nomi degli oggetti, e ognuno si può guardare.
+   *
+   * Toccarne uno chiude il cassetto e ne fa leggere la descrizione nel
+   * trascritto — la stessa che si otterrebbe nominandolo mentre si gioca.
+   * Quello che si ha in mano è l'unica cosa che il giocatore non può rileggere
+   * scorrendo indietro, perché non è mai stata scritta tutta insieme da nessuna
+   * parte: per questo ha una superficie sua e non una voce di menu.
+   */
+  private apriInventario(): void {
+    const corpo = byId('inventario-corpo');
+    clear(corpo);
+    const inv = this.session.snapshot().inventory;
+
+    if (!inv.length) {
+      corpo.append(el('p', 'empty', 'non hai niente con te'));
+    } else {
+      const box = el('div', 'chips inventario');
+      for (const it of inv) {
+        if (!it) continue;
+        // Un oggetto senza descrizione non è toccabile: non c'è niente da
+        // leggere e il player non lo inventa. Il linter intanto lo segnala, che
+        // è il posto dove quel buco va risolto.
+        if (!it.description && !it.description_variants?.length) {
+          box.append(el('span', 'chip', displayName(it)));
+          continue;
+        }
+        const b = el('button', 'chip oggetto', displayName(it));
+        b.type = 'button';
+        b.onclick = async () => {
+          await premi(b);
+          this.chiudiCassetti();
+          void this.lookAt(it.id);
+        };
+        box.append(b);
+      }
+      corpo.append(box);
+    }
+    show(byId('inventario'), true);
+    show(byId('scrim'), true);
   }
 
   /** Il segno davanti a «inizia», «continua» e all'uscita rimasta: cresce da
@@ -525,30 +751,52 @@ class Game {
     const snap = this.session.snapshot();
     const idx = this.session.idx;
 
-    if (!snap.exits.length) {
-      corpo.append(el('p', 'empty', 'Non conosci nessuna strada da qui.'));
-    } else {
-      const grid = el('div', 'luoghi');
-      for (const e of snap.exits) {
-        const dest = idx.places.get(e.to);
-        const aperta = this.session.state.meets(e.condition);
-        const b = el('button', `luogo${aperta.ok ? '' : ' chiuso'}`);
-        b.type = 'button';
-        const img = this.images.usable ? this.images.element(dest?.image, dest?.name ?? e.to) : undefined;
-        if (img) b.append(img);
-        b.append(el('span', 'nome', e.label || displayName(dest ?? { id: e.to })));
-        b.append(el('span', 'stato', aperta.ok ? 'aperto' : 'chiuso'));
-        b.addEventListener('click', () => {
-          void (async () => {
-            await premi(b);
-            this.chiudiMappa();
-            await this.feed(e.label || displayName(dest ?? { id: e.to }));
-          })();
-        });
-        grid.append(b);
-      }
-      corpo.append(grid);
+    const grid = el('div', 'luoghi');
+
+    // Dove si è adesso, per prima e spenta. Non è una destinazione — non si
+    // tocca — ma una mappa che mostra solo le strade e non il punto da cui
+    // partono chiede di ricordarselo, ed è l'unica cosa che chi la apre sa
+    // già. Il posto giusto per dirla è accanto alle altre, alla stessa scala.
+    if (snap.place) {
+      const qui = el('button', 'luogo qui');
+      qui.type = 'button';
+      qui.disabled = true;
+      const img = this.images.usable
+        ? this.images.element(placeImage(idx, snap.place), displayName(snap.place))
+        : undefined;
+      if (img) qui.append(img);
+      qui.append(el('span', 'nome', displayName(snap.place)));
+      qui.append(el('span', 'stato', 'sei qui'));
+      grid.append(qui);
     }
+
+    for (const e of snap.exits) {
+      const dest = idx.places.get(e.to);
+      const aperta = this.session.state.meets(e.condition);
+      const b = el('button', `luogo${aperta.ok ? '' : ' chiuso'}`);
+      b.type = 'button';
+      // Una destinazione si riconosce dalla figura prima che dal nome. Dove
+      // l'immagine non c'è — o è spenta — resta il testo: il riquadro è una
+      // griglia, la riga sparisce e non lascia un buco.
+      const img = this.images.usable
+        ? this.images.element(placeImage(idx, dest), displayName(dest ?? { id: e.to }))
+        : undefined;
+      if (img) b.append(img);
+      b.append(el('span', 'nome', e.label || displayName(dest ?? { id: e.to })));
+      b.append(el('span', 'stato', aperta.ok ? 'aperto' : 'chiuso'));
+      b.addEventListener('click', () => {
+        void (async () => {
+          await premi(b);
+          this.chiudiMappa();
+          await this.feed(e.label || displayName(dest ?? { id: e.to }));
+        })();
+      });
+      grid.append(b);
+    }
+    if (grid.childElementCount) corpo.append(grid);
+    // Il vicolo cieco si dice dopo la griglia, non al posto suo: «sei qui» è
+    // comunque la risposta alla prima metà della domanda.
+    if (!snap.exits.length) corpo.append(el('p', 'empty', 'Non conosci nessuna strada da qui.'));
     show(mappa, true);
     show(byId('scrim'), true);
   }
@@ -558,11 +806,21 @@ class Game {
     show(byId('scrim'), false);
   }
 
+  /** Chiude il cassetto aperto, qualunque sia. Torna vero se ce n'era uno: chi
+   * chiama lo usa per sapere se il gesto è stato speso. */
+  private chiudiCassetti(): boolean {
+    const aperti = ['mappa', 'inventario'].filter((id) => !byId(id).hidden);
+    for (const id of aperti) show(byId(id), false);
+    if (aperti.length) show(byId('scrim'), false);
+    return aperti.length > 0;
+  }
+
   private wireMappa(): void {
-    byId('btn-chiudi-mappa').addEventListener('click', () => this.chiudiMappa());
-    // Lo stesso velo chiude la mappa e il pannello: sono due cassetti della
+    byId('btn-chiudi-mappa').addEventListener('click', () => this.chiudiCassetti());
+    byId('btn-chiudi-inventario').addEventListener('click', () => this.chiudiCassetti());
+    // Lo stesso velo chiude i cassetti e il pannello: sono superfici della
     // stessa applicazione, e due modi di chiudersi si noterebbero.
-    byId('scrim').addEventListener('click', () => this.chiudiMappa());
+    byId('scrim').addEventListener('click', () => this.chiudiCassetti());
   }
 
   // ------------------------------------------------------------ interruttori
@@ -622,6 +880,21 @@ class Game {
     const voci = () => [...this.dock.querySelectorAll<HTMLButtonElement>('button.choice:not([disabled])')];
 
     document.addEventListener('keydown', (e) => {
+      // Esc chiude il cassetto aperto — la mappa o il menu. Prima di ogni
+      // altra cosa, e anche mentre si scrive: è il gesto con cui si esce da
+      // una schermata, non una scorciatoia di gioco. La lente ha la sua Esc e
+      // viene prima: chiudere l'immagine non deve chiudere anche quello che
+      // sta sotto.
+      if (e.key === 'Escape') {
+        if (lenteAperta()) return;
+        const menu = !byId('panel').hidden;
+        if (this.chiudiCassetti()) e.preventDefault();
+        else if (menu) {
+          this.panel.close();
+          e.preventDefault();
+        }
+        return;
+      }
       if (staScrivendo(e)) return;
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         const v = voci();
@@ -630,6 +903,20 @@ class Game {
         const i = v.indexOf(document.activeElement as HTMLButtonElement);
         const giu = e.key === 'ArrowDown';
         v[i < 0 ? (giu ? 0 : v.length - 1) : (i + (giu ? 1 : -1) + v.length) % v.length].focus();
+        return;
+      }
+      // L'invio esegue il passo unico del dock: «continua», «inizia»,
+      // «ricomincia», l'uscita rimasta. Arriva qui solo dove non si scrive —
+      // il campo, quando c'è, se lo prende da sé — e con le battute di un
+      // dialogo aperte non fa niente: quelle sono una scelta, e sceglierne una
+      // per inerzia è il modo più rapido di dire una cosa che non si voleva
+      // dire.
+      if (e.key === 'Enter') {
+        const b = this.dock.querySelector<HTMLButtonElement>('button.choice.continue:not([disabled])');
+        if (b) {
+          e.preventDefault();
+          b.click();
+        }
         return;
       }
       // Le cifre restano: sono le stesse stampate accanto a ogni voce.
@@ -679,17 +966,30 @@ class Game {
     this.panel.render();
   }
 
-  private fullscreen(src: string, caption: string): void {
-    const box = el('div', 'pieno');
-    const img = new Image();
-    img.src = src;
-    box.append(img);
-    if (caption) box.append(el('p', 'didascalia', caption));
-    // Si chiude con un tocco ovunque: su un telefono un popup che si chiude in
-    // un punto solo è il modo più rapido di far uscire qualcuno dalla partita.
-    box.addEventListener('click', () => box.remove());
-    document.body.append(box);
+}
+
+/** Un evento che qualcuno dice: è quello che apre un blocco. Il resto — suoni,
+ * cambi di stato, diagnostica — sta appeso a ciò che lo precede. */
+function parlante(e: TurnEvent): boolean {
+  return e.kind === 'narration' || e.kind === 'say' || e.kind === 'system';
+}
+
+/**
+ * Il turno diviso in blocchi da leggere uno alla volta.
+ *
+ * Un blocco è una cosa detta con appesi i campi che la descrivono. Non è logica
+ * di flusso che il player si inventa: gli eventi e il loro ordine restano
+ * quelli che il core ha deciso, cambia il momento in cui si vedono, che è
+ * impaginazione.
+ */
+function blocchi(events: TurnEvent[]): TurnEvent[][] {
+  const out: TurnEvent[][] = [];
+  for (const e of events) {
+    const ultimo = out[out.length - 1];
+    if (!ultimo || (parlante(e) && ultimo.some(parlante))) out.push([e]);
+    else ultimo.push(e);
   }
+  return out;
 }
 
 /**

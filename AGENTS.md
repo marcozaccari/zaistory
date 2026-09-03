@@ -57,7 +57,19 @@ Ordine della ricostruzione (in `ARCHITECTURE.md`, «Stato del lavoro»):
    id doppi fra oggetti di luoghi diversi, un elenco degli oggetti richiesti a
    valle che non pretende più quelli che a valle si trovano da soli, la fase che
    si marca come vista e perdeva la propria narrazione, e le azioni del luogo
-   che aprono un dialogo che non tutte le fasi hanno. 40 test.
+   che aprono un dialogo che non tutte le fasi hanno. Sono poi
+   tornati i pezzi che nel passaggio erano rimasti indietro — il foglio di stile
+   li vestiva ancora, ma nessuno li costruiva più: la **lente a schermo intero**
+   con la figura dell'oggetto guardato, la **copertina** (locandina nella
+   scheda, versione e lingua, stile per intero, anagrafica sotto il debug) con
+   il palco spento e la barra muta finché non si comincia, il **«continua»**
+   fra un beat e l'altro e fra due battute, la **meccanica interna** che torna
+   sotto il debug (la classe che la nascondeva non esisteva nel foglio di
+   stile), e l'**ispezione del luogo** nel dock — gesti, bersagli, azioni con
+   condizione, effetto e il segno di quali sbloccano; e poi il cassetto
+   dell'inventario accanto a quello della mappa, la battuta scelta che entra nel
+   flusso col nome di chi la dice, l'invio sul «continua» ed Esc sui cassetti, e
+   la traccia che scarta i tentativi a vuoto e nomina le battute. 43 test.
 4. ~~**il modulo assets**~~ — fatto: estrazione sulla nuova gerarchia (oggetti
    d'ambiente e cutscene di passaggio compresi), studio, pubblicazione,
    **`rebind.py`**, gli script di avvio e i tre selftest, che ora girano sulla

@@ -177,6 +177,31 @@ export function openExits(pl: Place | undefined, st: GameState): Exit[] {
   return knownExits(pl, st).filter((e) => st.ok(e.condition));
 }
 
+/**
+ * L'immagine con cui si mostra un luogo, quando ce n'è una.
+ *
+ * Tre strade, in ordine di quanto sono *del luogo*: la sua ancora, che è il
+ * riferimento stabile scritto apposta; quella del luogo che gli è fisicamente
+ * identico (`same_as`), perché due nodi di due grafi diversi possono essere la
+ * stessa stanza; e infine la prima inquadratura di base dichiarata fra le sue
+ * fasi, che è comunque una fotografia di quel posto.
+ *
+ * Non si inventa niente: sono tutti e tre id già pubblicati e scritti nel file.
+ * Serve perché l'ancora di un luogo è facoltativa — su una storia vera la
+ * scrivono meno della metà — e una mappa in cui una destinazione su tre ha la
+ * figura e le altre no si legge peggio di una senza figure affatto.
+ */
+export function placeImage(idx: StoryIndex, pl: Place | undefined): string | undefined {
+  if (!pl) return undefined;
+  const twin = pl.same_as ? idx.places.get(pl.same_as) : undefined;
+  return pl.image ?? twin?.image ?? firstBackground(pl) ?? (twin ? firstBackground(twin) : undefined);
+}
+
+function firstBackground(pl: Place): string | undefined {
+  for (const ph of pl.phases) if (ph.background?.image) return ph.background.image;
+  return undefined;
+}
+
 /** Come si chiama un'uscita per chi legge: l'etichetta se c'è, altrimenti il
  * nome della destinazione. */
 export function exitLabel(idx: StoryIndex, e: Exit): string {

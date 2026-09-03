@@ -20,10 +20,11 @@
  * leggere meglio, non a leggere alla cieca.
  */
 
-import type { Background, NarrationBeat, Phase, Place, StoryIndex } from '../core/index.js';
+import type { Background, NarrationBeat, Phase, PhaseCharacter, Place, StoryIndex } from '../core/index.js';
 import { displayName } from '../core/index.js';
 import { byId, clear, el, initials } from './dom.js';
 import type { Images } from './images.js';
+import { apriGrande } from './lightbox.js';
 import { promptNudi, promptRow, type PromptRow } from './prompt.js';
 import { doppio } from './names.js';
 
@@ -47,7 +48,6 @@ export class Stage {
   constructor(
     private readonly idx: StoryIndex,
     private readonly images: Images,
-    private readonly onOpenFull: (src: string, caption: string) => void,
   ) {
     this.handle.addEventListener('click', () => {
       const ridotto = document.body.classList.toggle('palco-ridotto');
@@ -133,7 +133,7 @@ export class Stage {
 
     const righe: PromptRow[] = [
       ['place', pl ? doppio(displayName(pl), `${pl.id} — ${displayName(pl)}`) : undefined, 'none'],
-      ['characters_in_frame', this.nomiInCampo(ph), 'none'],
+      ['characters_in_frame', this.nomiInCampo(), 'none'],
     ];
     for (const r of righe) if (r[1]) this.riga.append(promptRow(r as [string, string, 'none']));
 
@@ -143,16 +143,13 @@ export class Stage {
   /**
    * Chi è in campo, coi nomi del cast quando li si conosce.
    *
-   * Torna `undefined` quando le facce lo dicono già: una riga «in campo ·
-   * Laura, Mark» sotto due ritratti accesi è la stessa cosa scritta due volte,
-   * e la seconda occupa la striscia che serve al tono.
+   * La riga si vede solo col debug — fuori di lì lo dicono le facce qui sotto —
+   * e lì la domanda è cosa l'inquadratura *dichiara*: quindi si scrive sempre,
+   * anche quando i ritratti accesi la ripetono.
    */
-  private nomiInCampo(ph: Phase | undefined) {
+  private nomiInCampo() {
     const ids = this.current?.inFrame ?? [];
     if (!ids.length) return undefined;
-    const roster = (ph?.characters ?? []).map((c) => c.id).filter((id) => id !== this.idx.story.protagonist);
-    const senzaFaccia = ids.filter((id) => !roster.includes(id));
-    if (roster.length > 0 && senzaFaccia.length === 0) return undefined;
     const nome = (id: string) => displayName(this.idx.characters.get(id) ?? { id });
     return doppio(ids.map(nome).join(', '), ids.join(', '));
   }
@@ -167,7 +164,19 @@ export class Stage {
       : undefined;
     if (img) {
       this.tela.classList.remove('nuda');
-      img.addEventListener('click', () => this.onOpenFull(img.src, this.caption()));
+      // Toccare l'inquadratura la apre grande, coi prompt che l'hanno
+      // prodotta: è lì che si decide se quell'asset va bene.
+      img.tabIndex = 0;
+      img.setAttribute('role', 'button');
+      img.title = 'guardala a schermo intero';
+      const guarda = () => apriGrande({ src: img.src, titolo: this.titolo(), righe: this.righe() });
+      img.addEventListener('click', guarda);
+      img.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          guarda();
+        }
+      });
       this.tela.append(img);
     } else {
       this.mostraPrompt();
@@ -199,8 +208,30 @@ export class Stage {
     clear(this.cast);
     const inFrame = this.current?.inFrame ?? [];
     const debug = document.body.classList.contains('debug');
-    for (const c of ph?.characters ?? []) {
-      if (c.id === this.idx.story.protagonist) continue;
+
+    // Chi è in campo ha una faccia anche se la fase corrente non lo elenca.
+    //
+    // Succede a ogni stacco che scavalca una fase: i beat di una cutscene
+    // arrivano mentre la fase che vale *adesso* è già la successiva, e la sua
+    // roster non è quella dell'inquadratura che si sta guardando. Mark schiacciato
+    // sotto il Cane-robot è dichiarato in campo dal beat e non compare fra i
+    // personaggi della fase che gli sopravvive: senza questa unione resta senza
+    // miniatura proprio nel momento in cui la figura lo mostra.
+    //
+    // La roster della fase resta prima, ed è giusto: è lì che stanno gli
+    // override d'aspetto e di voce. Chi arriva dall'inquadratura ricade sulla
+    // scheda globale del personaggio.
+    const roster: PhaseCharacter[] = [...(ph?.characters ?? [])];
+    for (const id of inFrame) {
+      if (!roster.some((c) => c.id === id) && this.idx.characters.has(id)) roster.push({ id });
+    }
+
+    for (const c of roster) {
+      // Il protagonista sta in fila con gli altri: che ci sia non è affatto
+      // scontato — una cutscene può raccontare una scena in cui il personaggio
+      // del giocatore proprio non c'è — e la fase lo dice dichiarandolo o no
+      // fra i suoi `characters`. Toglierlo d'ufficio faceva sparire l'unica
+      // faccia il cui vedersi o meno è un'informazione di trama.
       const acceso = inFrame.length === 0 || inFrame.includes(c.id);
       // A chi gioca i non inquadrati non si mostrano affatto: `characters`
       // elenca chiunque sia presente, anche chi deve ancora entrare, e una
@@ -217,22 +248,47 @@ export class Stage {
       if (img) box.append(img);
       else box.append(el('span', 'iniziali', initials(nome)));
       box.append(el('span', 'nome', nome));
-      box.addEventListener('click', () => {
-        const src = this.images.url(c.image ?? ch?.image);
-        const cap = [nome, c.visual_prompt ?? ch?.visual_prompt, ch?.voice?.style_prompt && `Voce: ${ch.voice.style_prompt}`]
-          .filter(Boolean)
-          .join(' — ');
-        if (src) this.onOpenFull(src, cap);
-        else alert(cap);
-      });
+      // Anche senza immagine il volto si apre: in solo testo — o prima che gli
+      // asset esistano — allargare un personaggio deve comunque portare ai suoi
+      // prompt, perché è lì che vivono.
+      box.addEventListener('click', () =>
+        apriGrande({
+          src: this.images.usable ? this.images.url(c.image ?? ch?.image) : undefined,
+          titolo: nome,
+          righe: [
+            [`visual_prompt${c.visual_prompt ? ' (override)' : ''}`, c.visual_prompt ?? ch?.visual_prompt, 'image'],
+            [`voice.style_prompt${c.voice ? ' (override)' : ''}`, (c.voice ?? ch?.voice)?.style_prompt, 'voice'],
+          ],
+        }),
+      );
       this.cast.append(box);
     }
     this.cast.hidden = this.cast.childElementCount === 0;
   }
 
-  private caption(): string {
+  /**
+   * Di cosa è l'inquadratura che si sta guardando: il luogo, e la fase quando
+   * ne ha un titolo suo.
+   *
+   * Sulla copertina non c'è né l'uno né l'altra — la partita non è ancora
+   * cominciata — e lì vale il titolo della storia: è pur sempre il nome di ciò
+   * che si sta guardando, ed è scritto nel file come tutto il resto.
+   */
+  private titolo(): string {
+    const pl = this.current?.place ? this.idx.places.get(this.current.place) : undefined;
+    return [pl && displayName(pl), this.phase?.title].filter(Boolean).join(' — ') || this.idx.story.title;
+  }
+
+  /** I prompt che hanno prodotto — o che produrranno — questa inquadratura.
+   * Sono gli stessi che la modalità testo mette al posto della figura: nella
+   * lente stanno accanto al risultato, che è dove servono per giudicarlo. */
+  private righe(): PromptRow[] {
     const c = this.current;
     const pl = c?.place ? this.idx.places.get(c.place) : undefined;
-    return [c?.prompt, pl?.visual_prompt].filter(Boolean).join(' — ');
+    return [
+      ['image_prompt', c?.prompt, 'image'],
+      ['ambient_sound_prompt', c?.sound, 'sound'],
+      [pl ? `places.${pl.id}.visual_prompt` : 'place', pl?.visual_prompt, 'image'],
+    ];
   }
 }

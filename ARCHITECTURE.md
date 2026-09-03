@@ -489,7 +489,18 @@ dispersa dentro gli effetti.
   disegnato a mano per ogni storia: un concetto in più nel formato e un lavoro
   d'autore senza ritorno. È una griglia di luoghi conosciuti, raggruppata per
   atto, con lo stato in evidenza, e le miniature sono le immagini dei luoghi già
-  pubblicate.
+  pubblicate. **Una destinazione la si riconosce dalla figura prima che dal
+  nome**, quindi la figura si cerca per tre strade in ordine di quanto sono *del
+  luogo*: la sua ancora, quella del luogo che gli è fisicamente identico
+  (`same_as`), e la prima inquadratura di base dichiarata fra le sue fasi.
+  L'ancora è facoltativa e su una storia vera la scrivono meno della metà dei
+  luoghi: una mappa in cui una destinazione su tre ha la figura e le altre no si
+  legge peggio di una senza figure affatto. Dove non c'è niente da mostrare —
+  nessun id, o immagini spente — resta il solo testo, e il riquadro si stringe
+  invece di lasciare un buco.
+- **La mappa dice anche dove si è**, per prima e spenta: non è una destinazione
+  e non si tocca, ma una mappa che mostra solo le strade e non il punto da cui
+  partono chiede di ricordarselo, ed è l'unica cosa che chi la apre sa già.
 - **Nel debug si vede di più**: anche i luoghi sconosciuti e gli inaccessibili,
   spenti. Stesso criterio delle facce del cast — al giocatore niente
   anticipazioni, a chi ispeziona la dichiarazione completa.
@@ -1042,25 +1053,80 @@ cima sta il palco con l'inquadratura, il tono, dove siamo, chi è in campo e le
 facce del cast; sotto scorre il transcript con narrazione, parlato, ambiente
 sonoro ed effetti.
 
+- **La copertina è una schermata, non un'inquadratura.** Ci si sta sopra finché
+  non si decide di cominciare, e per questo la locandina sta nella scheda e non
+  sul palco: il palco dice *dove si è*, e prima di «inizia» non si è da nessuna
+  parte — la barra in testa, per la stessa ragione, non nomina nessun luogo. La
+  scheda risponde in un colpo d'occhio alle domande che ci si fa aprendo una
+  storia che non si è compilata adesso: di cosa parla, in che lingua, con che
+  versione del formato, che stile hanno le immagini e le voci. Il resto —
+  l'identità del file, la roster, i luoghi, gli oggetti, i flag — è materiale da
+  ispezione e compare col debug, in elenchi che nascono chiusi col conto nel
+  titolo.
 - **L'inquadratura corrente sta ferma, il racconto le scorre sotto.** Ogni
   immagine nuova prende il posto della precedente. Finché le figure scorrevano
   dentro il transcript, quella di adesso usciva dallo schermo appena si scorreva
   per leggere la riga che la commenta: due movimenti per una cosa sola. Un nodo
   senza immagine **non svuota il palco** — resta l'ultima inquadratura, che è
   esattamente ciò che succede quando la macchina non si è spostata.
-- **Il tono non si nasconde mai.** È l'unico campo del palco che non descrive
-  un'immagine: è la chiave con cui si legge tutto quello che scorre sotto.
+- **Il tono non si nasconde mai, e fuori dal debug è l'unica cosa scritta sul
+  palco.** È l'unico campo che non descrive un'immagine: è la chiave con cui si
+  legge tutto quello che scorre sotto. Il luogo e chi è in campo, accanto a lui,
+  sono la stessa cosa scritta due volte — il primo sta già nella barra in testa,
+  il secondo lo dicono le facce qui sotto — e la seconda volta occupa la
+  striscia che serve al tono. Restano nel documento e tornano col debug, dove la
+  domanda è cosa l'inquadratura *dichiara*.
 - **I prompt stanno dentro la cosa che descrivono.** Non su una riga a parte del
   transcript: si aprono allargando ciò a cui appartengono. È il collegamento più
   corto fra un asset e il testo che lo produce, ed è anche il momento in cui
   serve — guardandolo grande si decide se va bene.
+- **Toccare un'immagine la apre grande**, con i suoi prompt per didascalia: vale
+  per l'inquadratura, per le facce del cast e per la figura di un oggetto. La
+  lente si apre **anche dove l'immagine non c'è**, perché è lì che i prompt
+  vivono, e si chiude con un tocco in qualunque punto — su un telefono un popup
+  che si chiude in un punto solo è il modo più rapido di far uscire qualcuno
+  dalla partita.
+- **La cosa che si sta guardando compare accanto alla sua descrizione.** Un
+  oggetto tirato fuori dallo zaino o un oggetto d'ambiente osservato mostrano la
+  loro figura nel transcript, sopra il testo: sono riferimenti dentro un
+  discorso, e appartengono alla riga accanto a cui compaiono. I **personaggi**
+  no: la loro faccia sta già sul palco, dove risponde per tutta la scena invece
+  che una volta sola. E nell'elenco delle chip nemmeno gli oggetti: lì sono voci
+  di menu, e dieci miniature in fila sono un inventario da gioco di ruolo, non
+  la risposta a «cosa ho in mano».
 - **Il cast di scena sta di lato, tutto, per tutta la fase.** Miniature piccole
   sul bordo: di lato perché non devono rubare altezza alla figura, sempre in
   vista perché «chi c'è qui» è una domanda che ci si fa in continuazione. Chi è
   dichiarato in campo è acceso; **a chi gioca i non-inquadrati non si mostrano
   affatto**, perché una faccia spenta in fila annuncia che sta per arrivare
   qualcuno. Col debug si vedono spenti, perché lì la domanda è cosa *dichiara*
-  l'inquadratura.
+  l'inquadratura. **Il protagonista sta in fila con gli altri**: che ci sia non è
+  affatto scontato — una cutscene può raccontare una scena in cui il personaggio
+  del giocatore proprio non c'è — e la fase lo dice dichiarandolo o no fra i suoi
+  `characters`. È l'unica faccia il cui vedersi o meno sia un'informazione di
+  trama, e toglierla d'ufficio la buttava via. **Chi l'inquadratura dichiara in
+  campo ha una faccia anche se la fase corrente non lo elenca**: a ogni stacco
+  che scavalca una fase i beat arrivano mentre la fase che vale adesso è già
+  un'altra, e la sua roster non è quella della figura che si sta guardando. La
+  roster della fase resta prima — è lì che stanno gli override d'aspetto e di
+  voce — e chi arriva dall'inquadratura ricade sulla scheda globale.
+- **La battuta che il giocatore sceglie sta nel flusso come tutte le altre**:
+  il nome sopra, la riga sotto, e una sola differenza — azzurro invece che oro,
+  perché è l'unica riga della storia a essere insieme parola d'autore e cosa
+  fatta dal giocatore. Al suo posto c'era il numero della scelta, che diceva
+  «questo l'ha registrato il player» invece di «questo l'hai detto tu»: chi
+  rileggeva vedeva il dialogo interrompersi a ogni sua mossa e ricominciare
+  dopo.
+- **L'invio esegue il passo unico del dock** — «continua», «inizia», l'uscita
+  rimasta — e **Esc chiude il cassetto aperto**, o il menu. Sono i due gesti con
+  cui si sta su una pagina senza spostare il puntatore, e su desktop il
+  «continua» a ogni beat è il bottone più premuto della partita.
+- **Quello che si ha in mano ha un cassetto suo, accanto alla mappa.** Sono le
+  due scorciatoie che saltano la digitazione — «vai» e «guarda quello che ho» —
+  e per questo stanno accanto al campo e non in barra. Il menu è dove si va per
+  *cambiare* qualcosa; dove si è lo dice la barra in testa, e cercare
+  l'inventario dentro un'impostazione voleva dire aprire il menu per guardare la
+  storia.
 - **Il palco c'è sempre, anche senza immagini**: al posto della figura
   l'`image_prompt`, al posto delle facce le iniziali. Un posto solo dove guardare
   in tutte e due le modalità.
@@ -1176,6 +1242,15 @@ cose che sono la stessa cosa:
   non butta via la partita**. Su un telefono ricaricare non è quasi mai un gesto
   deliberato: è il browser che scarica la scheda per fare spazio.
 
+Nella traccia va solo quello che ha **mosso la storia**: una frase che ha
+ricevuto il ripiego per intenzione non ha fatto succedere niente, e rigiocandola
+non farebbe succedere niente un'altra volta — tenerla significa allungare il
+salvataggio con i tentativi andati a vuoto e farli rileggere tutti a chi lo
+riprende. A dirlo è il core, con `noMatch` sull'esito del turno: lui constata,
+non decide cosa farne. E le battute di dialogo si scrivono **«battuta N»**: il
+numero nudo è la scorciatoia sotto le dita, ma in un salvataggio una colonna di
+cifre non dice di che cosa fossero il numero.
+
 Una traccia esaurita **finisce la partita in CLI e la restituisce al giocatore
 sul web**: è lo stesso file, ma in CLI una traccia che si esaurisce prima del
 finale è un test fallito, e sul web è semplicemente il punto in cui si riprende a
@@ -1193,6 +1268,22 @@ l'elenco delle azioni disponibili e **tutte** le azioni della fase, comprese
 quelle filtrate da una condizione, con accanto condizione richiesta ed effetto
 risultante. Serve a capire *perché* un'azione non compare, che è la domanda che
 ci si pone il 90% delle volte quando si collauda una storia.
+
+Sotto il campo, l'ispezione del luogo risponde a tre domande nell'ordine in cui
+ci si fanno collaudando: **con che gesto** si può agire qui (i verbi che almeno
+un'azione aperta usa), **su cosa** (i bersagli delle azioni aperte, le tre
+specie insieme, perché al parser non importa quale sia), e **cosa cambia**
+ciascuna azione — con il segno di quali *sbloccano* qualcosa, cioè non sono pure
+osservazioni, e di quali sono già state fatte. Un luogo dove nessuna azione
+sblocca niente è un vicolo cieco, e così si vede a colpo d'occhio invece che
+giocandoci contro.
+
+**La meccanica interna vive qui e solo qui.** Un flag che cambia, un oggetto che
+entra nello zaino, una diagnostica di testo mancante: stanno nel documento
+sempre — così accendere il debug mostra anche quello che è già passato — e si
+vedono solo a interruttore acceso. Chi gioca non legge mai un messaggio di
+macchina al posto della storia. L'unica eccezione è `problem`, che segnala una
+storia **rotta**: lì non c'è niente da leggere al suo posto.
 
 Le **chip dei verbi restano sotto il debug** per ora. Vale la pena registrare che
 la ragione originale è decaduta: le chip erano vietate perché elencavano le

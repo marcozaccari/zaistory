@@ -84,12 +84,25 @@
     </div>
 
     <!-- La mappa: ci si muove a scelte, come si parla a scelte. -->
-    <aside id="mappa" class="mappa" hidden aria-label="dove andare">
-      <div class="mappa-testa">
+    <aside id="mappa" class="cassetto" hidden aria-label="dove andare">
+      <div class="cassetto-testa">
         <button class="icon" id="btn-chiudi-mappa" aria-label="Chiudi la mappa">✕</button>
         <strong>dove andare</strong>
       </div>
-      <div class="mappa-corpo" id="mappa-corpo"></div>
+      <div class="cassetto-corpo" id="mappa-corpo"></div>
+    </aside>
+
+    <!-- L'inventario. Sta qui accanto alla mappa e non nel menu perche' e'
+         materiale di gioco e non un'impostazione: quello che si ha in mano e'
+         l'unica cosa che il giocatore non puo' rileggere scorrendo indietro,
+         perche' non e' mai stata scritta tutta insieme da nessuna parte. Si
+         apre col pollice mentre si gioca, dallo stesso posto della mappa. -->
+    <aside id="inventario" class="cassetto" hidden aria-label="cosa hai in mano">
+      <div class="cassetto-testa">
+        <button class="icon" id="btn-chiudi-inventario" aria-label="Chiudi l'inventario">✕</button>
+        <strong>inventario</strong>
+      </div>
+      <div class="cassetto-corpo" id="inventario-corpo"></div>
     </aside>
 
     <!-- Pannello laterale -->
@@ -108,7 +121,6 @@
                gli enigmi al posto suo. -->
           <button data-tab="stato" data-debug>stato</button>
           <button data-tab="linter" data-debug>linter<span class="badge" id="lint-badge" hidden></span></button>
-          <button data-tab="traccia" data-debug>traccia</button>
         </nav>
       </div>
       <div class="panel-body" id="panel-body"></div>

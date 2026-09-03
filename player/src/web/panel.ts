@@ -12,7 +12,7 @@
  */
 
 import type { Finding, Session } from '../core/index.js';
-import { countBySeverity, displayName, lint } from '../core/index.js';
+import { countBySeverity, lint } from '../core/index.js';
 import { byId, clear, conferma, el, kv, premi } from './dom.js';
 import type { ConfigEmbedder } from './embedder.js';
 import { ASCOLTO_DEFAULT, type ImpostazioniAscolto, type Listen } from './listen.js';
@@ -23,18 +23,15 @@ import { ASCOLTO_DEFAULT, type ImpostazioniAscolto, type Listen } from './listen
  * Le prime quattro sono per chi gioca; le ultime tre ispezionano, e a debug
  * spento non compaiono nemmeno.
  */
-export type Tab = 'principale' | 'disco' | 'interprete' | 'ascolto' | 'stato' | 'linter' | 'traccia';
+export type Tab = 'principale' | 'disco' | 'interprete' | 'ascolto' | 'stato' | 'linter';
 
 /** Le schede che esistono solo a debug acceso. */
-export const TAB_DEBUG: readonly Tab[] = ['stato', 'linter', 'traccia'];
+export const TAB_DEBUG: readonly Tab[] = ['stato', 'linter'];
 
 export interface PanelHooks {
   trace: () => string;
   resume: (text: string) => void;
   restart: () => void;
-  /** Guardare un oggetto che si ha in mano: chiude il menu e ne fa leggere la
-   * descrizione nel trascritto, come se lo si fosse nominato giocando. */
-  lookAt: (itemId: string) => void;
   version: string;
   imagesWhy: string;
   /** La modalità ascolto e il modo di regolarla a partita in corso. */
@@ -125,35 +122,21 @@ export class Panel {
         return this.stato();
       case 'linter':
         return this.linter();
-      case 'traccia':
-        return this.traccia();
     }
   }
 
   // ---------------------------------------------------------- principale
 
   /**
-   * Dove sei e cosa hai in mano.
+   * Quello che si fa alla partita, non quello che c'è dentro.
    *
-   * È la prima perché è l'unica che serve a chi sta giocando e basta. Dice le
-   * due cose che si dimenticano davvero — in che posto si è e cosa si è
-   * raccolto — con le parole della storia e non con quelle del file: il nome
-   * del luogo, non il suo id.
-   *
-   * «Ricomincia» sta qui sotto e non nel piede del menu: è l'unico comando che
-   * qualcuno cerchi *mentre* legge questa scheda — si guarda dove si è arrivati
-   * e cosa si ha in mano, e da lì si decide se rifare la strada.
+   * Dove si è e cosa si ha in mano stavano qui, e adesso no: il primo è scritto
+   * nella barra in testa e il secondo ha un cassetto suo accanto al campo. Il
+   * menu è dove si va per **cambiare** qualcosa — ricominciare, regolare la
+   * voce, cambiare interprete — e il materiale di gioco lì dentro chiedeva di
+   * aprire un'impostazione per guardare la storia.
    */
   private principale(): void {
-    const s = this.session.snapshot();
-
-    this.body.append(el('h3', undefined, 'dove sei'));
-    this.body.append(el('p', undefined, s.place ? displayName(s.place) : '—'));
-    if (s.look) this.body.append(el('p', 'empty', s.look));
-
-    this.body.append(el('h3', undefined, 'cosa hai in mano'));
-    this.body.append(this.inventario());
-
     // Un filo più marcato di quelli che dividono le sezioni: sotto c'è l'unico
     // bottone del player che possa buttare via qualcosa di irrecuperabile, e
     // non deve sembrare la continuazione dell'elenco che gli sta sopra.
@@ -177,45 +160,15 @@ export class Panel {
     }
   }
 
-  /**
-   * L'inventario: i nomi degli oggetti, e ognuno si può guardare.
-   *
-   * Toccarne uno chiude il menu e ne fa leggere la descrizione nel trascritto —
-   * la stessa che si otterrebbe nominandolo mentre si gioca. È il motivo per
-   * cui questa scheda è la prima: quello che si ha in mano è l'unica cosa che
-   * il giocatore non può rileggere scorrendo indietro, perché non è mai stata
-   * scritta tutta insieme da nessuna parte.
-   */
-  private inventario(): HTMLElement {
-    const inv = this.session.snapshot().inventory;
-    if (!inv.length) return el('p', 'empty', 'non hai niente con te');
-
-    const box = el('div', 'chips inventario');
-    for (const it of inv) {
-      if (!it) continue;
-      // Un oggetto senza descrizione non è toccabile: non c'è niente da
-      // leggere e il player non lo inventa. Il linter intanto lo segnala, che è
-      // il posto dove quel buco va risolto.
-      if (!it.description && !it.description_variants?.length) {
-        box.append(el('span', 'chip', displayName(it)));
-        continue;
-      }
-      const b = el('button', 'chip oggetto', displayName(it));
-      b.type = 'button';
-      b.onclick = async () => {
-        await premi(b);
-        this.close();
-        this.hooks.lookAt(it.id);
-      };
-      box.append(b);
-    }
-    return box;
-  }
-
   // --------------------------------------------------------------- disco
 
   private disco(): void {
-    this.body.append(el('h3', undefined, 'portare via la partita'));
+    const trace = this.hooks.trace();
+    const passi = trace ? trace.split('\n').filter((l) => l.trim()).length : 0;
+    // Il conto dei passi stava nella scheda «traccia», che diceva la stessa
+    // cosa di questa con altre parole. Qui è anche più utile: dice quanto è
+    // lunga la partita che si sta per copiare.
+    this.body.append(el('h3', undefined, `portare via la partita (${passi} ${passi === 1 ? 'passo' : 'passi'})`));
     this.body.append(
       el(
         'p',
@@ -229,7 +182,7 @@ export class Panel {
     const ta = el('textarea', 'trace');
     ta.rows = 8;
     ta.readOnly = true;
-    ta.value = this.hooks.trace();
+    ta.value = trace;
     this.body.append(ta);
 
     const btns = el('div', 'rowbtns');
@@ -563,45 +516,6 @@ export class Panel {
     );
   }
 
-  // ------------------------------------------------------------- traccia
-
-  private traccia(): void {
-    const trace = this.hooks.trace();
-    const passi = trace ? trace.split('\n').filter((l) => l.trim()).length : 0;
-    this.body.append(el('h3', undefined, `traccia (${passi} ${passi === 1 ? 'passo' : 'passi'})`));
-    this.body.append(
-      el(
-        'p',
-        'empty',
-        'Poiché il parser può solo scegliere fra azioni già definite, questa sequenza descrive per intero la ' +
-          'partita: rigiocarla è il test di regressione della storia.',
-      ),
-    );
-    this.body.append(el('pre', 'trace', trace || '(vuota)'));
-
-    const btns = el('div', 'rowbtns');
-    const copy = el('button', 'btn', 'copia');
-    copy.onclick = async () => {
-      void premi(copy).then(() => copy.classList.remove('premuto'));
-      try {
-        await navigator.clipboard.writeText(trace);
-        copy.textContent = 'copiata';
-        setTimeout(() => (copy.textContent = 'copia'), 1200);
-      } catch {
-        copy.textContent = 'selezionala a mano';
-      }
-    };
-    const restart = el('button', 'btn', 'ricomincia');
-    restart.onclick = async () => {
-      await premi(restart);
-      if (await chiediSeRicominciare()) {
-        this.close();
-        this.hooks.restart();
-      }
-    };
-    btns.append(copy, restart);
-    this.body.append(btns);
-  }
 }
 
 // ----------------------------------------------------------------- pezzi

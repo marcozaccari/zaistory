@@ -106,6 +106,24 @@ export function verbOfIntent(i: Intent): Verb | undefined {
   }
 }
 
+/**
+ * Come si chiama in italiano il gesto di un verbo.
+ *
+ * Sta qui e non nell'interfaccia perché è vocabolario: è la parola che il
+ * giocatore scriverebbe per fare quella cosa, la stessa radice che il parser
+ * riconosce, e il posto dei dati di lingua è questo file.
+ */
+export function verbLabel(v: Verb): string {
+  switch (v) {
+    case 'look':
+      return 'guarda';
+    case 'use':
+      return 'usa';
+    case 'talk':
+      return 'parla';
+  }
+}
+
 export function intentOfVerb(v: Verb): Intent {
   switch (v) {
     case 'look':

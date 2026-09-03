@@ -38,6 +38,13 @@ import type {
  * cui il giocatore le chiama, e una descrizione. È tutto ciò che serve per
  * rispondere a «guarda quella cosa». */
 type Describable = Item | Prop | Character;
+
+/** Una cosa che è qui, e di che specie: la specie non si ricava dall'oggetto —
+ * le tre interfacce si somigliano troppo — e serve a chi la mostra. */
+interface Found {
+  kind: Named['kind'];
+  entity: Describable;
+}
 import { displayName, pick, surfaces, textNow } from './types.js';
 import { GameState } from './state.js';
 import type { EffectSink, Jump } from './state.js';
@@ -90,6 +97,20 @@ export interface TurnEvent {
   /** Chi ha deciso questa risposta. Si mostra sempre, non solo in debug: un
    * rapporto di copertura non dice cosa si prova a giocarci. */
   by?: string;
+  /** Per la descrizione di una cosa nominata: **quale** cosa.
+   *
+   * Sta qui perché a sceglierla è il parser, e un'interfaccia che volesse
+   * mostrarne la figura dovrebbe altrimenti rifare da capo quella scelta —
+   * cioè duplicare fuori dal core la regola che dice cosa il giocatore ha
+   * nominato. Il core non decide che se ne faccia: dice solo di chi sta
+   * parlando. */
+  about?: Named;
+}
+
+/** Una delle tre specie di bersaglio, con l'id che la ritrova nell'indice. */
+export interface Named {
+  kind: 'item' | 'prop' | 'character';
+  id: string;
 }
 
 export interface TurnResult {
@@ -100,6 +121,16 @@ export interface TurnResult {
   /** L'unica uscita rimasta, quando nel luogo non resta niente da fare. */
   suggestedExit?: { label: string; to: string };
   ended?: { kind: 'natural' | 'premature'; label?: string };
+  /**
+   * Il turno non ha risolto niente.
+   *
+   * Né un'azione, né un'uscita, né una domanda sull'interfaccia, né una cosa
+   * che è qui: quello che si è letto è il ripiego per intenzione. Il core non
+   * decide che farne — lo dice e basta — ma chi tiene una traccia rigiocabile
+   * ha bisogno di saperlo: una frase che non ha mosso la storia non la muoverà
+   * nemmeno rigiocandola, e nel salvataggio è solo un tentativo andato a vuoto.
+   */
+  noMatch?: boolean;
 }
 
 /**
@@ -276,7 +307,9 @@ export class Session {
     if (this.answerNamedEntity(phrase)) return this.flush();
 
     this.fallback(res.kind === 'ambiguous' ? res.intent : res.intent);
-    return this.flush();
+    const muto = this.flush();
+    muto.noMatch = true;
+    return muto;
   }
 
   // --------------------------------------------- il secondo interprete
@@ -625,43 +658,48 @@ export class Session {
     const found = this.findNamedEntity(phrase);
     if (!found) return false;
 
-    const text = textNow(found.description, found.description_variants, this.state.ok);
+    const text = textNow(found.entity.description, found.entity.description_variants, this.state.ok);
     if (!text) {
-      this.push({ kind: 'note', text: `manca description su "${found.id}"` });
+      this.push({ kind: 'note', text: `manca description su "${found.entity.id}"` });
       return false;
     }
-    this.push({ kind: 'narration', text, by: 'cosa nominata' });
+    this.push({
+      kind: 'narration',
+      text,
+      by: 'cosa nominata',
+      about: { kind: found.kind, id: found.entity.id },
+    });
     return true;
   }
 
   /** La cosa che è qui e che la frase nomina, se ce n'è una. Separata da
    * `answerNamedEntity` perché `preview` deve poterla cercare senza scrivere
    * niente nel trascritto. */
-  private findNamedEntity(phrase: string): Describable | undefined {
+  private findNamedEntity(phrase: string): Found | undefined {
     const rs = roots(phrase);
     const pl = currentPlace(this.idx, this.state);
     const ph = currentPhase(pl, this.state);
 
     // Le tre specie, filtrate esattamente come le filtra il parser: una cosa
     // che non c'è non è un bersaglio nemmeno per essere guardata.
-    const here: Describable[] = [];
+    const here: Found[] = [];
     for (const id of this.state.inventory) {
       const it = this.idx.items.get(id);
-      if (it) here.push(it);
+      if (it) here.push({ kind: 'item', entity: it });
     }
-    here.push(...visibleProps(pl, this.state));
+    for (const pr of visibleProps(pl, this.state)) here.push({ kind: 'prop', entity: pr });
     for (const c of ph?.characters ?? []) {
       if (c.id === this.idx.story.protagonist) continue;
       const ch = this.idx.characters.get(c.id);
-      if (ch) here.push(ch);
+      if (ch) here.push({ kind: 'character', entity: ch });
     }
 
-    let best: { entity: Describable; score: number } | undefined;
-    for (const e of here) {
-      const s = bestAffinity(rs, surfaces(e));
-      if (s >= NAMED_ENTITY_FLOOR && (!best || s > best.score)) best = { entity: e, score: s };
+    let best: { found: Found; score: number } | undefined;
+    for (const f of here) {
+      const s = bestAffinity(rs, surfaces(f.entity));
+      if (s >= NAMED_ENTITY_FLOOR && (!best || s > best.score)) best = { found: f, score: s };
     }
-    return best?.entity;
+    return best?.found;
   }
 
   /**

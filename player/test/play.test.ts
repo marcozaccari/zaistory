@@ -199,10 +199,34 @@ test('una frase incomprensibile riceve il fallback per intenzione', () => {
   assert.match(texts(s.input('canto una canzone')), /Non ti viene in mente/);
 });
 
+test('un turno che non risolve niente lo dichiara', () => {
+  const s = fresh();
+  // Serve a chi tiene una traccia rigiocabile: una frase che non ha mosso la
+  // storia non la muoverà nemmeno rigiocandola.
+  assert.equal(s.input('spacco tutto a calci').noMatch, true);
+  assert.equal(s.input("do un'occhiata al bancone").noMatch, undefined);
+  assert.equal(s.input('cosa ho con me').noMatch, undefined);
+});
+
 test('una frase che nomina una cosa in mano parla di quella cosa', () => {
   const s = fresh();
   const r = texts(s.input('la lanterna spenta'));
   assert.match(r, /stoppino corto/);
+});
+
+test('la risposta di una cosa nominata dice di quale cosa parla', () => {
+  const s = fresh();
+  const e = s.input('la lanterna spenta').events.find((x) => x.about);
+  // Senza questo, la faccia web dovrebbe rifare da capo la scelta del
+  // bersaglio per sapere di che immagine si tratta.
+  assert.deepEqual(e?.about, { kind: 'item', id: 'lanterna_spenta' });
+});
+
+test("un oggetto d'ambiente nominato si distingue da uno in mano", () => {
+  const s = fresh();
+  // Non «il bancone»: lì c'è un'azione d'autore, e un'azione vince sempre.
+  const e = s.input('il camino').events.find((x) => x.about);
+  assert.deepEqual(e?.about, { kind: 'prop', id: 'camino' });
 });
 
 // -------------------------------------------------- atti, finale, memoria

@@ -44,6 +44,10 @@ const SEGNI: Record<string, string[]> = {
   // Una mappa piegata in tre: dove si puo' andare. Le due pieghe verticali
   // bastano a distinguerla da un foglio qualunque alla taglia di un bottone.
   map: ['M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z', 'M9 4v14', 'M15 6v14'],
+  // Uno zaino: quello che si ha in mano. La bretella sopra basta a
+  // distinguerlo da una scatola alla taglia di un bottone, e la riga della
+  // tasca a distinguerlo da una borsa.
+  bag: ['M6 9h12v11H6z', 'M9 9V6.5a3 3 0 016 0V9', 'M9 14h6'],
   // Tre cursori: lo stile globale, cioe' le regolazioni che valgono ovunque.
   style: ['M4 7h10', 'M18 7h2', 'M4 17h4', 'M12 17h8', 'M16 5v4', 'M8 15v4'],
   // Una A con la sua traversa e la riga di base: il carattere. E' l'unico segno
