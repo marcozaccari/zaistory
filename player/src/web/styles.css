@@ -938,7 +938,14 @@ body.debug .umano {
    che come l'informazione.
    Il luogo le stava accanto ed e' sceso sul palco, accanto al tono; il conto
    delle azioni e' sceso in fondo al dock, accanto all'elenco che conta. */
-.topbar .titles span .dove {
+/* Il colore va anche agli span dentro. L'atto e' scritto due volte — il nome
+   per chi gioca, l'id per chi collauda — quindi dentro `.dove` ci sono altri
+   due span, e `.topbar .titles span` piu' su li colora di grigio uno per uno:
+   se lo prendono per conto loro invece di ereditare l'oro del padre, e la riga
+   restava grigia mentre il colore stava tutto in un elemento che non aveva
+   testo suo da mostrare. */
+.topbar .titles span .dove,
+.topbar .titles span .dove span {
   color: var(--voce-atto);
 }
 
