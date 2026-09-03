@@ -12,7 +12,7 @@
  */
 
 import type { Finding, Session } from '../core/index.js';
-import { countBySeverity, lint } from '../core/index.js';
+import { actionsProgress, countBySeverity, describeEffect, lint, verbLabel } from '../core/index.js';
 import { byId, clear, conferma, el, kv, premi } from './dom.js';
 import type { ConfigEmbedder } from './embedder.js';
 import { ASCOLTO_DEFAULT, type ImpostazioniAscolto, type Listen } from './listen.js';
@@ -56,8 +56,22 @@ export class Panel {
   private tab: Tab = 'principale';
   private findings: Finding[] = [];
 
+  /**
+   * La sessione **di adesso**, e non quella di quando il menu è nato.
+   *
+   * È una funzione e non un riferimento, ed è il guasto che questa scheda
+   * aveva: rigiocare una partita — riprenderla, disfare un'azione,
+   * ricominciare — costruisce una `Session` nuova, e il menu continuava a
+   * ispezionare quella morta. La scheda «stato» mostrava così lo stato
+   * iniziale della storia dopo qualunque rigiocata, con l'aria di essere
+   * aggiornata.
+   */
+  private get session(): Session {
+    return this.leggiSessione();
+  }
+
   constructor(
-    private readonly session: Session,
+    private readonly leggiSessione: () => Session,
     private readonly hooks: PanelHooks,
   ) {
     byId('btn-panel').addEventListener('click', () => (this.root.hidden ? this.open() : this.close()));
@@ -466,41 +480,131 @@ export class Panel {
 
   // --------------------------------------------------------------- stato
 
+  /**
+   * Lo stato interno per intero, con gli id e non con i nomi.
+   *
+   * È l'altra faccia di «principale»: lì le cose si chiamano con le parole
+   * della storia, qui con quelle del file. Chi apre questa scheda non sta
+   * giocando — sta cercando di capire perché la storia non fa quello che
+   * dovrebbe — e la domanda è quasi sempre una di queste tre: *dove sono
+   * davvero*, *cosa si ricorda la partita di quello che ho fatto*, *perché
+   * quella cosa non parte*. Le tre sezioni rispondono in quest'ordine.
+   *
+   * Lo stato è piccolo e interamente derivabile dalla traccia: qui c'è tutto
+   * quello che il motore tiene, senza riassunti. Un campo che manca è una
+   * domanda a cui si risponde ricompilando il player.
+   */
   private stato(): void {
     const s = this.session.snapshot();
+    const st = this.session.state;
+    const idx = this.session.idx;
+    const mem = st.memoria;
+    const pr = actionsProgress(idx, s.place, s.phase, st);
 
+    // — dove si è, e da quanto
     this.body.append(el('h3', undefined, 'dove'));
-    const dl = el('dl', 'kv');
-    kv(dl, 'atto', s.act);
-    kv(dl, 'luogo', s.place?.id ?? '—');
-    kv(dl, 'fase', s.phase?.id ?? '—');
-    kv(dl, 'look', s.look || '— mancante');
-    kv(dl, 'tono', s.phase?.tone || `${this.session.idx.story.global_style?.default_tone ?? '—'} (default globale)`);
-    kv(dl, 'in dialogo', String(s.inDialogue));
-    this.body.append(dl);
+    const dove = el('dl', 'kv');
+    kv(dove, 'atto', s.act);
+    kv(dove, 'luogo', st.place || '—');
+    kv(dove, 'fase', s.phase?.id ?? '—');
+    kv(dove, 'turno', String(st.turn));
+    kv(dove, 'in dialogo', s.inDialogue ? (this.session.dialogueId ?? 'sì') : 'no');
+    if (st.ended) kv(dove, 'finita', `${st.ended.kind}${st.ended.label ? ` · ${st.ended.label}` : ''}`);
+    kv(dove, 'azioni fatte', `${pr.done}/${pr.total}${pr.left ? ` · restano ${pr.left}` : ' · niente da fare'}`);
+    kv(dove, 'look', s.look || '— mancante');
+    kv(dove, 'tono', s.phase?.tone || `${idx.story.global_style?.default_tone ?? '—'} (default globale)`);
+    this.body.append(dove);
 
-    this.body.append(el('h3', undefined, 'flag attivi'));
+    // — cosa la partita si porta dietro
+    this.body.append(el('h3', undefined, `flag attivi (${s.flags.length})`));
     this.body.append(chips(s.flags, 'nessun flag impostato'));
+    if (mem.carry.length) {
+      this.body.append(el('p', 'hint', 'trasportabili fra atti: ' + mem.carry.join(', ')));
+    }
 
-    this.body.append(el('h3', undefined, 'inventario (id)'));
-    this.body.append(chips(this.session.state.inventory, 'vuoto'));
+    this.body.append(el('h3', undefined, `inventario (${st.inventory.length})`));
+    this.body.append(chips(st.inventory, 'vuoto'));
 
-    this.body.append(el('h3', undefined, "oggetti d'ambiente presenti"));
+    this.body.append(el('h3', undefined, `luoghi attraversati (${st.history.length})`));
+    this.body.append(chips(st.history, 'nessuno'));
+
+    // La memoria delle cose già fatte. `consumate` e `eseguite` non sono un
+    // doppione: la prima dice *non si può più fare*, la seconda *è già stata
+    // fatta almeno una volta*, e sono le due domande che ci si pone davanti a
+    // un'azione che non riparte.
+    this.body.append(el('h3', undefined, `azioni eseguite (${mem.eseguite.length})`));
+    this.body.append(chips(mem.eseguite, 'nessuna'));
+
+    this.body.append(el('h3', undefined, `azioni consumate (${mem.consumate.length})`));
+    this.body.append(chips(mem.consumate, 'nessuna'));
+
+    this.body.append(el('h3', undefined, `dialoghi ascoltati (${mem.dialoghi.length})`));
+    this.body.append(chips(mem.dialoghi, 'nessuno'));
+
+    this.body.append(el('h3', undefined, `cutscene di passaggio viste (${mem.passaggi.length})`));
+    this.body.append(chips(mem.passaggi, 'nessuna'));
+
+    // — cosa c'è qui, e cosa si può fare
+    this.body.append(el('h3', undefined, `chi c'è (${s.phase?.characters?.length ?? 0})`));
+    this.body.append(chips((s.phase?.characters ?? []).map((c) => c.id), 'nessuno'));
+
+    this.body.append(el('h3', undefined, `oggetti d'ambiente presenti (${s.props.length})`));
     this.body.append(chips(s.props.map((p) => p.id), 'nessuno'));
+
+    const { actions } = this.session.candidates();
+    this.body.append(el('h3', undefined, `azioni candidate (${actions.length})`));
+    if (!actions.length) this.body.append(el('p', 'empty', 'nessuna'));
+    for (const a of actions) {
+      const ok = st.meets(a.condition);
+      const row = el('div', 'act');
+      const head = el('div', 'head');
+      head.append(el('span', `mark ${ok.ok ? 'on' : 'off'}`, ok.ok ? '✓' : '×'));
+      head.append(el('span', undefined, a.id));
+      if (st.executed(a.id)) head.append(el('span', 'why', 'già fatta'));
+      if (a.repeatable === false) head.append(el('span', 'why', 'una volta sola'));
+      row.append(head);
+      if (!ok.ok && ok.why) row.append(el('span', 'why', ok.why));
+      row.append(
+        el(
+          'span',
+          'meta',
+          `${verbLabel(a.verb)}${a.target ? ` · ${a.target}` : ''}${a.second_target ? ` · ${a.second_target}` : ''}` +
+            ` · effetto: ${describeEffect(a.effect)}`,
+        ),
+      );
+      this.body.append(row);
+    }
 
     this.body.append(el('h3', undefined, `uscite conosciute (${s.exits.length})`));
     if (!s.exits.length) this.body.append(el('p', 'empty', 'nessuna'));
     for (const e of s.exits) {
-      const aperta = this.session.state.meets(e.condition);
+      const aperta = st.meets(e.condition);
       const row = el('div', 'act');
       const head = el('div', 'head');
       head.append(el('span', `mark ${aperta.ok ? 'on' : 'off'}`, aperta.ok ? '✓' : '×'));
       head.append(el('span', undefined, e.label || `→ ${e.to}`));
       row.append(head);
       if (!aperta.ok && aperta.why) row.append(el('span', 'why', aperta.why));
-      row.append(el('span', 'meta', `verso: ${e.to}`));
+      row.append(
+        el('span', 'meta', `verso: ${e.to} · atto: ${idx.actOfPlace.get(e.to) ?? '—'}`),
+      );
       this.body.append(row);
     }
+
+    // — il file, in coda: non è stato di gioco, ma è la prima cosa da guardare
+    // quando quello che si legge non torna con quello che si è compilato.
+    this.body.append(el('h3', undefined, 'il file'));
+    const file = el('dl', 'kv');
+    kv(file, 'id', idx.story.id);
+    kv(file, 'zaistory', idx.story.zaistory_version);
+    kv(file, 'lingua', idx.story.language ?? '—');
+    kv(file, 'atti', String(idx.acts.size));
+    kv(file, 'luoghi', String(idx.places.size));
+    kv(file, 'personaggi', String(idx.characters.size));
+    kv(file, 'oggetti', String(idx.items.size));
+    kv(file, "oggetti d'ambiente", String(idx.props.size));
+    kv(file, 'si può perdere', idx.story.failure_mode === 'alternate_endings' ? 'sì' : 'no');
+    this.body.append(file);
   }
 
   // -------------------------------------------------------------- linter

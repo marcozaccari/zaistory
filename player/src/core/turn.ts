@@ -560,6 +560,13 @@ export class Session {
     return this.dialogue !== undefined;
   }
 
+  /** L'id del nodo di dialogo aperto adesso, per chi ispeziona: «in dialogo:
+   * sì» non dice *dove*, e in un albero con venti nodi è la sola cosa che
+   * serva. */
+  get dialogueId(): string | undefined {
+    return this.dialogue?.node;
+  }
+
   // ----------------------------------------------------- verbi di sistema
 
   private answerSystem(q: import('./verbs.js').SystemQuestion): void {

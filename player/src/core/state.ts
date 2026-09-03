@@ -95,6 +95,27 @@ export class GameState {
     this.seenDialogues.add(key);
   }
 
+  /**
+   * La memoria, in chiaro e in sola lettura: è quello che si guarda quando si
+   * ispeziona una partita.
+   *
+   * Sono `Set` privati perché nessuno deve poterli scrivere da fuori — lo stato
+   * cambia solo applicando effetti della storia — ma leggerli è un'altra cosa,
+   * ed è l'unico modo di rispondere a «perché quest'azione non riparte» o «che
+   * fine ha fatto quel flag». In ordine, che un elenco che cambia ordine a ogni
+   * disegno non si legge.
+   */
+  get memoria(): { consumate: string[]; eseguite: string[]; passaggi: string[]; dialoghi: string[]; carry: string[] } {
+    const ord = (s: ReadonlySet<string>) => [...s].sort();
+    return {
+      consumate: ord(this.consumedIds),
+      eseguite: ord(this.executedIds),
+      passaggi: ord(this.seenTransitions),
+      dialoghi: ord(this.seenDialogues),
+      carry: ord(this.carryFlags),
+    };
+  }
+
   hasItem(item: string): boolean {
     return this.inventory.includes(item);
   }

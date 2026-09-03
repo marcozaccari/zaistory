@@ -201,7 +201,7 @@ class Game {
     this.stage = new Stage(session.idx, images);
     this.listen = new Listen(session.idx, voce);
     this.listen.configura(this.impAscolto);
-    this.panel = new Panel(session, {
+    this.panel = new Panel(() => this.session, {
       trace: () => this.trace.join('\n'),
       resume: (t) => {
         // Una partita incollata è un'altra partita: quello che si era disfatto
@@ -241,6 +241,7 @@ class Game {
     byId('story-title').textContent = story.title;
     this.header();
 
+    this.wireDock();
     this.wireToggles();
     this.wireTasti();
     this.wireMappa();
@@ -967,7 +968,13 @@ class Game {
     const i = icona(segno);
     if (i) b.append(i);
     else b.append(document.createTextNode(etichetta));
-    b.addEventListener('click', apri);
+    b.addEventListener('click', () => {
+      // Il cassetto si apre su tutto lo schermo: la tastiera qui va chiusa, e
+      // va chiusa **adesso** e non un istante prima — il dock tiene il fuoco
+      // finché il tocco non è arrivato a destinazione. Vedi `wireDock`.
+      if (document.activeElement instanceof HTMLInputElement) document.activeElement.blur();
+      apri();
+    });
     return b;
   }
 
@@ -1197,6 +1204,34 @@ class Game {
   }
 
   // ------------------------------------------------------------ interruttori
+
+  /**
+   * Un tocco su un bottone del dock non deve togliere il fuoco al campo
+   * *prima* del clic.
+   *
+   * Il bug si vedeva solo su telefono, e sembrava una cosa sola: si scriveva
+   * una frase, si toccava il triangolo d'invio, la tastiera si chiudeva e la
+   * frase restava lì. Non era l'invio a non funzionare: era il tocco a non
+   * arrivarci. Toccando il bottone il campo perde il fuoco per primo, cade
+   * `body.tastiera`, il palco si riapre — e il dock scivola giù da sotto il
+   * dito prima che il clic parta.
+   *
+   * `preventDefault` sul `pointerdown` tiene il fuoco dov'è: niente blur,
+   * niente riflusso, il bottone resta fermo e il clic arriva. Chi ha bisogno di
+   * chiudere la tastiera lo fa dopo e di sua iniziativa — i due cassetti, che
+   * si aprono su tutto lo schermo.
+   *
+   * Sta sul dock e non sui singoli bottoni perché il dock si ridisegna a ogni
+   * turno e i bottoni sono altri ogni volta: qui l'ascoltatore si mette una
+   * volta sola, e vale anche per quelli che verranno.
+   */
+  private wireDock(): void {
+    this.dock.addEventListener('pointerdown', (e) => {
+      const t = e.target as HTMLElement | null;
+      if (!t?.closest('button')) return;
+      if (document.activeElement instanceof HTMLInputElement) e.preventDefault();
+    });
+  }
 
   private wireToggles(): void {
     const debugButtons = [byId<HTMLButtonElement>('btn-debug'), byId<HTMLButtonElement>('btn-debug-panel')];
