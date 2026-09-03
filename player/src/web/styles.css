@@ -924,44 +924,30 @@ body.debug .umano {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
 
-/* In barra il pezzo umano e' il nome della scena: dove si e'. Non e' un dato
-   sul file come quello che gli sta accanto col debug acceso, ed e' l'unica
-   riga della barra che appartenga alla storia — e per la regola dei due colori
-   quello che appartiene alla storia va in oro. Sotto un titolo bianco e in
-   mezzo a dei bottoni grigi era l'unica cosa della testata a non avere un
-   colore suo, e si leggeva come una didascalia del titolo invece che come
-   l'informazione. */
-/* Atto e luogo: e' tutto quello che la barra dice della partita. Il conto delle
-   azioni si aggiunge col debug — e si aggiunge, non prende il posto di niente:
-   dove si e' serve anche mentre si collauda. */
+/* L'atto: e' tutto quello che la barra dice della partita, col debug come
+   senza. E' l'unica riga della barra che appartenga alla storia — e per la
+   regola dei due colori quello che appartiene alla storia va in oro. Sotto un
+   titolo bianco e in mezzo a dei bottoni grigi era l'unica cosa della testata a
+   non avere un colore suo, e si leggeva come una didascalia del titolo invece
+   che come l'informazione.
+   Il luogo le stava accanto ed e' sceso sul palco, accanto al tono; il conto
+   delle azioni e' sceso in fondo al dock, accanto all'elenco che conta. */
 .topbar .titles span .dove {
   color: var(--voce-storia);
 }
 
-.topbar .titles span .conta {
-  display: none;
+/* Col debug al posto del nome c'e' l'id, e un id sta nel carattere dei dati:
+   e' una stringa da citare a chi compila la storia, non una da leggere. */
+.topbar .titles span .dove .ir {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  color: var(--fg-dim);
+  font-size: 12px;
 }
 
-body.debug .topbar .titles span .conta {
-  display: inline;
-}
-
-body.debug .topbar .titles span .conta::before {
-  content: ' · ';
-}
-
-/* E comincia con la maiuscola. Il nome di un luogo nella storia sta in
-   minuscolo — «l'automobile» — perche' quella e' la forma con cui entra in una
-   frase; qui invece e' l'inizio di una riga, e una riga comincia con la
-   maiuscola. Stessa regola del tono sul palco, e per la stessa ragione: la
-   trasformazione e' di stampa, il testo resta quello d'autore. Vale anche col
-   debug: quello che apre la riga e' il nome dell'atto in tutte e due i casi,
-   e non c'e' ragione perche' cambi forma a seconda dell'interruttore. */
-#story-meta::first-letter {
-  text-transform: uppercase;
-}
+/* La maiuscola non si trasforma piu' qui: la riga comincia col nome del campo,
+   che e' scritto com'e' — «Atto:» a chi gioca, «atto:» a chi collauda, come
+   ogni altro nome dell'IR. Il nome dell'atto viene dopo, e la sua forma e'
+   quella che gli ha dato l'autore. La regola della maiuscola resta dov'e'
+   ancora vera: sul palco, dove luogo e tono aprono la riga da soli. */
 
 .prompt .label .umano {
   font-size: 12px;
@@ -2334,23 +2320,44 @@ body.palco-ridotto .volto .nome {
   color: var(--voce-scena);
 }
 
-body:not(.debug) .palco-riga .tono .label {
+/* Il luogo e' della stessa famiglia — dove si e' e com'e' sono la stessa
+   domanda, ed e' esattamente il ruolo per cui questo grigio caldo esiste — ma
+   e' un nome, non una frase: un filo di peso in piu', perche' entrando in una
+   scena e' la prima cosa che si cerca. Nella barra in testa stava in oro; qui
+   accanto al tono l'oro lo farebbe leggere come un titolo sopra una didascalia,
+   mentre sono due coordinate della stessa riga. */
+.palco-riga .dove {
+  color: var(--voce-scena);
+  font-weight: 600;
+}
+
+body:not(.debug) .palco-riga .tono .label,
+body:not(.debug) .palco-riga .dove .label {
   display: none;
 }
 
-/* Fuori dal debug la striscia dice il tono e nient'altro. Il luogo sta gia'
-   scritto nella barra in testa e chi e' in campo lo dicono le facce qui sotto:
-   ripeterli qui e' la stessa cosa scritta due volte, e la seconda occupa la
-   striscia che serve al tono — che e' l'unico campo del palco a non descrivere
-   un'immagine, e la chiave con cui si legge tutto quello che scorre sotto.
-   Restano nel documento: accendere il debug li fa comparire senza ridisegnare
-   niente. */
-body:not(.debug) .palco-riga .prompt:not(.tono) {
+/* Fuori dal debug la striscia dice dove si e' e com'e', e nient'altro. Chi e'
+   in campo lo dicono le facce qui sotto: ripeterlo qui e' la stessa cosa
+   scritta due volte, e la seconda occupa la striscia che serve al tono — che
+   e' l'unico campo del palco a non descrivere un'immagine, e la chiave con cui
+   si legge tutto quello che scorre sotto. Resta nel documento: accendere il
+   debug lo fa comparire senza ridisegnare niente. */
+body:not(.debug) .palco-riga .prompt:not(.tono):not(.dove) {
   display: none;
 }
 
-body:not(.debug) .palco-riga .tono::first-letter {
+body:not(.debug) .palco-riga .tono::first-letter,
+body:not(.debug) .palco-riga .dove::first-letter {
   text-transform: uppercase;
+}
+
+/* Senza etichette davanti, due valori separati da uno spazio sono una frase
+   sola: il punto li tiene distinti come li teneva distinti il nome del campo.
+   Solo dove il luogo c'e' davvero, altrimenti la striscia aprirebbe con un
+   segno di punteggiatura e niente prima. */
+body:not(.debug) .palco-riga .dove + .tono::before {
+  content: "· ";
+  color: var(--fg-dim);
 }
 
 /* --- La tela senza immagine ----------------------------------------------- */

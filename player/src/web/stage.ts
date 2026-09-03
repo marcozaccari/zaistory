@@ -113,16 +113,28 @@ export class Stage {
   }
 
   /**
-   * La riga delle coordinate: il tono, dove siamo, chi è in campo.
+   * La riga delle coordinate: dove siamo, com'è, chi è in campo.
    *
-   * Il tono per primo e con una classe sua. Non è un campo come gli altri e non
-   * si legge come un campo: fuori dal debug perde il nome e prende la
-   * maiuscola, cioè torna a essere la frase che l'autore ha scritto.
-   * Etichettarla la fa sembrare un dato, ed è l'unica riga del palco che dato
-   * non è.
+   * Il luogo e il tono per primi, con una classe ciascuno, e sono i due che si
+   * vedono anche a debug spento: dove si è e la chiave con cui si legge quello
+   * che scorre sotto. Nessuno dei due si legge come un campo — fuori dal debug
+   * perdono il nome e prendono la maiuscola, cioè tornano a essere il nome e la
+   * frase che l'autore ha scritto. Etichettarli li fa sembrare dati, e dati non
+   * sono.
+   *
+   * Il luogo prima del tono, e sotto la figura invece che in barra: il posto in
+   * cui si guarda per sapere dove si è è l'inquadratura, non la testata, e i
+   * due erano la stessa domanda — dove siamo e com'è — divisa fra i due capi
+   * dello schermo.
    */
   private disegnaRiga(pl: Place | undefined, ph: Phase | undefined): void {
     clear(this.riga);
+
+    if (pl) {
+      const l = promptRow(['place', doppio(displayName(pl), `${pl.id} — ${displayName(pl)}`), 'none']);
+      l.classList.add('dove');
+      this.riga.append(l);
+    }
 
     const tono = ph?.tone ?? this.idx.story.global_style?.default_tone;
     if (tono) {
@@ -131,11 +143,8 @@ export class Stage {
       this.riga.append(t);
     }
 
-    const righe: PromptRow[] = [
-      ['place', pl ? doppio(displayName(pl), `${pl.id} — ${displayName(pl)}`) : undefined, 'none'],
-      ['characters_in_frame', this.nomiInCampo(), 'none'],
-    ];
-    for (const r of righe) if (r[1]) this.riga.append(promptRow(r as [string, string, 'none']));
+    const inCampo = this.nomiInCampo();
+    if (inCampo) this.riga.append(promptRow(['characters_in_frame', inCampo, 'none']));
 
     this.riga.hidden = this.riga.childElementCount === 0;
   }

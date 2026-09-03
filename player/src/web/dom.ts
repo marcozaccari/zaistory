@@ -71,8 +71,12 @@ export function kv(dl: HTMLElement, key: string, value: string): void {
  * Serve dove il player mostra elenchi da ispezionare — i flag, gli oggetti, le
  * azioni sotto il debug. Chiusi, il conto accanto al titolo dice già metà di
  * quello che si voleva sapere, e l'altra metà è a un tocco.
+ *
+ * Il conto è un numero quasi sempre, ma non deve esserlo: dove la domanda è «a
+ * che punto siamo» invece che «quanti sono», al suo posto sta la frase che lo
+ * dice.
  */
-export function piega(titolo: string, quanti?: number): { root: HTMLDetailsElement; corpo: HTMLElement } {
+export function piega(titolo: string, quanti?: number | string): { root: HTMLDetailsElement; corpo: HTMLElement } {
   const root = el('details', 'piega');
   const testa = el('summary');
   testa.append(el('span', 'piega-titolo', titolo));

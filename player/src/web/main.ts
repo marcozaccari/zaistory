@@ -726,11 +726,20 @@ class Game {
   }
 
   /**
-   * La riga sotto il titolo: dove si è, e — col debug — di quale file si tratta.
+   * La riga sotto il titolo: a che atto siamo, e basta.
    *
-   * Due righe per lo stesso posto, come per i nomi dei campi. A chi gioca
-   * interessa dove si trova; la versione del formato e il conto del linter sono
-   * informazioni sul *file*, non sulla storia, e stanno col debug.
+   * L'atto è l'unica coordinata che l'inquadratura non dice già. Il luogo stava
+   * qui accanto ed è sceso sul palco, insieme al tono: dove si è e com'è sono
+   * la stessa domanda, e tenerne le due metà ai capi opposti dello schermo
+   * obbligava a leggerle in due posti. Il conto delle azioni, che pure stava
+   * qui col debug, è sceso in fondo al dock per la stessa ragione: si legge
+   * dove lo si può anche aprire.
+   *
+   * Col nome del campo davanti, come ogni altra cosa che il player scrive: da
+   * solo, un titolo d'atto sotto il titolo della storia si legge come un
+   * sottotitolo. E i due nomi delle cose valgono anche qui — «Atto: La taverna»
+   * a chi gioca, «atto: atto_uno» a chi collauda, che l'id è quello da citare a
+   * chi compila la storia.
    */
   private header(): void {
     const s = this.session.snapshot();
@@ -739,22 +748,14 @@ class Game {
     clear(box);
     if (!this.iniziata || !s.place) return;
 
-    // Dove si è, e in che atto. Due cose sole: la versione del formato e l'id
-    // del file stavano qui e non ci sono più — sono informazioni sul *file*,
-    // non sulla storia, e le si legge sulla copertina; gli id di luogo e fase
-    // stanno nella scheda «stato», che è dove si va quando si ispeziona.
+    // La versione del formato e l'id del file stavano qui e non ci sono più —
+    // sono informazioni sul *file*, non sulla storia, e le si legge sulla
+    // copertina; gli id di luogo e fase stanno nella scheda «stato», che è dove
+    // si va quando si ispeziona.
     const atto = idx.acts.get(s.act);
-    box.append(el('span', 'dove', [atto ? atto.title || s.act : s.act, displayName(s.place)].join(' · ')));
-
-    // Col debug, e solo col debug, una cosa in più: a che punto è il luogo.
-    // «Quante ne restano» è la domanda che ci si fa quando l'uscita non viene
-    // offerta e non si capisce perché — e la risposta era leggibile solo
-    // aprendo l'elenco delle azioni e contandole a occhio.
-    const p = actionsProgress(idx, s.place, s.phase, this.session.state);
-    if (p.total) {
-      const restano = p.left === 0 ? 'niente da fare' : `restano ${p.left}`;
-      box.append(el('span', 'conta', `azioni ${p.done}/${p.total} · ${restano}`));
-    }
+    const dove = el('span', 'dove');
+    dove.append(el('span', 'umano', `Atto: ${atto?.title || s.act}`), el('span', 'ir', `atto: ${s.act}`));
+    box.append(dove);
   }
 
   // ----------------------------------------------------------------- dock
@@ -892,7 +893,17 @@ class Game {
     // elencano lo stesso, perché la domanda che ci si fa collaudando è quasi
     // sempre *perché* una non compare.
     const aperte = actions.filter((a) => st.ok(a.condition));
-    const { root, corpo } = piega('azioni', actions.length);
+
+    // Accanto al titolo, a che punto è il luogo: lo stesso conto che decide il
+    // consiglio dell'uscita. «Quante ne restano» è la domanda che ci si fa
+    // quando l'uscita non viene offerta e non si capisce perché, e la si fa
+    // qui, con davanti l'elenco che a un tocco dice anche *quali*. Dove non c'è
+    // niente da contare — un luogo di sole osservazioni — resta il numero delle
+    // candidate, che è comunque quello che l'elenco sta per mostrare.
+    const s = this.session.snapshot();
+    const p = actionsProgress(this.session.idx, s.place, s.phase, st);
+    const conto = p.total ? `${p.done}/${p.total} rimanenti ${p.left}` : actions.length;
+    const { root, corpo } = piega('azioni', conto);
 
     const chips = (voci: string[]) => {
       const riga = el('div', 'chips');
