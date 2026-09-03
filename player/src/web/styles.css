@@ -1078,6 +1078,50 @@ body.debug .dbg {
   padding: 4px 0 12px;
 }
 
+/* Indietro e avanti di un'azione, in coda al dock e a destra. Non sono la
+   partita — quella comincia da sinistra, dove si scrive — ma uno strumento
+   appoggiato al banco di chi la sta collaudando, e stanno dove stanno gli
+   strumenti: in fondo, piccoli, spenti finche' non c'e' niente da fare. */
+.dock .controlli {
+  display: none;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+body.debug .dock .controlli {
+  display: flex;
+}
+
+.dock .controlli .passo {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg-dim);
+}
+
+.dock .controlli .passo:not(:disabled):hover,
+.dock .controlli .passo:not(:disabled):focus-visible {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+.dock .controlli .passo:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.dock .controlli .passo .icona {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  vertical-align: 0;
+}
+
 /* Dentro il dock la piega e' una voce fra le chip: prende il loro respiro e
    sparisce con loro quando il debug e' spento. */
 .dock .piega.solo-debug {

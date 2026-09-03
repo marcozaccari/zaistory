@@ -178,6 +178,12 @@ class Game {
   /** Il dock messo da parte mentre si guarda la copertina, e se il palco era
    * acceso. Il trascritto se lo tiene da sé. */
   private dockDaParte?: { nodi: ChildNode[]; palco: boolean };
+  /** Le azioni disfatte, nell'ordine in cui tornerebbero: `rifare[0]` è la
+   * prossima. Vivono solo finché non se ne fa una nuova. */
+  private rifare: string[] = [];
+  /** Vero mentre si sta rifacendo: dice a `feed` di non buttare via il resto
+   * della pila che sta consumando. */
+  private rifacendo = false;
   private key: string;
 
   /** Il secondo interprete, quando è acceso. Parte spento: il lessicale è
@@ -196,7 +202,12 @@ class Game {
     this.listen.configura(this.impAscolto);
     this.panel = new Panel(session, {
       trace: () => this.trace.join('\n'),
-      resume: (t) => void this.replay(t.split('\n')),
+      resume: (t) => {
+        // Una partita incollata è un'altra partita: quello che si era disfatto
+        // qui non ha più un posto in cui tornare.
+        this.rifare = [];
+        void this.replay(t.split('\n'));
+      },
       restart: () => this.restart(),
       version: VERSION,
       imagesWhy: images.available ? '' : images.why,
@@ -239,6 +250,8 @@ class Game {
   begin(): void {
     this.transcript.clear();
     this.dockDaParte = undefined;
+    // Le azioni disfatte appartenevano alla partita di prima.
+    this.rifare = [];
     this.listen.ricomincia();
     this.iniziata = false;
     this.header();
@@ -415,9 +428,17 @@ class Game {
     this.begin();
   }
 
-  /** Rigioca una partita. Sul web una traccia esaurita non è un errore: è il
-   * punto in cui si riprende a giocare. */
-  private async replay(lines: string[]): Promise<void> {
+  /**
+   * Rigioca una partita. Sul web una traccia esaurita non è un errore: è il
+   * punto in cui si riprende a giocare.
+   *
+   * Con `eco` restano scritti anche i comandi, come li si era scritti. Serve a
+   * chi torna indietro di un'azione: lì la rigiocata deve rimettere il
+   * trascritto **com'era**, meno l'ultima mossa, e un flusso in cui le risposte
+   * ci sono e le domande no non è quello di prima. Incollando una partita di
+   * qualcun altro invece si legge la storia, non la sua tastiera.
+   */
+  private async replay(lines: string[], eco = false): Promise<void> {
     this.session = new Session(this.session.idx);
     this.trace = [];
     this.ended = false;
@@ -432,16 +453,88 @@ class Game {
     for (const raw of lines) {
       const line = raw.trim();
       if (!line || line.startsWith('#')) continue;
-      await this.feed(line, true);
+      await this.feed(line, true, eco);
       if (this.ended) break;
     }
     this.listen.configura({ ...this.impAscolto, attiva: eraAttiva });
     this.save();
   }
 
+  // ------------------------------------------------------- avanti/indietro
+
+  /**
+   * Disfare e rifare un'azione, sotto il debug.
+   *
+   * Non è un salvataggio a punti: la partita **è** la sequenza di quello che si
+   * è scritto, quindi tornare indietro di un'azione vuol dire rigiocare la
+   * stessa sequenza meno l'ultima riga. Lo stato che ne esce è quello vero,
+   * ricalcolato dal motore, non uno ricostruito a ritroso — e con lui sparisce
+   * dal flusso tutto quello che quell'azione aveva scritto, che è il punto:
+   * collaudando si prova una frase, si guarda cosa succede, si torna indietro e
+   * se ne prova un'altra al suo posto.
+   *
+   * Sta sotto il debug con le chip e l'ispezione, e per la stessa ragione:
+   * potersi rimangiare una mossa cambia la partita in una cosa senza
+   * conseguenze, e una storia non si giudica giocandola così.
+   */
+  private async indietro(): Promise<void> {
+    if (!this.trace.length || this.inCopertina) return;
+    const passi = this.trace.slice(0, -1);
+    // Prima della rigiocata: il dock si ridisegna dentro `replay`, e a quel
+    // punto i due bottoni devono già sapere che c'è qualcosa da rifare.
+    this.rifare = [this.trace[this.trace.length - 1]!, ...this.rifare];
+    await this.replay(passi, true);
+  }
+
+  private async avanti(): Promise<void> {
+    const linea = this.rifare[0];
+    if (linea === undefined || this.inCopertina) return;
+    this.rifare = this.rifare.slice(1);
+    this.rifacendo = true;
+    try {
+      // Non in silenzio: si rifà per **guardare** cosa succede, e la risposta
+      // arriva com'era arrivata la prima volta, «continua» compresi.
+      await this.feed(linea);
+    } finally {
+      this.rifacendo = false;
+    }
+  }
+
+  /**
+   * I due comandi, in fondo al dock e a destra.
+   *
+   * A destra perché non sono la partita: la riga in cui si scrive comincia da
+   * sinistra ed è quella che si guarda giocando, questi due stanno in coda come
+   * uno strumento appoggiato al banco. Restano nel documento anche a debug
+   * spento — a nasconderli è il foglio di stile, come per tutta l'altra
+   * diagnostica, così accendere il debug non deve ricostruire il dock.
+   */
+  private controlliDebug(): HTMLElement {
+    const riga = el('div', 'controlli solo-debug');
+
+    const b = (segno: string, etichetta: string, spento: boolean, fai: () => Promise<void>) => {
+      const n = el('button', 'passo');
+      n.type = 'button';
+      n.disabled = spento;
+      n.title = etichetta;
+      n.setAttribute('aria-label', etichetta);
+      const i = icona(segno);
+      if (i) n.append(i);
+      else n.append(document.createTextNode(segno === 'back' ? '<' : '>'));
+      if (!spento) n.onclick = () => void this.premi(n, fai);
+      return n;
+    };
+
+    riga.append(
+      b('back', "indietro di un'azione", !this.trace.length, () => this.indietro()),
+      b('forward', "avanti di un'azione", !this.rifare.length, () => this.avanti()),
+    );
+    return riga;
+  }
+
   // ---------------------------------------------------------------- turno
 
-  private async feed(line: string, silent = false): Promise<void> {
+  private async feed(line: string, silent = false, eco = false): Promise<void> {
     if (this.ended) return;
     // Una battuta si scrive «battuta 2» nella traccia e «2» sulla tastiera: il
     // secondo è la scorciatoia sotto le dita, il primo è quello che si rilegge
@@ -454,9 +547,11 @@ class Game {
     // si è premuta, non cosa si è detto.
     const battuta = scelta ? this.choices.find((c) => c.index === n - 1)?.text : undefined;
 
-    if (!silent) {
+    if (!silent || eco) {
       if (battuta) this.transcript.chosen(battuta);
       else this.transcript.echo(line);
+    }
+    if (!silent) {
       // La voce di prima si ferma: senza, un tocco veloce lascerebbe indietro
       // la risposta al turno precedente, che continuerebbe a parlare sopra
       // quella nuova.
@@ -469,7 +564,14 @@ class Game {
     // rigiocandola non farebbe succedere niente un'altra volta: tenerla
     // significa allungare il salvataggio con i tentativi andati a vuoto, e
     // farli rileggere tutti a chi lo riprende.
-    if (!res.noMatch) this.trace.push(scelta ? `battuta ${n}` : line);
+    if (!res.noMatch) {
+      this.trace.push(scelta ? `battuta ${n}` : line);
+      // Un'azione nuova taglia il ramo che si era disfatto: quello che stava
+      // «avanti» apparteneva a una partita che da qui in poi non esiste più.
+      // Rifarlo lo rimetterebbe in coda a una storia diversa da quella in cui
+      // era stato fatto, e non sarebbe più la stessa partita.
+      if (!silent && !this.rifacendo) this.rifare = [];
+    }
     // «Guardati intorno» è il contrappeso del collapse acustico: a schermo la
     // composizione resta scritta e si rilegge, all'orecchio si riapre
     // chiedendola. Vedi `listen.ts`.
@@ -583,6 +685,9 @@ class Game {
         void premi(again).then(() => this.restart());
       });
       this.dock.append(again);
+      // Anche qui, e soprattutto qui: un finale è il posto in cui collaudando
+      // si vuole tornare indietro di una mossa per vedere l'altro.
+      this.dock.append(this.controlliDebug());
       return;
     }
     this.paintDock(res, silent);
@@ -623,6 +728,9 @@ class Game {
         b.addEventListener('click', () => void this.premi(b, () => this.feed(String(c.index + 1))));
         this.dock.append(b);
       }
+      // In dialogo la riga in cui si scrive non c'è, ma la battuta sbagliata è
+      // proprio la mossa che collaudando si vuole rifare in un altro modo.
+      this.dock.append(this.controlliDebug());
       return;
     }
 
@@ -704,6 +812,7 @@ class Game {
       void this.feed(v);
     };
     this.dock.append(row);
+    this.dock.append(this.controlliDebug());
 
     const ispezione = this.ispezione();
     if (ispezione) this.dock.append(ispezione);

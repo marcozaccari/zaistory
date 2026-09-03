@@ -54,6 +54,12 @@ const SEGNI: Record<string, string[]> = {
   // dicono anche «inizia» e «continua», e sotto il campo la domanda non e'
   // dove si va ma cosa succede alla frase che si e' scritta.
   enter: ['M20 6v6a2 2 0 01-2 2H6', 'M9.5 10.5L6 14l3.5 3.5'],
+  // Due frecce nude: indietro e avanti di un'azione, sotto il campo, col
+  // debug acceso. Nude apposta — il ritorno a capo qui accanto e' il gesto
+  // della partita, queste due sono lo strumento di chi la sta collaudando, e
+  // non devono sembrare la stessa famiglia di cose.
+  back: ['M15 5l-7 7 7 7'],
+  forward: ['M9 5l7 7-7 7'],
   // Tre cursori: lo stile globale, cioe' le regolazioni che valgono ovunque.
   style: ['M4 7h10', 'M18 7h2', 'M4 17h4', 'M12 17h8', 'M16 5v4', 'M8 15v4'],
   // Una A con la sua traversa e la riga di base: il carattere. E' l'unico segno
