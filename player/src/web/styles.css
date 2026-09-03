@@ -2366,6 +2366,18 @@ body.palco-ridotto .volto .nome {
   overflow-y: auto;
 }
 
+/* Fuori dal debug la striscia e' una riga di testo, non due caselle: il luogo e
+   il tono si leggono di fila, e vanno a capo solo quando la riga finisce. In
+   fila indiana ognuno dei due era un blocco per conto suo — il tono, che e'
+   lungo, si prendeva sempre una riga tutta sua, e la striscia ne occupava due
+   dove il testo ne riempiva una e mezza. Sopra un palco ridotto quella riga in
+   piu' e' un ottavo della fascia. Col debug tornano caselle: li' sono campi
+   messi in fila, con il loro nome davanti, e si scorrono con l'occhio in
+   colonna. */
+body:not(.debug) .palco-riga {
+  display: block;
+}
+
 /* Fuori dal debug il tono si legge come una frase e non come un campo: niente
    nome davanti, e la maiuscola all'inizio. E' l'unica riga del palco che non e'
    un dato ma prosa d'autore — la chiave con cui si legge tutto quello che
@@ -2382,14 +2394,14 @@ body.palco-ridotto .volto .nome {
   color: var(--voce-scena);
 }
 
-/* Il luogo e' della stessa famiglia — dove si e' e com'e' sono la stessa
-   domanda, ed e' esattamente il ruolo per cui questo grigio caldo esiste — ma
-   e' un nome, non una frase: un filo di peso in piu', perche' entrando in una
-   scena e' la prima cosa che si cerca. Nella barra in testa stava in oro; qui
-   accanto al tono l'oro lo farebbe leggere come un titolo sopra una didascalia,
-   mentre sono due coordinate della stessa riga. */
+/* Il luogo e' un nome, e i nomi che il player scrive hanno tutti lo stesso oro
+   spento: chi parla sopra una battuta, chi c'e' in campo sotto una faccia, cosa
+   si ha in mano. Dove si e' e' della stessa specie — una cosa della storia
+   chiamata per nome — e leggerlo nello stesso colore lo lega a quelli invece
+   che al tono che gli sta accanto, che e' prosa. Un filo di peso in piu' perche'
+   entrando in una scena e' la prima cosa che si cerca. */
 .palco-riga .dove {
-  color: var(--voce-scena);
+  color: var(--voce-nome);
   font-weight: 600;
 }
 
@@ -2408,17 +2420,25 @@ body:not(.debug) .palco-riga .prompt:not(.tono):not(.dove) {
   display: none;
 }
 
-body:not(.debug) .palco-riga .tono::first-letter,
-body:not(.debug) .palco-riga .dove::first-letter {
+/* La maiuscola e' una sola, ed e' quella che apre la riga: il luogo dove c'e',
+   il tono dove il luogo manca. Sta sulla striscia e non sui due pezzi perche'
+   `::first-letter` vuole un blocco, e da quando i due si leggono di fila
+   blocchi non sono piu'; ma e' anche la regola giusta — una riga comincia con
+   la maiuscola una volta, e il tono che segue il punto e' la stessa riga che
+   continua, non una frase nuova. */
+body:not(.debug) .palco-riga::first-letter {
   text-transform: uppercase;
 }
 
 /* Senza etichette davanti, due valori separati da uno spazio sono una frase
    sola: il punto li tiene distinti come li teneva distinti il nome del campo.
-   Solo dove il luogo c'e' davvero, altrimenti la striscia aprirebbe con un
-   segno di punteggiatura e niente prima. */
+   Lo spazio e' nel margine e non nel testo: attaccato al contenuto sparirebbe
+   a fine riga, proprio dove serve a dire che si sta ancora leggendo la stessa
+   cosa. Solo dove il luogo c'e' davvero, altrimenti la striscia aprirebbe con
+   un segno di punteggiatura e niente prima. */
 body:not(.debug) .palco-riga .dove + .tono::before {
-  content: "· ";
+  content: "·";
+  margin: 0 0.45em;
   color: var(--fg-dim);
 }
 
