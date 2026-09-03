@@ -90,7 +90,14 @@ Ordine della ricostruzione (in `ARCHITECTURE.md`, «Stato del lavoro»):
    frase, ed è il prezzo per restare rigiocabile). E una regola del core: **un
    dialogo già ascoltato è fatto, da qualunque porta ci si sia entrati** — le
    azioni che aprono la stessa conversazione sono spesso tre, e il consiglio
-   dell'uscita le contava a una a una. 45 test.
+   dell'uscita le contava a una a una. La **barra in testa** dice soltanto atto
+   e luogo (versione e id del file stavano lì e sono roba della copertina), e
+   col debug aggiunge a che punto è il luogo — `azioni 1/3 · restano 2`, lo
+   stesso conto che decide il consiglio dell'uscita, e sta in `core/`. La
+   **mappa** è la mappa dell'atto: solo i suoi luoghi, mai quelli degli altri —
+   l'uscita che cambia atto resta percorribile ma non è una destinazione da
+   mappa — con le chiuse e le irraggiungibili sotto il debug e le visitate che
+   non si rivisitano sempre visibili, spente, sotto un filo. 45 test.
 4. ~~**il modulo assets**~~ — fatto: estrazione sulla nuova gerarchia (oggetti
    d'ambiente e cutscene di passaggio compresi), studio, pubblicazione,
    **`rebind.py`**, gli script di avvio e i tre selftest, che ora girano sulla

@@ -931,17 +931,35 @@ body.debug .umano {
    mezzo a dei bottoni grigi era l'unica cosa della testata a non avere un
    colore suo, e si leggeva come una didascalia del titolo invece che come
    l'informazione. */
-.topbar .titles span .umano {
+/* Atto e luogo: e' tutto quello che la barra dice della partita. Il conto delle
+   azioni si aggiunge col debug — e si aggiunge, non prende il posto di niente:
+   dove si e' serve anche mentre si collauda. */
+.topbar .titles span .dove {
   color: var(--voce-storia);
+}
+
+.topbar .titles span .conta {
+  display: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--fg-dim);
+}
+
+body.debug .topbar .titles span .conta {
+  display: inline;
+}
+
+body.debug .topbar .titles span .conta::before {
+  content: ' · ';
 }
 
 /* E comincia con la maiuscola. Il nome di un luogo nella storia sta in
    minuscolo — «l'automobile» — perche' quella e' la forma con cui entra in una
    frase; qui invece e' l'inizio di una riga, e una riga comincia con la
    maiuscola. Stessa regola del tono sul palco, e per la stessa ragione: la
-   trasformazione e' di stampa, il testo resta quello d'autore. Col debug no:
-   li' accanto c'e' l'id, e fra due dati una maiuscola di cortesia e' rumore. */
-body:not(.debug) #story-meta::first-letter {
+   trasformazione e' di stampa, il testo resta quello d'autore. Vale anche col
+   debug: quello che apre la riga e' il nome dell'atto in tutte e due i casi,
+   e non c'e' ragione perche' cambi forma a seconda dell'interruttore. */
+#story-meta::first-letter {
   text-transform: uppercase;
 }
 
@@ -3269,6 +3287,34 @@ body[data-font="schoolbook"] {
 
 .luogo.chiuso .stato {
   color: var(--amber);
+}
+
+/* Sotto il filo: i posti in cui si e' gia' stati e in cui adesso non si torna.
+   Spenti come le chiuse ma senza il loro ambra — quella dice «forse piu'
+   tardi», e qui non c'e' nessun forse. Restano visibili a tutti: sono la
+   memoria del posto, e appartengono a chi gioca quanto l'inventario. */
+.luogo.visitato {
+  opacity: 0.5;
+}
+
+/* Il filo che separa dove si puo' andare da dove si e' stati. */
+.sep-mappa {
+  height: 0;
+  margin: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+/* Chiuse e irraggiungibili stanno nel documento e le nasconde il debug, come
+   tutta l'altra diagnostica: per chi gioca una porta che non si apre e un
+   posto senza strada sono la stessa cosa — roba che non c'e' — e stamparla
+   dice che c'e' qualcosa da trovare, cioe' risolve mezzo enigma. */
+.luogo.solo-debug {
+  display: none;
+}
+
+body.debug .luogo.solo-debug {
+  display: grid;
 }
 
 /* I bottoni che aprono i cassetti, accanto al campo in cui si scrive: sono le

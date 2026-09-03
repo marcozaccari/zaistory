@@ -27,6 +27,7 @@ import './styles.css';
 
 import type { Action, Resolution, Session as SessionType, TurnEvent, TurnResult } from '../core/index.js';
 import {
+  actionsProgress,
   LoadError,
   Session,
   VectorResolver,
@@ -732,16 +733,27 @@ class Game {
    */
   private header(): void {
     const s = this.session.snapshot();
-    const story = this.session.idx.story;
-    const umano: string[] = [];
-    if (this.iniziata && s.place) umano.push(displayName(s.place));
-
-    const meta = [`zaistory ${story.zaistory_version}`, story.id];
-    if (this.iniziata && s.place) meta.push(`${s.place.id}/${s.phase?.id ?? '—'}`);
-
+    const idx = this.session.idx;
     const box = byId('story-meta');
     clear(box);
-    box.append(el('span', 'umano', umano.join(' · ')), el('span', 'ir', meta.join(' · ')));
+    if (!this.iniziata || !s.place) return;
+
+    // Dove si è, e in che atto. Due cose sole: la versione del formato e l'id
+    // del file stavano qui e non ci sono più — sono informazioni sul *file*,
+    // non sulla storia, e le si legge sulla copertina; gli id di luogo e fase
+    // stanno nella scheda «stato», che è dove si va quando si ispeziona.
+    const atto = idx.acts.get(s.act);
+    box.append(el('span', 'dove', [atto ? atto.title || s.act : s.act, displayName(s.place)].join(' · ')));
+
+    // Col debug, e solo col debug, una cosa in più: a che punto è il luogo.
+    // «Quante ne restano» è la domanda che ci si fa quando l'uscita non viene
+    // offerta e non si capisce perché — e la risposta era leggibile solo
+    // aprendo l'elenco delle azioni e contandole a occhio.
+    const p = actionsProgress(idx, s.place, s.phase, this.session.state);
+    if (p.total) {
+      const restano = p.left === 0 ? 'niente da fare' : `restano ${p.left}`;
+      box.append(el('span', 'conta', `azioni ${p.done}/${p.total} · ${restano}`));
+    }
   }
 
   // ----------------------------------------------------------------- dock
@@ -1065,54 +1077,101 @@ class Game {
     const snap = this.session.snapshot();
     const idx = this.session.idx;
 
+    const st = this.session.state;
+    // **Solo i luoghi di questo atto.** Un atto è un mondo chiuso: quello che
+    // viene dopo non è un posto in cui si possa andare, è la storia che gira
+    // pagina. L'uscita che cambia atto resta percorribile — sta nel testo e
+    // nel consiglio in fondo al dock — ma non è una destinazione da mappa, e
+    // metterla qui accanto alle altre la farebbe sembrare un giro da fare.
+    const nellAtto = (id: string) => idx.actOfPlace.get(id) === st.act;
+    const visitati = new Set(st.history);
+    const uscite = new Map(snap.exits.filter((e) => nellAtto(e.to)).map((e) => [e.to, e]));
+
     const grid = el('div', 'luoghi');
+    const passati = el('div', 'luoghi');
 
     // Dove si è adesso, per prima e spenta. Non è una destinazione — non si
     // tocca — ma una mappa che mostra solo le strade e non il punto da cui
     // partono chiede di ricordarselo, ed è l'unica cosa che chi la apre sa
     // già. Il posto giusto per dirla è accanto alle altre, alla stessa scala.
-    if (snap.place) {
-      const qui = el('button', 'luogo qui');
-      qui.type = 'button';
-      qui.disabled = true;
-      const img = this.images.usable
-        ? this.images.element(placeImage(idx, snap.place), displayName(snap.place))
-        : undefined;
-      if (img) qui.append(img);
-      qui.append(el('span', 'nome', displayName(snap.place)));
-      qui.append(el('span', 'stato', 'sei qui'));
-      grid.append(qui);
+    if (snap.place) grid.append(this.scheda(snap.place.id, displayName(snap.place), 'sei qui', 'qui'));
+
+    for (const pl of idx.places.values()) {
+      if (!nellAtto(pl.id) || pl.id === snap.place?.id) continue;
+      const e = uscite.get(pl.id);
+      const aperta = e ? st.meets(e.condition).ok : false;
+
+      // Aperta adesso: è una destinazione, e si tocca. L'etichetta è quella
+      // dell'uscita e non il nome del luogo — è la frase che si scriverebbe.
+      if (e && aperta) {
+        const label = e.label || displayName(pl);
+        const b = this.scheda(pl.id, label, 'accessibile');
+        b.disabled = false;
+        b.addEventListener('click', () => {
+          void (async () => {
+            await premi(b);
+            this.chiudiMappa();
+            await this.feed(label);
+          })();
+        });
+        grid.append(b);
+        continue;
+      }
+
+      // Già stata, e adesso no: sotto il filo, spenta. Si vede sempre — anche
+      // giocando — perché è la sola parte della mappa che risponde a «dove
+      // sono stato», e quella domanda non è un'ispezione: è la memoria del
+      // posto, che al giocatore appartiene quanto l'inventario.
+      if (visitati.has(pl.id)) {
+        passati.append(this.scheda(pl.id, displayName(pl), 'ci sei già stato', 'visitato'));
+        continue;
+      }
+
+      // Chiusa o irraggiungibile: solo col debug. Una porta che non si apre e
+      // un posto a cui non porta ancora nessuna strada sono la stessa cosa per
+      // chi gioca — roba che non c'è — e stamparla è dire che esiste qualcosa
+      // da trovare, cioè risolvere mezzo enigma.
+      grid.append(this.scheda(pl.id, displayName(pl), e ? 'chiuso' : 'irraggiungibile', 'chiuso solo-debug'));
     }
 
-    for (const e of snap.exits) {
-      const dest = idx.places.get(e.to);
-      const aperta = this.session.state.meets(e.condition);
-      const b = el('button', `luogo${aperta.ok ? '' : ' chiuso'}`);
-      b.type = 'button';
-      // Una destinazione si riconosce dalla figura prima che dal nome. Dove
-      // l'immagine non c'è — o è spenta — resta il testo: il riquadro è una
-      // griglia, la riga sparisce e non lascia un buco.
-      const img = this.images.usable
-        ? this.images.element(placeImage(idx, dest), displayName(dest ?? { id: e.to }))
-        : undefined;
-      if (img) b.append(img);
-      b.append(el('span', 'nome', e.label || displayName(dest ?? { id: e.to })));
-      b.append(el('span', 'stato', aperta.ok ? 'aperto' : 'chiuso'));
-      b.addEventListener('click', () => {
-        void (async () => {
-          await premi(b);
-          this.chiudiMappa();
-          await this.feed(e.label || displayName(dest ?? { id: e.to }));
-        })();
-      });
-      grid.append(b);
-    }
     if (grid.childElementCount) corpo.append(grid);
+    if (passati.childElementCount) {
+      corpo.append(el('hr', 'sep-mappa'));
+      corpo.append(passati);
+    }
     // Il vicolo cieco si dice dopo la griglia, non al posto suo: «sei qui» è
     // comunque la risposta alla prima metà della domanda.
-    if (!snap.exits.length) corpo.append(el('p', 'empty', 'Non conosci nessuna strada da qui.'));
+    if (!uscite.size) {
+      corpo.append(
+        el(
+          'p',
+          'empty',
+          snap.exits.length
+            ? 'Da qui la strada porta fuori da questo atto: non è un posto in cui tornare.'
+            : 'Non conosci nessuna strada da qui.',
+        ),
+      );
+    }
     show(mappa, true);
     show(byId('scrim'), true);
+  }
+
+  /** Una casella della mappa: la figura del luogo, il nome, e in che stato è.
+   * Nasce spenta — la sola che si tocchi è la destinazione aperta, e l'accende
+   * chi la costruisce. */
+  private scheda(placeId: string, nome: string, stato: string, classe = ''): HTMLButtonElement {
+    const b = el('button', `luogo${classe ? ` ${classe}` : ''}`);
+    b.type = 'button';
+    b.disabled = true;
+    // Una destinazione si riconosce dalla figura prima che dal nome. Dove
+    // l'immagine non c'è — o è spenta — resta il testo: il riquadro è una
+    // griglia, la riga sparisce e non lascia un buco.
+    const img = this.images.usable
+      ? this.images.element(placeImage(this.session.idx, this.session.idx.places.get(placeId)), nome)
+      : undefined;
+    if (img) b.append(img);
+    b.append(el('span', 'nome', nome), el('span', 'stato', stato));
+    return b;
   }
 
   private chiudiMappa(): void {

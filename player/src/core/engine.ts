@@ -188,13 +188,31 @@ export function nothingLeftToDo(
   ph: Phase | undefined,
   st: GameState,
 ): boolean {
-  const acts = availableActions(idx, pl, ph, st);
-  return acts.every(
+  return actionsProgress(idx, pl, ph, st).left === 0;
+}
+
+/**
+ * A che punto è il luogo: quante delle cose che lo tengono chiuso sono fatte.
+ *
+ * Sta qui e non nell'interfaccia perché è la stessa regola di
+ * `nothingLeftToDo` — contarla una seconda volta altrove vorrebbe dire due
+ * definizioni di «fatto» che prima o poi divergono. Le pure osservazioni non
+ * contano né come fatte né come da fare: si possono rileggere per sempre, e
+ * non è di loro che il luogo sta aspettando.
+ */
+export function actionsProgress(
+  idx: StoryIndex,
+  pl: Place | undefined,
+  ph: Phase | undefined,
+  st: GameState,
+): { done: number; total: number; left: number } {
+  const acts = availableActions(idx, pl, ph, st).filter((a) => !isPureObservation(a));
+  const done = acts.filter(
     (a) =>
       st.executed(a.id) ||
-      isPureObservation(a) ||
       (onlyOpensDialogue(a) && st.dialogueSeen(dialogueKey(pl, ph, a.effect.goto_dialogue!))),
-  );
+  ).length;
+  return { done, total: acts.length, left: acts.length - done };
 }
 
 // -------------------------------------------------------------- uscite
