@@ -271,9 +271,12 @@ npm run build:web           # -> dist/index.html
 npm run embed -- testdata/mini.zaistory.json /tmp/play.html   # con la storia dentro
 npm run serve -- 8000 ../stories                              # per provarla dal telefono
 
-# la prova del fumo: apre la build in un browser vero e gioca una partita.
-# Playwright NON è una dipendenza del progetto e non deve diventarlo.
+# la prova del fumo: apre la build in un browser vero e gioca la partita di
+# riferimento — `testdata/completo.txt`, la stessa della CLI, non una copia.
+# Playwright NON è una dipendenza del progetto e non deve diventarlo; i browser
+# di playwright nemmeno, se sulla macchina c'è già un Chrome (CHROME_PATH).
 npm i --no-save playwright && node scripts/smoke.mjs /tmp/play.html
+node scripts/smoke.mjs /tmp/play.html testdata/altro-playthrough.txt   # o un altro copione
 ```
 
 La distinzione della copertura è il punto: una frase **persa** costa al
