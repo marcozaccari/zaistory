@@ -40,6 +40,13 @@ cosa, ed è il tipo di coppia che diverge al primo `mv`. In una cartella ci sta
 **esattamente un** `*.zaistory.json`: gli strumenti lo cercano per glob, e zero
 file o due file sono un errore, non un caso da gestire.
 
+**La sceneggiatura e il file giocabile stanno accanto perché devono restare
+allineati.** `sceneggiatura.md` è la sorgente, `<id>.zaistory.json` è il
+compilato: correggere direttamente il compilato è lecito — a volte è l'unica
+cosa sensata — ma quella correzione va riportata anche nella sceneggiatura, o la
+prima ricompilazione la butta via. La regola sta in `SPECS.md`, «La sceneggiatura
+è la sorgente».
+
 **Il banco di lavoro sta dentro la storia ma fuori da git.** `_work/` contiene
 per costruzione anche i tentativi: le versioni precedenti, i grezzi non
 ritagliati, le miniature. È materiale di produzione, si rigenera, e pesa dieci

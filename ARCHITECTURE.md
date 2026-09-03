@@ -764,6 +764,23 @@ Limiti onesti, da comunicare all'utente:
   esiste già e serve solo un aggiornamento, meglio editarlo in place mantenendo
   gli id che ricompilare tutto.
 
+**L'edit in place ha un prezzo, e va pagato nello stesso momento.** La regola sta
+in `SPECS.md`, «La sceneggiatura è la sorgente»: ogni modifica fatta a mano sul
+compilato va riportata anche nella sceneggiatura. La ragione è la stessa che
+rende conveniente l'edit in place — il compilatore non ripete se stesso, quindi
+la sola cosa che una ricompilazione conserva è ciò che sta scritto nel sorgente.
+Una correzione che vive solo nel `.zaistory.json` è già persa: non lo si scopre
+il giorno in cui la si fa, lo si scopre mesi dopo, quando la storia ricompilata
+torna a sbagliare esattamente come prima e nessuno ricorda perché.
+
+Il caso in cui la modifica non sa dove andare nella sceneggiatura non è
+un'eccezione alla regola, è un sintomo: o è una decisione di compilazione — e
+allora va scritta in modo che il compilatore la riprenda da sola, che è
+esattamente quello che la sceneggiatura serve a dire — oppure non è materiale
+della storia, e nel compilato non ce l'ha messa una mano ma uno strumento. Il
+campo `image` è il caso tipico: lo scrive la pubblicazione degli asset, lo
+riaggancia `rebind.py`, e nella sceneggiatura non ci va.
+
 **Generatore ad hoc (futuro, non iniziato).** Le stesse regole implementate come
 codice deterministico, per ripetibilità e velocità che la skill non può dare.
 Nessuna scelta di linguaggio o stack è stata presa, ed è deliberato: prima si

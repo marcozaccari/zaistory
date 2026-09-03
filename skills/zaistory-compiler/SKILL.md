@@ -288,6 +288,13 @@ Scrivi il file come `<id>.zaistory.json` — il nome deve combaciare con il camp
   sceneggiatura possono dare id e dettagli diversi. Se esiste già un file e
   serve solo un aggiornamento, **editalo in place** mantenendo gli id, invece di
   ricompilare.
+- **Quello che scrivi in place, scrivilo anche nella sceneggiatura.** Un edit
+  diretto sul file giocabile vive in un posto solo, e la prossima compilazione
+  lo cancella: tu leggi la sceneggiatura, non il compilato. Quindi ogni
+  modifica fatta a mano va riportata nel sorgente **nello stesso momento**, in
+  modo che una compilazione futura la riproduca da sola. Se non sai dove
+  metterla, dillo all'utente invece di lasciarla solo nel compilato: è la regola
+  in `SPECS.md`, «La sceneggiatura è la sorgente».
 - **Gli id valgono denaro.** Le immagini pubblicate sono agganciate agli id di
   entità e fase: cambiarli senza motivo butta via generazioni già pagate e
   selezionate a mano.

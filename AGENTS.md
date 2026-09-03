@@ -197,6 +197,13 @@ il caricamento di ogni file che lo usa.
   deterministico fra sessioni: id e dettagli minori cambiano. L'eccezione è
   questo passaggio di formato, dove la forma cambia e le storie vanno
   ricompilate — ma **ereditando gli id**, vedi sotto.
+- **Se metti le mani in un compilato, riportalo nella sceneggiatura.** Ogni
+  modifica fatta a mano su un `.zaistory.json` va scritta anche nel sorgente da
+  cui è stato compilato, **nello stesso momento in cui la fai**: la
+  ricompilazione conserva solo quello che sta nella sceneggiatura, e una
+  correzione che vive nel solo compilato è già persa. Se non sai dove metterla
+  nella sceneggiatura, non è un dettaglio da rimandare: è la regola in
+  `SPECS.md`, «La sceneggiatura è la sorgente», e lì c'è cosa fare.
 - **La selezione delle immagini è umana, e sta nel filesystem.** Nella storia
   finisce solo ciò che è stato marcato *definitivo* nello studio; il resto resta
   in `_work/`. Non aggiungere euristiche che pubblicano da sole.

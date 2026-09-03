@@ -15,6 +15,20 @@ ARCHITECTURE e le scelte implementative emergono di conseguenza, oppure si allin
 - Un player che riesce a far girare e giocare l'avventura grafica.
   Il player non inventa nulla della storia, si limita a giocarla secondo i meccanismi, i flag e tutte le generazioni delle varianti di gioco.
 
+## La sceneggiatura è la sorgente
+
+Il file giocabile (`<id>.zaistory.json`) è un **compilato**: si ottiene dalla sceneggiatura, e la sceneggiatura resta l'unica sorgente della storia.
+
+È permesso modificarlo direttamente (spesso è la scelta giusta per costi/benefici): una battuta da correggere, una condizione sbagliata, un fallback da aggiungere, una rielaborazione di un prompt, non valgono una ricompilazione intera — che oltretutto non è deterministica e rimescola id e dettagli.
+
+Regola ferrea:
+
+- Ogni modifica fatta a mano sul compilato va riportata nella sceneggiatura che l'ha prodotto, nello stesso momento in cui la si fa.
+
+Altrimenti quella modifica esiste in un posto solo e la prossima ricompilazione non ne terrà conto. Più modifiche si accumuleranno, più le due versioni divergeranno, finché ricompilare diventerà impraticabile.
+
+La regola ovviamente esclude i casi in cui c'è da cambiare soltanto degli id o roba interna che con le informazioni di sceneggiatura non c'entra niente.
+
 ## Tipologia di gioco
 
 Regia e fotografia creano quell'immersività del background delle scene fatta di immagini, musiche e suoni. Cutscene, cambi di inquadratura, descrizioni, tutto ciò che evoca l'ambiente nel giocatore.
