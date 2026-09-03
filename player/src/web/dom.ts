@@ -1,37 +1,44 @@
-/** Micro-helper per il DOM: il player web non usa nessun framework. */
+/** Quattro aiuti per non scrivere `document.createElement` duecento volte. */
 
 export function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
-  cls?: string,
+  className?: string,
   text?: string,
 ): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
-  if (cls) node.className = cls;
-  if (text !== undefined) node.textContent = text;
-  return node;
+  const n = document.createElement(tag);
+  if (className) n.className = className;
+  if (text !== undefined) n.textContent = text;
+  return n;
 }
 
-export function $<T extends Element = HTMLElement>(sel: string): T {
-  const node = document.querySelector<T>(sel);
-  if (!node) throw new Error(`elemento mancante nel documento: ${sel}`);
-  return node;
+export function byId<T extends HTMLElement = HTMLElement>(id: string): T {
+  const n = document.getElementById(id);
+  if (!n) throw new Error(`manca #${id} nell'HTML`);
+  return n as T;
 }
 
-export function clear(node: Element): void {
-  node.replaceChildren();
+export function clear(n: HTMLElement): void {
+  while (n.firstChild) n.removeChild(n.firstChild);
+}
+
+export function show(n: HTMLElement, visible: boolean): void {
+  n.hidden = !visible;
+}
+
+/** Le iniziali di un nome, per quando una faccia non ha ancora un ritratto. */
+export function initials(name: string): string {
+  const parts = name.replace(/^(il|lo|la|l')\s*/i, '').split(/\s+/).filter(Boolean);
+  return parts.slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('');
 }
 
 /**
  * Trattiene un bottone nello stato premuto quanto basta a vederlo.
  *
- * Serve ovunque il bottone sparisca nello stesso istante del click — le chip
+ * Serve ovunque il bottone sparisca nello stesso istante del click — le voci
  * del dock, che vengono svuotate, e i bottoni del pannello che ricostruiscono
  * quello che sta loro intorno. In quei casi `:active` da solo vive qualche
- * millisecondo: non e' una questione di durata dell'animazione, e' che non
+ * millisecondo: non è una questione di durata dell'animazione, è che non
  * c'era niente da animare.
- *
- * Il ritardo si paga a ogni interazione, per questo resta corto: giusto il
- * tempo che la campitura arrivi a fondo.
  */
 export const DURATA_PRESSIONE = 140;
 
@@ -43,11 +50,9 @@ export function premi(b: HTMLElement): Promise<void> {
 /**
  * Vero se l'evento arriva da un campo di testo.
  *
- * Serve a ogni scorciatoia da tastiera che vive su `document`: li' le frecce
- * muovono il cursore, lo spazio scrive uno spazio e l'invio manda la frase, e
- * una scorciatoia che se li prende rompe l'unica interfaccia che il player ha.
- * Sta qui e non in un modulo solo perche' se ne servono due — la barra delle
- * scorciatoie e il tap-to-continue — e due copie divergono.
+ * Serve a ogni scorciatoia da tastiera che vive su `document`: lì le frecce
+ * muovono il cursore, le cifre scrivono cifre e l'invio manda la frase, e una
+ * scorciatoia che se li prende rompe l'unica interfaccia che il player ha.
  */
 export function staScrivendo(e: Event): boolean {
   const t = e.target as HTMLElement | null;
@@ -55,20 +60,17 @@ export function staScrivendo(e: Event): boolean {
   return /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable;
 }
 
+/** Coppia chiave/valore in una <dl class="kv">. */
+export function kv(dl: HTMLElement, key: string, value: string): void {
+  dl.append(el('dt', undefined, key), el('dd', undefined, value));
+}
+
 /**
  * Un blocco che nasce chiuso e si apre toccandolo.
  *
- * Serve dove il player mostra *elenchi da ispezionare* — la roster, i luoghi,
- * i flag, gli oggetti, le azioni sotto il debug. Sono cose che vanno esistere
- * nel documento, perche' senza di loro il debug non direbbe niente, ma che
- * aperte tutte insieme sono mezzo schermo di elenco fra chi legge e cio' che
- * stava leggendo. Chiuse, il conto accanto al titolo dice gia' la meta' di
- * quello che si voleva sapere — «quanti personaggi ha questa storia» — e
- * l'altra meta' e' a un tocco.
- *
- * `<details>` nativo e non un bottone fatto a mano: si apre con la tastiera,
- * lo screen reader lo annuncia per quello che e', e la ricerca del browser lo
- * trova anche chiuso. Un finto accordion costa codice per fare peggio.
+ * Serve dove il player mostra elenchi da ispezionare — i flag, gli oggetti, le
+ * azioni sotto il debug. Chiusi, il conto accanto al titolo dice già metà di
+ * quello che si voleva sapere, e l'altra metà è a un tocco.
  */
 export function piega(titolo: string, quanti?: number): { root: HTMLDetailsElement; corpo: HTMLElement } {
   const root = el('details', 'piega');
@@ -80,24 +82,13 @@ export function piega(titolo: string, quanti?: number): { root: HTMLDetailsEleme
   return { root, corpo };
 }
 
-/** Coppia chiave/valore in una <dl class="kv">. */
-export function kv(dl: HTMLElement, key: string, value: string): void {
-  dl.append(el('dt', undefined, key), el('dd', undefined, value));
-}
-
 /**
  * Una domanda che va risolta prima di andare avanti.
  *
  * Non usa `confirm()` del browser per due motivi che contano davvero: quel
  * riquadro blocca l'intera pagina — compresa la voce che sta leggendo, che
- * resterebbe a meta' frase — e ha l'aspetto del sistema operativo, cioe' di
- * qualcosa che non appartiene alla storia che si sta guardando. Questo invece
- * e' un pezzo di player come gli altri: prende i colori del tema, si chiude con
- * Esc o toccando fuori, e la risposta prudente e' gia' sotto il dito.
- *
- * Serve dove un tocco distratto costa la partita. Non e' una cortesia: da
- * quando la partita si puo' salvare, «ricomincia» e' l'unico bottone del player
- * che possa buttare via qualcosa di irrecuperabile.
+ * resterebbe a metà frase — e ha l'aspetto del sistema operativo, cioè di
+ * qualcosa che non appartiene alla storia che si sta guardando.
  */
 export function conferma(o: { titolo: string; testo: string; ok: string; annulla?: string }): Promise<boolean> {
   return new Promise((risolvi) => {
@@ -127,8 +118,8 @@ export function conferma(o: { titolo: string; testo: string; ok: string; annulla
     const suTasto = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        // `stopPropagation`: la stessa Esc chiuderebbe anche il pannello
-        // sotto, e chi annulla una domanda non ha chiesto di uscire dal menu.
+        // La stessa Esc chiuderebbe anche il pannello sotto, e chi annulla una
+        // domanda non ha chiesto di uscire dal menu.
         e.stopPropagation();
         chiudi(false);
       }

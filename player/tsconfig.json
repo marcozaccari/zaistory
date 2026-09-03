@@ -3,17 +3,15 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022"],
     "types": ["node"],
     "strict": true,
     "noImplicitOverride": true,
     "noUnusedLocals": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "declaration": false,
-    "sourceMap": false,
     "rootDir": ".",
     "outDir": "dist-node"
   },
-  "include": ["src", "test"]
+  "include": ["src/core", "src/cli", "test"]
 }

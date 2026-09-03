@@ -48,16 +48,23 @@ out = tmp / "out"
 # lasciato in giro da una sessione precedente e' il modo piu' sicuro di avere
 # un test che passa sulla macchina di chi l'ha scritto e su nessun'altra.
 import extract_manifest
-STORIA = pathlib.Path(__file__).resolve().parents[2] / "stories" / "metal-head" / "story.ir.json"
+# La fixture del formato, non una storia vera: le storie si ricompilano e si
+# rinominano, questa no. Ed e' anche quella che sta accanto allo schema, quindi
+# se il formato cambia si accorge prima lei.
+STORIA = (pathlib.Path(__file__).resolve().parents[2]
+          / "skills" / "zaistory-compiler" / "references" / "mini.zaistory.json")
 ir = json.loads(STORIA.read_text(encoding="utf-8"))
 manifest = extract_manifest.Extractor(
     ir, STORIA.name,
     {"width": 1024, "height": 1024, "steps": 8, "cfg": 0.0},
     {"anchors": "zimage", "shots": "klein"}).build()
 
-# Un sottoinsieme: due ancore personaggio, la loro ancora luogo, e uno shot
-# che le referenzia entrambe.
-shot = next(j for j in manifest["jobs"] if j["id"] == "shot.auto_in_viaggio.n1")
+# Un sottoinsieme: l'inquadratura con piu' riferimenti e le ancore che le
+# servono. Si sceglie per *forma* e non per id, cosi' il test non dipende da
+# quale storia sia la fixture ne' da come si chiamano le sue fasi.
+shot = max((j for j in manifest["jobs"] if j["level"] == "shot"),
+           key=lambda j: len(j["deps"]))
+assert shot["deps"], "la fixture non ha nessuna inquadratura con riferimenti"
 needed = set(shot["deps"])
 jobs = [j for j in manifest["jobs"] if j["id"] in needed] + [shot]
 manifest["jobs"] = jobs
@@ -76,7 +83,7 @@ for c in CALLS:
     print(f"  {c['method']:4} {c['url'][:78]}  body={c['bytes']}B {c['ctype'][:40]}")
 
 assert not runner.failed, runner.failed
-assert len(runner.done) == 4, runner.done
+assert len(runner.done) == len(needed) + 1, runner.done
 
 # --- il multipart dello shot contiene davvero 3 allegati?
 multipart = [c for c in CALLS if "edits" in c["url"]]
@@ -89,7 +96,7 @@ print("\n=== reference ===")
 for r in refs:
     with Image.open(r) as im:
         print(f"  {r.name}  {im.size}  {r.stat().st_size}B  {im.format}")
-assert len(refs) == 3, refs
+assert len(refs) == len(needed), refs
 
 # --- sidecar
 side = json.load(open(out / shot["file"] + ".json")) if False else json.load(
@@ -98,7 +105,7 @@ print("\n=== sidecar dello shot ===")
 print(json.dumps({k: side[k] for k in
                   ("job_id", "model", "size", "api")}, ensure_ascii=False, indent=2))
 print("  refs:", [(r["anchor"], r["sha256"][:12]) for r in side["refs"]])
-assert len(side["refs"]) == 3
+assert len(side["refs"]) == len(needed)
 assert side["model"] == "klein"
 # La premessa del tier con reference: senza, l'endpoint di editing
 # *modifica* la prima immagine invece di comporne una nuova.
@@ -109,12 +116,14 @@ assert "attached references" in side["prompt"], side["prompt"][:200]
 print("\n=== check-stale prima ===")
 print(" ", generate.check_stale(manifest, out) or "nessuna, corretto")
 
-anchor = next(j for j in manifest["jobs"] if j["id"] == "anchor.char.laura")
+# Un'ancora fra quelle da cui l'inquadratura dipende: se la si rigenera, lo
+# shot che la referenzia deve risultare "stale".
+anchor = next(j for j in manifest["jobs"] if j["id"] in needed)
 src = out / anchor["file"]
 _noise(seed=99).save(src)          # "rigenerata"
 generate.make_reference(src, out / "_refs", max_side=768, fmt="webp")
 
-print("=== check-stale dopo aver rigenerato anchor.char.laura ===")
+print(f"=== check-stale dopo aver rigenerato {anchor['id']} ===")
 stale = generate.check_stale(manifest, out)
 for job_id, why in stale:
     print(f"  {job_id}  ({why})")

@@ -1,0 +1,1080 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zaistory.dev/schemas/zaistory.schema.json",
+  "title": "Story",
+  "description": "Il formato zaistory: il file giocabile e player-agnostic prodotto dal compilatore a partire dalla sceneggiatura markdown libera. Non è un formato intermedio, è il prodotto finale — è il contratto che ogni player deve rispettare per essere compatibile, e l'unica cosa che il player legge. Gerarchia: Story > Act > Place > Phase. Il luogo è il nodo del grafo di gioco; la fase è l'unità di autoraggio, cioè ciò che il compilatore ricava da una scena della sceneggiatura. Lo schema è permissivo perché è il contratto; il linter è severo perché è il collaudo: molti campi qui opzionali sono obbligatori per giocare.",
+  "type": "object",
+  "required": [
+    "zaistory_version",
+    "id",
+    "title",
+    "start_act",
+    "acts"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "zaistory_version": {
+      "type": "string",
+      "description": "Versione del formato (semver). Non c'è retrocompatibilità: quando il formato cambia, le storie si ricompilano.",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "examples": [
+        "1.0.0"
+      ]
+    },
+    "generated_by": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "id": {
+      "type": "string",
+      "description": "Identificatore univoco della storia (slug). Deve combaciare con il nome del file: <id>.zaistory.json. Sono due posti che dicono la stessa cosa, ed è il tipo di coppia che diverge al primo mv — il linter lo verifica.",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string",
+      "description": "Codice lingua ISO 639-1 dei testi. Non è decorativo: il player ci sceglie la tabella dei verbi con cui interpreta quello che il giocatore scrive.",
+      "default": "it"
+    },
+    "cover": {
+      "$ref": "#/$defs/Background",
+      "description": "La locandina: l'immagine che rappresenta la storia prima che cominci, come la copertina di un gioco o il manifesto di un film. È un'inquadratura come tutte le altre — stesso oggetto, stessi campi — perché quello che serve a generarla è lo stesso: cosa si vede, in che luogo, con chi dentro. Non inquadra però un momento della storia ma la storia intera: il protagonista, il luogo che la storia ha in testa, la cosa che le sta di fronte. Non è l'inquadratura del primo luogo, che dice invece dove si comincia. ambient_sound_prompt di solito non serve: una copertina non suona."
+    },
+    "failure_mode": {
+      "type": "string",
+      "enum": [
+        "none",
+        "alternate_endings"
+      ],
+      "default": "none",
+      "description": "Se e come si può perdere. 'none' (stile LucasArts): niente morti, niente game over, niente vicoli ciechi — qualunque cosa faccia il giocatore si arriva sempre allo stesso finale, e ciò che cambia è quanto gli costa. 'alternate_endings' (stile Sierra): una biforcazione può portare a un finale prematuro. In quel caso valgono due vincoli che il linter fa rispettare: un finale prematuro si raggiunge SOLO da un'azione, mai da un'uscita — cioè mai per omissione o per aver sbagliato ordine — e deve esistere sempre un percorso completo fino al finale naturale."
+    },
+    "global_style": {
+      "$ref": "#/$defs/GlobalStyle"
+    },
+    "player_voice": {
+      "$ref": "#/$defs/PlayerVoice"
+    },
+    "protagonist": {
+      "type": "string",
+      "description": "id del personaggio che il giocatore È. Sta in characters come tutti — ha un aspetto e una voce, e nelle cutscene si vede e parla — ma a chi chiede «chi c'è qui» non va elencato: è chi sta chiedendo. Senza questo campo il player risponde 'in questa stanza ci sono: Laura, Mark e Tommy' a Laura.",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "characters": {
+      "type": "array",
+      "description": "Anagrafica globale dei personaggi, valida per tutta la storia. Ci va CHIUNQUE parli, anche una sola volta: è l'elenco dei parlanti, non dei personaggi importanti, e il modulo assets assegna il timbro una volta per parlante — un parlante che esiste solo come stringa in speaker non ha niente a cui agganciare quell'assegnazione. Le fasi possono fare override locali di aspetto e voce; quello che non possono fare è essere l'unico posto dove un personaggio esiste.",
+      "items": {
+        "$ref": "#/$defs/Character"
+      }
+    },
+    "items": {
+      "type": "array",
+      "description": "Anagrafica globale degli oggetti d'inventario. Gli oggetti attraversano il confine fra un atto e il successivo, e sono l'unica cosa che lo fa. Un oggetto che cambia stato è un ALTRO oggetto, con il suo id, il suo nome e la sua immagine (il walkie sotto carica non è il walkie scarico con una descrizione diversa): la trasformazione si scrive con un effetto che fa remove_inventory e add_inventory nella stessa mossa. Le description_variants servono all'altro caso, quello in cui cambia ciò che il giocatore SA dell'oggetto e non l'oggetto.",
+      "items": {
+        "$ref": "#/$defs/Item"
+      }
+    },
+    "initial_inventory": {
+      "type": "array",
+      "description": "Gli oggetti che il protagonista ha già addosso quando la storia comincia. Un dato di partenza, non un evento: darlo con un add_inventory nella prima scena lo travestirebbe da cosa raccolta, e il linter non potrebbe più distinguerli.",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9_-]+$"
+      }
+    },
+    "carry_flags": {
+      "type": "array",
+      "maxItems": 3,
+      "description": "I soli flag che sopravvivono al confine fra un atto e il successivo. Sono l'eccezione all'autonomia degli atti e hanno un tetto duro di TRE: oltre quella soglia la verifica per atto smette di essere esaustiva. Servono al TONO, non alla logica — possono cambiare cosa dice la storia, mai se si arriva alla fine — e il linter pretende che ogni atto sia completabile per ogni combinazione dei carry flag che legge. Se serve che aprano una porta, quella porta va aperta da un oggetto.",
+      "items": {
+        "$ref": "#/$defs/CarryFlag"
+      }
+    },
+    "start_act": {
+      "type": "string",
+      "description": "id dell'atto con cui la storia comincia.",
+      "pattern": "^[a-z0-9_-]+$"
+    },
+    "acts": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Gli atti. Ogni atto è autonomo: i suoi flag non escono, i suoi luoghi non si raggiungono da fuori, e fra un atto e l'altro passa solo l'inventario (più i carry_flags dichiarati).",
+      "items": {
+        "$ref": "#/$defs/Act"
+      }
+    }
+  },
+  "$defs": {
+    "Provenance": {
+      "type": "object",
+      "description": "Chi ha scritto questo file. Il compilatore non è deterministico fra sessioni, quindi riaprendo una storia mesi dopo — o confrontandone due della stessa sceneggiatura — la prima domanda è con cosa è stata fatta. Nessun consumatore può cambiare comportamento leggendo questo blocco: il player lo mostra e nient'altro.",
+      "required": [
+        "compiler",
+        "compiler_version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "compiler": {
+          "type": "string",
+          "examples": [
+            "zaistory-compiler"
+          ]
+        },
+        "compiler_version": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string",
+          "description": "Da OMETTERE quando non è determinabile con certezza: una provenienza inventata è peggio di una assente, perché fa cercare differenze dove non ce ne sono."
+        }
+      }
+    },
+    "ImageRef": {
+      "type": "string",
+      "description": "id di un'immagine già prodotta e approvata. NON lo scrive il compilatore: lo scrive la pubblicazione del modulo assets, ed è la firma di un essere umano che l'ha guardata e marcata definitiva. È un id, mai un percorso e mai il nome di un generatore: il player compone il percorso come assets/images/<id>.<ext> relativo alla cartella della storia. Un file appena compilato non ne ha nessuno, ed è giusto così.",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "VoiceSpec": {
+      "type": "object",
+      "description": "Come suona una voce, descritto a parole. Nessun engine, nessun voice_id, nessun parametro: il binding a un generatore concreto vive nel file di mapping del modulo assets, così cambiare provider TTS non tocca il contratto.",
+      "additionalProperties": false,
+      "properties": {
+        "style_prompt": {
+          "type": "string"
+        }
+      }
+    },
+    "GlobalStyle": {
+      "type": "object",
+      "description": "Lo stile che vale per tutta la storia: quello che ogni prompt di immagine si porta dietro, la voce del narratore, il tono di default.",
+      "additionalProperties": false,
+      "properties": {
+        "image_style_suffix": {
+          "type": "string"
+        },
+        "image_style_suffix_en": {
+          "type": "string",
+          "description": "La versione inglese, che è quella che va davvero al modello: i modelli sono addestrati in inglese e uno style suffix in coda a un prompt italiano lungo può essere ignorato in blocco. Il campo italiano resta canonico perché è quello che il player mostra in modalità solo testo."
+        },
+        "anchor_framing": {
+          "type": "string",
+          "description": "Il taglio con cui si generano i ritratti di riferimento. È una decisione sull'INTERO cast e non sul singolo personaggio: un cast con ritagli disomogenei sembra venire da storie diverse. Tre valori e non prosa libera, perché è una chiave che il modulo assets usa per scegliere l'impalcatura del prompt — un testo inventato qui viene scartato con un avviso e si ripiega sul default. L'override sul singolo Character esiste per i soggetti che una figura umana non sono (un quadrupede, un veicolo), dove «mezzo busto» non significa niente.",
+          "enum": [
+            "bust",
+            "waist-up",
+            "full-body"
+          ],
+          "default": "waist-up"
+        },
+        "narrator_voice": {
+          "$ref": "#/$defs/VoiceSpec"
+        },
+        "default_tone": {
+          "type": "string"
+        },
+        "ambient_music_tags": {
+          "type": "array",
+          "description": "Tag con cui si cerca la musica in una libreria curata. La musica non si genera: la generazione musicale è ancora troppo acerba rispetto a immagini e voce per una pipeline automatica.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Condition": {
+      "type": "object",
+      "description": "Condizione di validità per un'azione, un'uscita, una fase, un ramo di dialogo, la presenza di un oggetto d'ambiente. Se assente: sempre valida. I campi semplici presenti valgono tutti insieme (AND), e `all_of`/`any_of` servono a comporre quello che i campi semplici non sanno dire — due oggetti sulla stessa porta, o lo stesso oggetto in una qualunque delle sue forme. I flag nominati qui devono appartenere all'atto corrente o essere carry_flags dichiarati: nominare il flag di un altro atto è un errore, perché i flag muoiono con l'atto che li ha creati.",
+      "additionalProperties": false,
+      "properties": {
+        "flag_present": {
+          "type": "string",
+          "description": "Valida solo se questo flag è stato impostato."
+        },
+        "flag_absent": {
+          "type": "string",
+          "description": "Valida solo se questo flag NON è stato impostato."
+        },
+        "has_item": {
+          "type": "string",
+          "description": "Richiede il possesso di un oggetto in inventario."
+        },
+        "all_of": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "description": "Tutte le condizioni elencate devono valere. Serve dove i campi semplici non bastano, e il caso tipico è **due oggetti sulla stessa porta**: `has_item` ne porta uno solo, e chiedere il secondo un'uscita più in là non sempre si può. Si può annidare, ma se serve annidare più di un livello quasi sempre la condizione sta dicendo una cosa che andava detta con un flag."
+        },
+        "any_of": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "description": "Almeno una delle condizioni elencate deve valere. Il caso per cui esiste è **l'oggetto in una qualunque delle sue forme**: siccome un oggetto che cambia stato è un altro oggetto, una porta che va bene con il walkie scarico come con quello carico li elenca tutti e due qui invece di far scegliere a chi compila quale dei due chiedere."
+        }
+      }
+    },
+    "ConditionalText": {
+      "type": "object",
+      "description": "Un testo che vale solo in un certo stato. Si valutano in ordine e vince il primo che matcha, quindi l'ordine è significativo: le varianti più specifiche vanno prima.",
+      "required": [
+        "condition",
+        "text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "condition": {
+          "$ref": "#/$defs/Condition"
+        },
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    "Effect": {
+      "type": "object",
+      "description": "Cosa succede. È l'unico modo in cui lo stato del gioco cambia, ed è condiviso da azioni, scelte di dialogo e nodi: un solo motore di applicazione, non due logiche parallele. Il player non ne genera mai uno di sua iniziativa — può solo applicare quelli che trova qui.",
+      "additionalProperties": false,
+      "properties": {
+        "narration": {
+          "type": "string",
+          "description": "Cosa si legge dopo che l'effetto si è applicato."
+        },
+        "narration_voice": {
+          "$ref": "#/$defs/VoiceSpec"
+        },
+        "set_flag": {
+          "type": "string",
+          "description": "Alza un flag dell'atto corrente, o un carry_flag dichiarato in scrittura da questo atto."
+        },
+        "unset_flag": {
+          "type": "string"
+        },
+        "add_inventory": {
+          "type": "string",
+          "description": "id di un oggetto di items[]."
+        },
+        "remove_inventory": {
+          "type": "string"
+        },
+        "play_sound_prompt": {
+          "type": "string"
+        },
+        "goto_dialogue": {
+          "type": "string",
+          "description": "Apre l'albero di dialogo della fase corrente a partire da un nodo. Entrare in un dialogo è un'azione come le altre e passa dal parser; da lì in poi si sceglie e basta."
+        },
+        "goto_place": {
+          "type": "string",
+          "description": "Sposta il giocatore in un altro luogo senza passare da un'uscita. È il modo in cui si paga il costo di un errore — 'il costo dell'errore è camminare all'indietro' — e in cui una pressione narrativa rimette indietro chi ha sbagliato. Non è il movimento normale, che passa dalle Exit."
+        }
+      }
+    },
+    "CarryFlag": {
+      "type": "object",
+      "description": "Un flag che sopravvive al cambio di atto. Massimo tre in tutta la storia. Deve essere dichiarato da chi lo scrive (Act.writes_carry_flags) e da ogni atto che lo legge (Act.reads_carry_flags): un carry flag che nessun atto successivo legge è un ERRORE, non un avviso — la memoria morta è il primo sintomo di un canale che si sta riempiendo per inerzia.",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "description": {
+          "type": "string",
+          "description": "Cosa ricorda, in una riga. Serve a chi rilegge la storia per capire perché quel canale è stato speso."
+        }
+      }
+    },
+    "Character": {
+      "type": "object",
+      "description": "Un personaggio. L'identità sta qui una volta sola: è a questa che il modulo assets aggancia il ritratto di riferimento e il timbro.",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "aliases": {
+          "type": "array",
+          "description": "I modi in cui il giocatore può nominarlo scrivendo: nome, cognome, soprannomi, e i giri che lo indicano senza nominarlo ('il ragazzo', 'quello col cappello'). NON è una rifinitura: con il modello a verbi, la copertura lessicale sta sulle ENTITÀ — il verbo lo riconosce la tabella del player, il bersaglio lo riconoscono questi alias. Servono soprattutto al confine con il dialogo: «parla con il ragazzo» deve arrivare a tommy.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "type": "string",
+          "description": "Cosa si legge guardandolo. Tutto ciò con cui si interagisce deve essere osservabile: un personaggio con cui si può parlare e che non si può guardare è un buco."
+        },
+        "description_variants": {
+          "type": "array",
+          "description": "La descrizione com'è adesso, quando lo stato l'ha cambiata.",
+          "items": {
+            "$ref": "#/$defs/ConditionalText"
+          }
+        },
+        "visual_prompt": {
+          "type": "string",
+          "description": "L'aspetto: come è fatto. Diverso dall'inquadratura, che dice come lo si vede."
+        },
+        "visual_prompt_en": {
+          "type": "string"
+        },
+        "anchor_framing": {
+          "type": "string",
+          "description": "Override del taglio d'ancora globale. Ammesso solo per i soggetti non umani.",
+          "enum": [
+            "bust",
+            "waist-up",
+            "full-body"
+          ]
+        },
+        "image": {
+          "$ref": "#/$defs/ImageRef"
+        },
+        "voice": {
+          "$ref": "#/$defs/VoiceSpec"
+        }
+      }
+    },
+    "Item": {
+      "type": "object",
+      "description": "Un oggetto d'inventario.",
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Come si chiama per il giocatore. A «cosa ho nello zaino» un id non è una risposta."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "type": "string",
+          "description": "Cosa si legge guardandolo. Un oggetto senza descrizione non è guardabile, e il player non la inventa."
+        },
+        "description_variants": {
+          "type": "array",
+          "description": "Per quando cambia ciò che il giocatore SA dell'oggetto — una lettera che adesso ha letto. Se invece cambia l'oggetto, non è una variante: è un altro oggetto con un altro id.",
+          "items": {
+            "$ref": "#/$defs/ConditionalText"
+          }
+        },
+        "visual_prompt": {
+          "type": "string"
+        },
+        "visual_prompt_en": {
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/$defs/ImageRef"
+        }
+      }
+    },
+    "Prop": {
+      "type": "object",
+      "description": "Un oggetto d'ambiente: sta nel luogo, non nello zaino. È l'entità che rende applicabile la regola 'tutto ciò con cui si interagisce deve essere osservabile', ed è anche il posto della scenografia NON interagibile — un dettaglio descritto e senza azioni migliora la giocabilità e non costa niente al motore. Vive nel luogo e non nella fase perché le fasi cambiano cosa ci si può fare, non se esiste. Un prop che si raccoglie sparisce con un present_when e mette in inventario l'Item corrispondente.",
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "type": "string"
+        },
+        "description_variants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ConditionalText"
+          }
+        },
+        "present_when": {
+          "$ref": "#/$defs/Condition",
+          "description": "Quando c'è. Se assente, c'è sempre. Un prop assente non si guarda e non si usa: il parser non lo considera nemmeno un bersaglio."
+        },
+        "visual_prompt": {
+          "type": "string"
+        },
+        "visual_prompt_en": {
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/$defs/ImageRef"
+        }
+      }
+    },
+    "NoMatch": {
+      "type": "object",
+      "description": "La risposta d'autore per quando il gioco non capisce, categorizzata per intenzione. Il player non genera prosa: sceglie fra queste. Più d'una per intenzione, scelte a rotazione — la varietà viene dalla combinatoria su testo scritto, non da un modello.",
+      "required": [
+        "intent",
+        "text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "intent": {
+          "type": "string",
+          "enum": [
+            "perception",
+            "manipulation",
+            "communication",
+            "movement",
+            "generic"
+          ],
+          "description": "Le quattro famiglie di verbi più il generico. Corrispondono ai quattro gesti del giocatore: guardare, usare, parlare, andare."
+        },
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    "PlayerVoice": {
+      "type": "object",
+      "description": "Le risposte globali del player, in tono con la storia. Sono le domande che il giocatore fa continuamente e che non passano da nessuna azione: senza un posto dove metterle o restano senza risposta, o l'autore le duplica come azioni e si mangia il budget del luogo.",
+      "additionalProperties": false,
+      "properties": {
+        "inventory_intro": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Come si annuncia l'elenco di ciò che si ha in mano."
+        },
+        "inventory_empty": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "presence_intro": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Come si annuncia chi c'è qui. Il protagonista non si elenca mai."
+        },
+        "presence_alone": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exits_intro": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Come si annuncia l'elenco delle uscite conosciute, cioè la risposta a «dove posso andare» e il testo in cima alla mappa."
+        },
+        "exits_none": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "no_match_narration": {
+          "type": "array",
+          "description": "I fallback globali, usati quando la fase non ne ha uno per quell'intenzione.",
+          "items": {
+            "$ref": "#/$defs/NoMatch"
+          }
+        }
+      }
+    },
+    "Background": {
+      "type": "object",
+      "description": "Un'inquadratura: cosa si vede. Non descrive il luogo — quello lo fa Place.visual_prompt — ma come lo si sta guardando adesso.",
+      "required": [
+        "image_prompt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "image_prompt": {
+          "type": "string"
+        },
+        "image_prompt_en": {
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/$defs/ImageRef"
+        },
+        "ambient_sound_prompt": {
+          "type": "string"
+        },
+        "place": {
+          "type": "string",
+          "description": "id del luogo inquadrato. Dentro una fase è ridondante e va omesso — il luogo lo dice la struttura — e serve invece dove non c'è una struttura a dirlo: nella copertina, o in un beat ambientato altrove.",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "characters_in_frame": {
+          "type": "array",
+          "description": "Chi si VEDE. Non è chi è presente: una camera buia in cui parlano tre anziani ha tre presenti e nessuno inquadrato, e una voce oltre il muro è presente e fuori campo. Condizionare la generazione su tutti i presenti peggiora l'immagine quanto non condizionare affatto.",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$"
+          }
+        }
+      }
+    },
+    "NarrationBeat": {
+      "type": "object",
+      "description": "Un beat di narrazione. Una sequenza narrata può cambiare inquadratura più volte, quindi ogni beat può avere la sua immagine e il suo suono: un'unica immagine per fase non basterebbe per un montaggio con più fotografie diverse.",
+      "required": [
+        "text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "voice": {
+          "$ref": "#/$defs/VoiceSpec"
+        },
+        "image_prompt": {
+          "type": "string"
+        },
+        "image_prompt_en": {
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/$defs/ImageRef"
+        },
+        "sound_effect_prompt": {
+          "type": "string"
+        },
+        "characters_in_frame": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$"
+          }
+        }
+      }
+    },
+    "Act": {
+      "type": "object",
+      "description": "Un atto: un contenitore autonomo di luoghi. I suoi flag sono locali e muoiono con lui, i suoi luoghi non si raggiungono da fuori, e l'unica cosa che attraversa il confine è l'inventario (più i carry_flags dichiarati). L'autonomia non è ordine: è ciò che rende la verifica decomponibile — lo spazio di stato di un atto è piccolo e chiuso, quindi il linter può esplorarlo davvero. L'atto si chiude quando il giocatore prende l'uscita che porta a un luogo di un altro atto, e quell'uscita è condizionata agli oggetti che servono a valle (has_item): così la scelta di raccoglierli resta al giocatore e la possibilità di finire la storia resta garantita.",
+      "required": [
+        "id",
+        "start_place",
+        "places"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "start_place": {
+          "type": "string",
+          "description": "id del luogo in cui si entra arrivando in questo atto.",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "flags": {
+          "type": "array",
+          "description": "Elenco documentale dei flag locali a questo atto. Serve al linter per distinguere un flag di qui da uno di un altro atto, che è un errore.",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$"
+          }
+        },
+        "reads_carry_flags": {
+          "type": "array",
+          "description": "I carry flag che questo atto legge. Il linter verifica che l'atto sia completabile per OGNI combinazione di questi: i flag portati cambiano cosa dice la storia, mai se si arriva alla fine.",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$"
+          }
+        },
+        "writes_carry_flags": {
+          "type": "array",
+          "description": "I carry flag che questo atto imposta. Scriverne uno senza dichiararlo è un errore.",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$"
+          }
+        },
+        "places": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Place"
+          }
+        }
+      }
+    },
+    "Place": {
+      "type": "object",
+      "description": "Un luogo: IL NODO DEL GRAFO DI GIOCO. Ci si entra, ci si guarda intorno, ci si agisce, e ci si torna finché l'atto non lo chiude. Porta l'identità, le uscite e gli oggetti d'ambiente; cosa ci si può fare adesso lo dicono le fasi. Il ritorno libero non è una comodità: è ciò che rende pagabile il costo dell'errore in passi, che è l'unica valuta di punizione di questo motore. Il prezzo è che ogni luogo deve avere qualcosa da dire in ogni stato in cui ci si torna — compreso lo stato esaurito, che è una fase come le altre.",
+      "required": [
+        "id",
+        "name",
+        "phases"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Come si chiama per il giocatore: è il nome che compare nella mappa e nell'elenco delle uscite."
+        },
+        "aliases": {
+          "type": "array",
+          "description": "I modi in cui il giocatore può nominarlo scrivendo: «vai al magazzino», «torna giù», «esci sul piazzale».",
+          "items": {
+            "type": "string"
+          }
+        },
+        "same_as": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$",
+          "description": "id di un luogo, in un ALTRO atto, che è fisicamente lo stesso posto. Serve perché i luoghi vivono dentro gli atti mentre le stanze no: il soggiorno dell'atto della villa e quello dell'atto del finale sono due nodi di due grafi diversi, ma sono la stessa stanza. Dichiararlo tiene separate le due cose che qui divergono — l'**identità di gioco**, che è per atto, e l'**identità visiva**, che è del posto: il modulo assets non genera una seconda ancora e la pubblicazione scrive lo stesso id d'immagine in tutti e due. Senza, la stessa stanza verrebbe disegnata due volte, e le due versioni divergerebbero alla prima rigenerazione."
+        },
+        "visual_prompt": {
+          "type": "string",
+          "description": "Com'è fatto il posto. Diverso dall'inquadratura di una fase, che dice come lo si sta guardando."
+        },
+        "visual_prompt_en": {
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/$defs/ImageRef"
+        },
+        "completed_when": {
+          "$ref": "#/$defs/Condition",
+          "description": "Quando qui non resta più niente da fare. Non chiude il luogo — ci si può ancora entrare — ma lo dice: è il contrassegno che la mappa mostra, ed è quello che il linter usa per verificare che l'atto arrivi a chiudersi."
+        },
+        "exits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Exit"
+          }
+        },
+        "objects": {
+          "type": "array",
+          "description": "Gli oggetti d'ambiente, interagibili e non. Il tetto di quelli INTERAGIBILI è un parametro deciso in compilazione, non una costante del formato: protegge dalle stanze-elenco quando è il compilatore a inventare, e non ha nessun titolo per correggere un autore che ha già deciso quante cose ci sono in una stanza.",
+          "items": {
+            "$ref": "#/$defs/Prop"
+          }
+        },
+        "actions": {
+          "type": "array",
+          "description": "Le azioni valide in QUALUNQUE fase di questo luogo. È la stessa scelta già fatta per gli oggetti d'ambiente, e per la stessa ragione: le fasi cambiano cosa si può fare, non cosa esiste. Un gesto che ha senso finché il posto è quel posto — accendere qualcosa al camino, guardare gli scaffali, parlare con chi non se ne va — sta qui e non si ripete in ogni fase. Le azioni della fase si sommano a queste. Senza questo campo, un'azione necessaria che vive in una sola fase sparisce quando lo stato cambia la fase, e la storia può restare senza soluzione: è un vicolo cieco che nessuno vede finché non ci finisce dentro.",
+          "items": {
+            "$ref": "#/$defs/Action"
+          }
+        },
+        "phases": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Le fasi, valutate IN ORDINE: vale la prima la cui condition è soddisfatta. L'ultima dovrebbe essere senza condition, o il luogo può restare senza niente da dire.",
+          "items": {
+            "$ref": "#/$defs/Phase"
+          }
+        }
+      }
+    },
+    "Exit": {
+      "type": "object",
+      "description": "Un passaggio verso un altro luogo. Il movimento non è un'azione: guarda, usa e parla agiscono sulle entità dentro il nodo, andare cambia il nodo. Due stati distinti e non intercambiabili: CONOSCIUTA (compare nell'elenco e nella mappa) e ACCESSIBILE (ci si può passare). Un'uscita conosciuta ma bloccata dà la sua blocked_narration; una sconosciuta non compare affatto — e non si scopre dalla mappa, si scopre dal testo, con un effetto d'autore che alza il flag di known_when.",
+      "required": [
+        "to"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "to": {
+          "type": "string",
+          "description": "id del luogo di destinazione. Se appartiene a un altro atto, questa è l'uscita che chiude l'atto corrente: è lì che vanno gli has_item degli oggetti richiesti a valle.",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "label": {
+          "type": "string",
+          "description": "Come si chiama il passaggio, quando non coincide col nome della destinazione — «la porta sul retro», «la scala antincendio». Serve dove il giocatore vede l'uscita ma non sa ancora dove porta."
+        },
+        "aliases": {
+          "type": "array",
+          "description": "Come si può nominare il passaggio scrivendo. Il parser risolve prima il complemento e poi decide il verbo: se il bersaglio è un'uscita o un luogo è movimento, se è un oggetto è manipolazione — così «usa la porta» e «vai alla porta» convergono senza contendersi le stesse parole.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "known_when": {
+          "$ref": "#/$defs/Condition",
+          "description": "Quando il giocatore sa che questo passaggio esiste. Se assente, lo sa da subito."
+        },
+        "condition": {
+          "$ref": "#/$defs/Condition",
+          "description": "Quando ci si può passare. Se assente, sempre."
+        },
+        "blocked_narration": {
+          "type": "string",
+          "description": "Cosa si legge quando il giocatore prova ad andarci ma la condition non è soddisfatta. Non è un effetto: nessun cambio di stato, nessuna transizione."
+        },
+        "transitions": {
+          "type": "array",
+          "description": "Le cutscene di passaggio, valutate in ordine: vale la prima la cui condition è soddisfatta. Servono al ritmo, e sono direzionali — calarsi nel pozzo e risalirne non sono la stessa sequenza.",
+          "items": {
+            "$ref": "#/$defs/Transition"
+          }
+        }
+      }
+    },
+    "Transition": {
+      "type": "object",
+      "description": "Una cutscene di passaggio, agganciata a un'uscita. Si vede UNA VOLTA SOLA per default: con il ritorno libero una transizione si attraversa molte volte, e una sequenza rivista dieci volte è una punizione.",
+      "required": [
+        "narration"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "condition": {
+          "$ref": "#/$defs/Condition",
+          "description": "Quando vale questa variante. La prima volta che si scende in cantina è una scoperta, la quinta è una scala."
+        },
+        "narration": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/NarrationBeat"
+          }
+        },
+        "replay": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se true si rivede ogni volta. Da usare con parsimonia."
+        }
+      }
+    },
+    "Phase": {
+      "type": "object",
+      "description": "Una fase: com'è il luogo adesso. È l'unità di autoraggio, cioè quello che il compilatore ricava da una scena della sceneggiatura — ma il rapporto non è uno a uno: più scene nello stesso posto diventano più fasi di un luogo solo, e una fase può non avere nessuna scena sorgente (il ritorno che l'autore ha dato per scontato). Si apre una fase nuova quando cambia cosa si può fare o cosa si vede; se cambia solo ciò che il giocatore sa, bastano delle look_variants.",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "condition": {
+          "$ref": "#/$defs/Condition",
+          "description": "Quando vale questa fase. Le fasi si valutano in ordine e vince la prima che matcha."
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "interactive",
+            "cutscene"
+          ],
+          "default": "interactive",
+          "description": "Una cutscene è puro montaggio narrato — voce fuori campo su più inquadrature, zero scelte reali — e non va forzata nel modello 'stanza con azioni': ha narration multi-beat e una sola uscita."
+        },
+        "background": {
+          "$ref": "#/$defs/Background"
+        },
+        "look": {
+          "type": "string",
+          "description": "La stanza com'è adesso, rileggibile. È la risposta a «guardati intorno» e «dove sono», le domande più frequenti di un'avventura a parole. Sta fuori da actions[] di proposito: è un verbo di sistema, non consuma il budget del luogo. È anche il posto dove l'autore nomina le cose della stanza, ed è l'unico testo che cambia con lo stato — quindi è quello che porta l'indizio."
+        },
+        "look_variants": {
+          "type": "array",
+          "description": "Il look com'è dopo un cambio di stato. Se un flag di questa fase apre o chiude un'azione, per definizione qui qualcosa è cambiato, e il look è l'unico posto in cui il giocatore può accorgersene: senza varianti la scena è muta, non difficile.",
+          "items": {
+            "$ref": "#/$defs/ConditionalText"
+          }
+        },
+        "tone": {
+          "type": "string",
+          "description": "Il tono con cui si legge tutto quello che accade qui. È l'unica riga del palco che non descrive un'immagine, e non si nasconde mai."
+        },
+        "characters": {
+          "type": "array",
+          "description": "Chi è presente. Non è chi si vede — quello lo dice characters_in_frame — e comprende anche chi deve ancora entrare, motivo per cui al giocatore i presenti non inquadrati non si mostrano.",
+          "items": {
+            "$ref": "#/$defs/PhaseCharacter"
+          }
+        },
+        "narration": {
+          "type": "array",
+          "description": "Cosa si legge entrando in questa fase.",
+          "items": {
+            "$ref": "#/$defs/NarrationBeat"
+          }
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Action"
+          }
+        },
+        "dialogue": {
+          "$ref": "#/$defs/DialogueTree"
+        },
+        "no_match_narration": {
+          "type": "array",
+          "description": "I fallback di questa fase, che vincono su quelli globali di player_voice.",
+          "items": {
+            "$ref": "#/$defs/NoMatch"
+          }
+        },
+        "on_enter_flags_set": {
+          "type": "array",
+          "description": "Flag alzati entrando in questa fase. Serve a marcare che qualcosa è stato visto, senza chiedere al giocatore un'azione che non ha senso.",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]+$"
+          }
+        },
+        "ending": {
+          "$ref": "#/$defs/Ending"
+        }
+      }
+    },
+    "PhaseCharacter": {
+      "type": "object",
+      "description": "Un personaggio presente in questa fase, con gli eventuali override locali di aspetto e voce. L'identità resta nella roster globale: qui si dice solo che c'è, e semmai che qui è diverso — una ferita, un travestimento.",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "visual_prompt": {
+          "type": "string"
+        },
+        "visual_prompt_en": {
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/$defs/ImageRef"
+        },
+        "voice": {
+          "$ref": "#/$defs/VoiceSpec"
+        }
+      }
+    },
+    "Ending": {
+      "type": "object",
+      "description": "Questa fase è un finale: la storia finisce qui. 'natural' è la fine a cui la storia tende, e ce n'è sempre almeno una raggiungibile. 'premature' è il finale alternativo delle storie con failure_mode 'alternate_endings', e vale un vincolo: ci si arriva SOLO da un'azione, mai da un'uscita — cioè mai per omissione o per aver sbagliato l'ordine delle cose.",
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "natural",
+            "premature"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "description": "Come si chiama questo finale, per chi collauda e per il riepilogo di fine partita."
+        }
+      }
+    },
+    "Action": {
+      "type": "object",
+      "description": "Cosa si può fare qui. Una tripletta verbo + bersaglio (+ secondo bersaglio), non un'etichetta con una lista di parafrasi: il verbo lo riconosce la tabella del player, i bersagli li riconoscono gli alias delle entità. Il compilatore NON scrive un'azione per ogni coppia possibile — scrive quelle che fanno qualcosa, e tutto il resto lo copre il rifiuto contestuale, che è comunque testo d'autore. Niente si scopre da un elemento di interfaccia: quello che il giocatore deve trovare va nominato nel testo che legge.",
+      "required": [
+        "id",
+        "verb",
+        "effect"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifica l'azione nelle tracce di partita e nei playthrough. Non si mostra mai al giocatore.",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "verb": {
+          "type": "string",
+          "enum": [
+            "look",
+            "use",
+            "talk"
+          ],
+          "description": "Quale dei quattro verbi del giocatore è, fra i tre che agiscono dentro il luogo. Il quarto — andare — si scrive in un altro campo: le exits, perché agisce sul grafo dei luoghi invece che dentro uno. 'use' non può stare senza bersaglio; 'look' e 'talk' da soli sono verbi di sistema e rispondono col look della fase o con l'unico interlocutore."
+        },
+        "target": {
+          "type": "string",
+          "description": "id dell'entità su cui si agisce: un Prop del luogo, un Character presente, un Item in inventario.",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "second_target": {
+          "type": "string",
+          "description": "Il secondo complemento, per 'usa X con Y' e 'dai X a Y'. L'ordine conta ed è quello della frase: target è ciò che si impugna, second_target ciò su cui si agisce.",
+          "pattern": "^[a-z0-9_-]+$"
+        },
+        "test_phrases": {
+          "type": "array",
+          "description": "Parafrasi che DOVREBBERO risolvere a questa azione, tenute deliberatamente fuori dagli alias delle entità. Nessun player le legge: le legge il linter, che le passa al parser e conta quante arrivano dove devono. Scrivile lontane dagli alias — copiarle di lì misura il lookup, non il richiamo.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "condition": {
+          "$ref": "#/$defs/Condition"
+        },
+        "blocked_narration": {
+          "type": "string",
+          "description": "Cosa si legge quando il giocatore chiede questa azione ma la condition non è soddisfatta. Ha senso solo insieme a condition, e non è un effetto: nessun cambio di stato, nessuna transizione. A input libero un'azione filtrata non è una voce che sparisce da un menu: è una cosa che il giocatore chiede lo stesso, e che merita una risposta d'autore invece del non-ho-capito generico. Non esiste la deroga «questa condizione nessuno la incontrerà mai al contrario»: chi gioca a parole prova le cose nell'ordine che gli viene in mente.",
+          "examples": [
+            "La cordicella penzola a tre metri, fuori portata."
+          ]
+        },
+        "effect": {
+          "$ref": "#/$defs/Effect"
+        },
+        "repeatable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Se false, l'azione non si può ripetere dopo la prima volta (tipico per 'prendi')."
+        }
+      }
+    },
+    "DialogueTree": {
+      "type": "object",
+      "description": "Una conversazione. Si agisce a parole, si parla a scelte: dentro un dialogo il parser non viene interpellato e l'elenco delle battute si vede sempre — nel parlato l'elenco È il piacere, e far indovinare la formula giusta per dire una cosa che il personaggio saprebbe dire è frustrazione senza guadagno. Conseguenza sulla compilazione, più importante del meccanismo: nel dialogo non si nasconde niente che il giocatore debba scoprire da solo. Vanno preferiti grafi con ramificazioni e riconvergenze alle sequenze lineari di battute.",
+      "required": [
+        "start",
+        "nodes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "type": "string"
+        },
+        "nodes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/DialogueNode"
+          }
+        }
+      }
+    },
+    "DialogueNode": {
+      "type": "object",
+      "required": [
+        "speaker",
+        "text"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "speaker": {
+          "type": "string",
+          "description": "id di un personaggio della roster globale, sempre — anche per una voce fuori campo con una sola battuta. 'narrator' indica la didascalia: non è una battuta ma la riga che nella sceneggiatura sta fra due battute e dice cosa succede mentre si parla. Il player la impagina come prosa e non ci mette nessun nome davanti, perché «Narratore:» inventerebbe una voce fuori campo che nella scena non c'è."
+        },
+        "text": {
+          "type": "string"
+        },
+        "text_variants": {
+          "type": "array",
+          "description": "Altri modi di dire la stessa battuta, scelti a rotazione quando si ripassa di qui. Servono dove la stessa azione di dialogo si ripete: è la stessa combinatoria su testo d'autore con cui il player evita di sembrare un disco rotto.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "voice_override": {
+          "$ref": "#/$defs/VoiceSpec"
+        },
+        "effect": {
+          "$ref": "#/$defs/Effect"
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DialogueChoice"
+          }
+        },
+        "next": {
+          "type": "string",
+          "description": "Il nodo successivo, quando non ci sono scelte."
+        },
+        "end": {
+          "type": "boolean",
+          "description": "Chiude il dialogo e riporta al luogo."
+        }
+      }
+    },
+    "DialogueChoice": {
+      "type": "object",
+      "description": "Una battuta che il giocatore può scegliere. Non ha alias e non deve averne: qui si tocca, non si scrive.",
+      "required": [
+        "text",
+        "goto"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "goto": {
+          "type": "string",
+          "description": "id del nodo di destinazione. È anche il nome con cui i playthrough identificano il ramo, visto che una scelta non ha un id proprio."
+        },
+        "condition": {
+          "$ref": "#/$defs/Condition"
+        },
+        "effect": {
+          "$ref": "#/$defs/Effect",
+          "description": "Si applica dopo la scelta e prima del nodo di destinazione: è il posto della didascalia su un ramo."
+        }
+      }
+    }
+  }
+}

@@ -1,25 +1,18 @@
 /**
- * Core del player ZAiStory: tutto quello che non e' interfaccia.
+ * Il core: la logica di gioco, e solo quella.
  *
- * Questo modulo non tocca il DOM, non legge da stdin e non stampa niente.
- * E' la ragione per cui esiste: la stessa logica gira nel player web sul
- * telefono e nella CLI node in CI senza essere riscritta due volte e senza
- * rischiare che le due versioni divergano.
- *
- * Vincolo architetturale che si vede direttamente nel codice: qui non c'e'
- * logica narrativa. Nessuna azione inventata, nessun testo generato, nessun
- * cambio di stato che non venga da un `Effect` gia' presente nell'IR.
+ * Non tocca il DOM e non legge da stdin. Web e CLI sono interfacce: se una
+ * regola si trova duplicata lì, è nel posto sbagliato.
  */
 
 export * from './types.js';
-export * from './load.js';
+export * from './lexical.js';
+export * from './verbs.js';
 export * from './state.js';
 export * from './engine.js';
+export * from './parser.js';
+export * from './turn.js';
+export * from './load.js';
 export * from './lint.js';
-export * from './lexical.js';
-export * from './resolver.js';
-export * from './verbi.js';
-export * from './turno.js';
-export * from './copertura.js';
-export * from './script.js';
-export * from './salvataggio.js';
+export * from './coverage.js';
+export * from './vectors.js';

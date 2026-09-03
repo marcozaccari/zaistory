@@ -1,831 +1,676 @@
 /**
- * Analisi statica di giocabilita': i bug che la validazione di schema non puo'
- * vedere.
+ * Il linter di giocabilità.
  *
- * La distinzione e' quella dell'architettura del progetto: la validazione di
- * schema dice che l'IR e' *ben formato*, il linter e la partita dicono se e'
- * *giocabile*. Qui stanno i controlli statici (goto rotti, scene senza uscita,
- * flag mai impostati, rami di dialogo irraggiungibili); quelli che richiedono
- * di giocare davvero restano al player.
- */
-
-import type { Condition, Effect, Intent, Scene, Story } from './types.js';
-import { NARRATORE, SCENE_CUTSCENE, SCENE_INTERACTIVE, coverShot, displayName, findScene, isDidascalia, sceneHasExit, sceneType, shotsOf, type Shot } from './types.js';
-import { verboDelPlayer } from './verbi.js';
-
-export type Level = 'info' | 'avviso' | 'errore';
-
-/**
- * Sotto quanti alias la copertura di un'azione si sente.
+ * La validazione di schema dice che una storia è **ben formata**; questo dice
+ * se è **giocabile**. È il modo più economico di scoprire che non lo è senza
+ * prima generare immagini e voci — trova le porte chiuse a chiave, non se la
+ * storia si gioca *bene*: per quello serve giocarla.
  *
- * Non e' un numero magico: e' l'ordine di grandezza a cui un elenco di
- * sinonimi smette di coprire i modi in cui la stessa cosa si chiede. Tre alias
- * coprono tre frasi; quindici cominciano a coprire un modo di parlare.
- */
-export const SOGLIA_ALIAS = 8;
-
-/**
- * Sotto quanti nodi un dialogo e' troppo corto perche' valga la pena contare le
- * descrizioni. Uno scambio di tre battute serrate senza didascalie e' una
- * scelta di scrittura legittima, e segnalarlo sarebbe solo rumore.
- */
-export const MIN_NODI_DIALOGO = 4;
-
-/**
- * Ogni quanti nodi ci si aspetta almeno una descrizione.
+ * Tre gravità, e la differenza non è di tono:
  *
- * E' un rapporto e non un conteggio, ed e' l'unica forma che funziona: la
- * regola "zero descrizioni" lascia passare proprio il caso da cui questo
- * controllo e' nato — undici battute con una sola didascalia superstite, che a
- * giocarle sono dieci frasi a vuoto di fila. Sei e' largo apposta: deve
- * accendersi su un dialogo spogliato, non su uno scritto fitto.
+ * - **errore**: la storia non si può finire, o un riferimento non esiste. Non è
+ *   un'opinione.
+ * - **avviso**: la storia gira ma da qualche parte resta muta. Sono i controlli
+ *   che nascono da una regola sola — *un luogo non deve poter restare senza
+ *   niente da dire* — e sono quelli che si è tentati di ignorare, sbagliando.
+ * - **info**: una misura, non un difetto.
+ *
+ * Lo schema è permissivo perché è il contratto; qui si è severi perché questo è
+ * il collaudo. Molti campi opzionali nello schema sono obbligatori per giocare,
+ * ed è qui che la differenza si vede.
  */
-export const NODI_PER_DESCRIZIONE = 6;
+
+import type { Act, Action, Condition, Effect, Phase, Place, StoryIndex } from './types.js';
+
+export type Severity = 'errore' | 'avviso' | 'info';
 
 export interface Finding {
-  level: Level;
-  /** Posizione leggibile: scena, azione, nodo... */
+  severity: Severity;
   where: string;
-  msg: string;
+  message: string;
 }
 
-export function formatFinding(f: Finding): string {
-  const lv = f.level.padEnd(7);
-  return f.where ? `${lv} [${f.where}] ${f.msg}` : `${lv} ${f.msg}`;
-}
+const ORDER: Record<Severity, number> = { errore: 0, avviso: 1, info: 2 };
 
-export function countFindings(fs: Finding[]): { errors: number; warnings: number; infos: number } {
-  return {
-    errors: fs.filter((f) => f.level === 'errore').length,
-    warnings: fs.filter((f) => f.level === 'avviso').length,
-    infos: fs.filter((f) => f.level === 'info').length,
-  };
-}
+export function lint(idx: StoryIndex): Finding[] {
+  const f: Finding[] = [];
+  const story = idx.story;
 
-interface EffLoc {
-  eff: Effect;
-  where: string;
-}
-interface CondLoc {
-  cond: Condition;
-  where: string;
-}
-
-function allEffects(sc: Scene): EffLoc[] {
-  const out: EffLoc[] = [];
-  for (const a of sc.actions) {
-    if (a.effect) out.push({ eff: a.effect, where: `${sc.id} / ${a.id}` });
+  checkStory(idx, f);
+  for (const act of story.acts) {
+    checkAct(idx, act, f);
+    for (const place of act.places) checkPlace(idx, act, place, f);
   }
-  if (sc.dialogue_tree) {
-    for (const [id, n] of Object.entries(sc.dialogue_tree.nodes)) {
-      if (n.effect) out.push({ eff: n.effect, where: `${sc.id} / nodo ${id}` });
-      (n.choices ?? []).forEach((c, k) => {
-        if (c.effect) out.push({ eff: c.effect, where: `${sc.id} / nodo ${id} / scelta ${k + 1}` });
-      });
-    }
-  }
+  checkCarryFlags(idx, f);
+  checkReachability(idx, f);
+  checkEndings(idx, f);
+
+  return f.sort((a, b) => ORDER[a.severity] - ORDER[b.severity] || a.where.localeCompare(b.where));
+}
+
+export function countBySeverity(findings: Finding[]): Record<Severity, number> {
+  const out: Record<Severity, number> = { errore: 0, avviso: 0, info: 0 };
+  for (const x of findings) out[x.severity]++;
   return out;
 }
 
-function allConditions(sc: Scene): CondLoc[] {
-  const out: CondLoc[] = [];
-  for (const a of sc.actions) {
-    if (a.condition) out.push({ cond: a.condition, where: `${sc.id} / ${a.id}` });
+// ------------------------------------------------------------------ storia
+
+function checkStory(idx: StoryIndex, f: Finding[]): void {
+  const s = idx.story;
+  const err = (where: string, message: string) => f.push({ severity: 'errore', where, message });
+  const warn = (where: string, message: string) => f.push({ severity: 'avviso', where, message });
+
+  if (!s.protagonist) {
+    err('story', 'manca protagonist: senza, a «chi c\'è qui» il player elenca anche chi sta chiedendo');
+  } else if (!idx.characters.has(s.protagonist)) {
+    err('story.protagonist', `"${s.protagonist}" non è nella roster dei personaggi`);
   }
-  if (sc.dialogue_tree) {
-    for (const [id, n] of Object.entries(sc.dialogue_tree.nodes)) {
-      (n.choices ?? []).forEach((c, k) => {
-        if (c.condition) out.push({ cond: c.condition, where: `${sc.id} / nodo ${id} / scelta ${k + 1}` });
-      });
+
+  const pv = s.player_voice;
+  if (!pv) {
+    err('story', 'manca player_voice: inventario, presenti, uscite e fallback globali restano senza voce');
+  } else {
+    const intents = new Set((pv.no_match_narration ?? []).map((n) => n.intent));
+    if (!intents.has('generic')) {
+      err('story.player_voice', 'manca il fallback globale "generic": è la rete sotto tutte le altre');
     }
-  }
-  return out;
-}
-
-class Linter {
-  findings: Finding[] = [];
-  constructor(private story: Story) {}
-
-  add(level: Level, where: string, msg: string): void {
-    this.findings.push({ level, where, msg });
-  }
-
-  // ----------------------------------------------------------------- scene
-
-  checkScenes(): void {
-    for (const sc of this.story.scenes) {
-      const where = sc.id;
-
-      if (!sc.background?.image_prompt) {
-        this.add('errore', where, 'manca background.image_prompt (richiesto dallo schema)');
-      }
-      if (sc.actions.length === 0) {
-        // Una scena senza azioni e' un bug solo se la storia dovrebbe
-        // proseguire: se da qui non esce nessun goto_scene, e' un finale.
-        if (sceneHasExit(sc)) {
-          this.add('errore', where, 'nessuna azione: la scena non ha alcun modo di proseguire');
-        } else {
-          this.add('info', where, "scena senza azioni: e' un finale della storia");
-        }
-      }
-      if (sceneType(sc) === SCENE_CUTSCENE) {
-        if (sc.dialogue_tree) {
-          this.add('avviso', where, 'cutscene con dialogue_tree: per convenzione una cutscene non ha dialoghi');
-        }
-        if (sc.actions.length > 1) {
-          this.add('avviso', where, `cutscene con ${sc.actions.length} azioni: per convenzione ne ha una sola ("continua")`);
-        }
-        if ((sc.narration ?? []).length === 0) {
-          this.add('avviso', where, 'cutscene senza narration[]: non ha nulla da raccontare');
-        }
-      }
-
-      const seen = new Set<string>();
-      sc.actions.forEach((a, j) => {
-        const aw = `${where} / ${a.id}`;
-        if (!a.id) this.add('errore', where, `azione ${j} senza id`);
-        if (seen.has(a.id)) this.add('errore', aw, 'id di azione duplicato nella stessa scena');
-        seen.add(a.id);
-        if (!a.label) this.add('errore', aw, 'azione senza label');
-        if (!a.effect) {
-          this.add('errore', aw, 'azione senza effect (richiesto dallo schema): selezionarla non farebbe nulla');
-          return;
-        }
-        this.checkEffect(sc, aw, a.effect);
-      });
-
-      this.checkLookVarianti(sc);
-      this.checkDialogue(sc);
+    for (const k of ['inventory_intro', 'presence_intro', 'exits_intro'] as const) {
+      if (!pv[k]?.length) warn(`story.player_voice.${k}`, 'manca: la domanda corrispondente resta senza risposta d\'autore');
     }
   }
 
-  checkEffect(sc: Scene, where: string, e?: Effect): void {
-    if (!e) return;
-    if (e.goto_scene && !findScene(this.story, e.goto_scene)) {
-      this.add('errore', where, `goto_scene punta alla scena inesistente "${e.goto_scene}"`);
+  if (!s.cover) warn('story', 'manca cover: la storia si apre su una pagina di solo testo');
+
+  for (const it of s.initial_inventory ?? []) {
+    if (!idx.items.has(it)) err('story.initial_inventory', `l'oggetto "${it}" non è in items[]`);
+  }
+  for (const c of idx.characters.values()) {
+    if (!c.description && !(c.description_variants?.length)) {
+      warn(`characters.${c.id}`, 'senza description: un personaggio con cui si parla e che non si può guardare è un buco');
     }
-    if (e.goto_dialogue) {
-      if (!sc.dialogue_tree) {
-        this.add('errore', where, `goto_dialogue "${e.goto_dialogue}" ma la scena non ha dialogue_tree`);
-      } else if (!sc.dialogue_tree.nodes[e.goto_dialogue]) {
-        this.add('errore', where, `goto_dialogue punta al nodo inesistente "${e.goto_dialogue}"`);
-      }
-    }
-    if (e.goto_scene && e.goto_dialogue) {
-      this.add('avviso', where, 'goto_scene e goto_dialogue insieme: il player esegue la transizione di scena e ignora il dialogo');
-    }
-    if (e.set_flag && e.set_flag === e.unset_flag) {
-      this.add('avviso', where, `set_flag e unset_flag sullo stesso flag "${e.set_flag}"`);
+  }
+  for (const it of idx.items.values()) {
+    if (!it.description && !(it.description_variants?.length)) {
+      f.push({ severity: 'errore', where: `items.${it.id}`, message: 'senza description: guardarlo non darebbe niente, e il player non la inventa' });
     }
   }
 
-  /**
-   * Un flag che apre o chiude un'azione **in questa stessa scena**, ma che il
-   * `look` ignora.
-   *
-   * Se un flag cambia cosa si puo' fare qui, per definizione qualcosa qui e'
-   * cambiato — e il `look` e' l'unico posto in cui il giocatore puo'
-   * accorgersene, perche' e' l'unico testo della scena che si rilegge quando si
-   * vuole. Senza la variante corrispondente si rilegge la stanza di partenza e
-   * si conclude di non aver combinato niente.
-   *
-   * Il caso che ha fatto scrivere il controllo: una scena di fuga in cui
-   * `carrello_visto` chiudeva «corri» e apriva «rovescia il carrello», con zero
-   * `look_variants` e nessuna menzione del carrello da nessuna parte. Il
-   * giocatore aveva in mano tutto tranne la parola: non una scena difficile,
-   * una scena muta.
-   *
-   * Si guardano solo i flag **prodotti dalla scena stessa**: uno impostato
-   * altrove descrive qualcosa che qui non e' successo, e pretendere che la
-   * stanza lo racconti sarebbe sbagliato.
-   */
-  checkLookVarianti(sc: Scene): void {
-    if (sceneType(sc) === SCENE_CUTSCENE) return;
-
-    const impostatiQui = new Set<string>();
-    const raccogli = (e?: Effect) => {
-      if (e?.set_flag) impostatiQui.add(e.set_flag);
-    };
-    for (const a of sc.actions) raccogli(a.effect);
-    for (const f of sc.on_enter_flags_set ?? []) impostatiQui.add(f);
-    for (const n of Object.values(sc.dialogue_tree?.nodes ?? {})) {
-      raccogli(n.effect);
-      for (const c of n.choices ?? []) raccogli(c.effect);
-    }
-
-    // I flag che, qui, decidono se un'azione si puo' fare.
-    const cancelli = new Set<string>();
-    for (const a of sc.actions) {
-      const c = a.condition;
-      if (c?.flag_present && impostatiQui.has(c.flag_present)) cancelli.add(c.flag_present);
-      if (c?.flag_absent && impostatiQui.has(c.flag_absent)) cancelli.add(c.flag_absent);
-    }
-    if (cancelli.size === 0) return;
-
-    const raccontati = new Set<string>();
-    for (const v of sc.look_variants ?? []) {
-      if (v.condition.flag_present) raccontati.add(v.condition.flag_present);
-      if (v.condition.flag_absent) raccontati.add(v.condition.flag_absent);
-    }
-
-    const muti = [...cancelli].filter((f) => !raccontati.has(f)).sort();
-    if (muti.length === 0) return;
-    this.add(
-      'avviso',
-      sc.id,
-      `il flag ${muti.map((f) => `"${f}"`).join(', ')} cambia cosa si puo' fare qui, ma il look non cambia: guardandosi intorno si rilegge la stanza di prima (manca look_variants)`,
-    );
-  }
-
-  checkDialogue(sc: Scene): void {
-    const dt = sc.dialogue_tree;
-    if (!dt) return;
-    const where = `${sc.id} / dialogue_tree`;
-
-    if (!dt.nodes[dt.start]) {
-      this.add('errore', where, `start punta al nodo inesistente "${dt.start}"`);
-    }
-
-    // Punti di ingresso: lo start piu' ogni goto_dialogue che arriva dalle
-    // azioni della scena.
-    const entries = new Set<string>();
-    let entryFromAction = false;
-    for (const a of sc.actions) {
-      if (a.effect?.goto_dialogue) {
-        entries.add(a.effect.goto_dialogue);
-        entryFromAction = true;
-      }
-    }
-    if (!entryFromAction) {
-      this.add('avviso', where, "nessuna azione della scena porta al dialogo (goto_dialogue): l'albero e' irraggiungibile");
-      entries.add(dt.start);
-    }
-
-    const ids = Object.keys(dt.nodes).sort();
-
-    for (const id of ids) {
-      const n = dt.nodes[id];
-      const nw = `${sc.id} / nodo ${id}`;
-      if (!n.speaker) this.add('errore', nw, 'nodo senza speaker');
-      this.checkEffect(sc, nw, n.effect);
-
-      (n.choices ?? []).forEach((c, k) => {
-        const cw = `${nw} / scelta ${k + 1}`;
-        if (!c.goto) this.add('errore', cw, 'scelta senza goto');
-        else if (!dt.nodes[c.goto]) this.add('errore', cw, `goto punta al nodo inesistente "${c.goto}"`);
-        this.checkEffect(sc, cw, c.effect);
-      });
-
-      if (n.next) {
-        if (!dt.nodes[n.next]) this.add('errore', nw, `next punta al nodo inesistente "${n.next}"`);
-        if ((n.choices ?? []).length > 0) {
-          this.add('avviso', nw, 'ha sia choices sia next: il player usa le scelte e ignora next');
-        }
-      }
-
-      const leadsOut = !!(n.effect?.goto_scene || n.effect?.goto_dialogue);
-      if (!n.end && !n.next && (n.choices ?? []).length === 0 && !leadsOut) {
-        this.add('errore', nw, 'nodo monco: nessuna scelta, nessun next, nessun end - il dialogo si interrompe qui');
-      }
-    }
-
-    // Un dialogo lungo senza nemmeno una didascalia.
-    //
-    // Non e' un errore di struttura — si gioca benissimo — ed e' proprio per
-    // questo che serve dirlo: e' la firma di una compilazione che ha buttato
-    // via le didascalie della sceneggiatura, quelle che stanno fra due battute
-    // e dicono cosa succede mentre si parla. A leggerlo, un dialogo cosi' e'
-    // una sequenza di frasi a vuoto, e senza questo controllo lo si scopre
-    // solo giocandolo. Conta anche `effect.narration`, che e' l'altro modo in
-    // cui una descrizione puo' stare dentro un dialogo.
-    // Le tre forme in cui una descrizione puo' stare dentro un dialogo, e
-    // contano tutte: un nodo `narrator`, una `narration` sull'effetto del
-    // nodo, e una sull'effetto di una *scelta* — che e' dove finisce ogni
-    // didascalia posata su un ramo, e dimenticarla farebbe suonare l'allarme
-    // proprio sui dialoghi appena sistemati.
-    const descrizioni = ids.filter((id) => {
-      const n = dt.nodes[id];
-      return isDidascalia(n) || !!n.effect?.narration || (n.choices ?? []).some((c) => !!c.effect?.narration);
-    }).length;
-    if (ids.length >= MIN_NODI_DIALOGO && descrizioni * NODI_PER_DESCRIZIONE < ids.length) {
-      this.add(
-        'info',
-        where,
-        `${ids.length} nodi e ${descrizioni === 0 ? 'nessuna descrizione' : `solo ${descrizioni} descrizione${descrizioni > 1 ? 'i' : ''}`}: nella sceneggiatura le didascalie fra le battute quasi certamente c'erano. Si scrivono come nodi con speaker "${NARRATORE}" (o come effect.narration), e senza si legge una sequenza di frasi a vuoto`,
-      );
-    }
-
-    // Raggiungibilita' dei nodi a partire dagli ingressi.
-    const seen = new Set<string>();
-    const visit = (id: string): void => {
-      if (seen.has(id)) return;
-      const n = dt.nodes[id];
-      if (!n) return;
-      seen.add(id);
-      if (n.effect?.goto_dialogue) visit(n.effect.goto_dialogue);
-      for (const c of n.choices ?? []) {
-        if (c.effect?.goto_dialogue) visit(c.effect.goto_dialogue);
-        visit(c.goto);
-      }
-      if (n.next) visit(n.next);
-    };
-    for (const id of entries) visit(id);
-    for (const id of ids) {
-      if (!seen.has(id)) this.add('avviso', `${sc.id} / nodo ${id}`, 'nodo di dialogo irraggiungibile');
-    }
-  }
-
-  // ------------------------------------------------------ raggiungibilita'
-
-  checkReachability(): void {
-    const seen = new Set<string>();
-    const visit = (id: string): void => {
-      if (seen.has(id)) return;
-      const sc = findScene(this.story, id);
-      if (!sc) return;
-      seen.add(id);
-      for (const e of allEffects(sc)) {
-        if (e.eff.goto_scene) visit(e.eff.goto_scene);
-      }
-    };
-    visit(this.story.start_scene);
-
-    let terminals = 0;
-    for (const sc of this.story.scenes) {
-      if (!seen.has(sc.id)) this.add('avviso', sc.id, 'scena irraggiungibile da start_scene');
-      if (!sceneHasExit(sc)) {
-        terminals++;
-        this.add('info', sc.id, 'scena terminale: nessun goto_scene esce da qui (finale della storia?)');
-      }
-    }
-    if (terminals === 0) {
-      this.add('avviso', '', 'nessuna scena terminale: la storia non ha un finale raggiungibile');
-    }
-  }
-
-  // --------------------------------------------------------- flag e oggetti
-
-  checkFlagsAndItems(): void {
-    const setFlags = new Set<string>();
-    const unsetFlags = new Set<string>();
-    const addItems = new Set<string>();
-    const readFlags = new Map<string, string[]>();
-    const readItems = new Map<string, string[]>();
-    const push = (m: Map<string, string[]>, k: string, v: string) => {
-      m.set(k, [...(m.get(k) ?? []), v]);
-    };
-
-    for (const it of this.story.initial_inventory ?? []) addItems.add(it);
-
-    for (const sc of this.story.scenes) {
-      for (const f of sc.on_enter_flags_set ?? []) setFlags.add(f);
-      for (const e of allEffects(sc)) {
-        if (e.eff.set_flag) setFlags.add(e.eff.set_flag);
-        if (e.eff.unset_flag) unsetFlags.add(e.eff.unset_flag);
-        if (e.eff.add_inventory) addItems.add(e.eff.add_inventory);
-        if (e.eff.remove_inventory && !addItems.has(e.eff.remove_inventory)) {
-          push(readItems, e.eff.remove_inventory, e.where);
-        }
-      }
-      for (const c of allConditions(sc)) {
-        if (c.cond.flag_present) push(readFlags, c.cond.flag_present, c.where);
-        if (c.cond.flag_absent) push(readFlags, c.cond.flag_absent, c.where);
-        if (c.cond.has_item) push(readItems, c.cond.has_item, c.where);
-      }
-    }
-
-    // Un flag richiesto con flag_present e mai impostato da nessuna parte e'
-    // una porta chiusa a chiave che non ha una chiave.
-    for (const sc of this.story.scenes) {
-      for (const c of allConditions(sc)) {
-        if (c.cond.flag_present && !setFlags.has(c.cond.flag_present)) {
-          this.add(
-            'errore',
-            c.where,
-            `richiede il flag "${c.cond.flag_present}", che nessuna azione imposta mai: la condizione non sara' mai vera`,
-          );
-        }
-        if (c.cond.has_item && !addItems.has(c.cond.has_item)) {
-          this.add('errore', c.where, `richiede l'oggetto "${c.cond.has_item}", che nessuna azione mette mai in inventario e che non e' in initial_inventory`);
-        }
-      }
-    }
-    for (const f of [...setFlags].sort()) {
-      if (!(readFlags.get(f) ?? []).length) {
-        this.add('info', '', `flag "${f}" impostato ma mai letto da nessuna condizione`);
-      }
-    }
-    for (const f of [...unsetFlags].sort()) {
-      if (!setFlags.has(f)) this.add('avviso', '', `flag "${f}" rimosso (unset_flag) ma mai impostato`);
-    }
-    for (const it of [...addItems].sort()) {
-      if (!(readItems.get(it) ?? []).length) {
-        this.add('info', '', `oggetto "${it}" raccolto ma mai richiesto da nessuna condizione`);
-      }
-    }
-
-    // Confronto con gli elenchi documentali, se presenti.
-    if (this.story.state_flags_schema?.length) {
-      const declared = new Set(this.story.state_flags_schema);
-      for (const f of [...setFlags].sort()) {
-        if (!declared.has(f)) this.add('info', '', `flag "${f}" usato ma non elencato in state_flags_schema`);
-      }
-    }
-    const carried = new Set(this.story.initial_inventory ?? []);
-    for (const sc of this.story.scenes) {
-      for (const e of allEffects(sc)) {
-        if (e.eff.add_inventory && carried.has(e.eff.add_inventory)) {
-          this.add(
-            'avviso',
-            e.where,
-            `mette in inventario "${e.eff.add_inventory}", che il giocatore ha gia' da initial_inventory`,
-          );
-        }
-      }
-    }
-
-    // L'anagrafica degli oggetti non e' documentale come lo era
-    // inventory_schema: un oggetto senza scheda non ha un nome da mostrare a chi
-    // chiede cosa ha nello zaino, ne' sinonimi con cui nominarlo. In un player
-    // che si comanda a parole e' un oggetto che il giocatore non puo' usare.
-    // Il player si comanda a parole: "dove mi trovo" e' la domanda
-    // piu' frequente di tutte, e senza `look` non ha una risposta d'autore.
-    for (const sc of this.story.scenes) {
-      if (sceneType(sc) === SCENE_INTERACTIVE && !sc.look) {
-        this.add('errore', `scena "${sc.id}"`, 'scena interattiva senza look: a parole "guardati intorno" non ha risposta');
-      }
-      for (const a of sc.actions ?? []) {
-        if (a.blocked_narration && !a.condition) {
-          this.add('avviso', `scena "${sc.id}", azione "${a.id}"`, 'blocked_narration senza condition: non si vedra\' mai');
-        }
-        if (a.condition && !a.blocked_narration) {
-          // Avviso e non info: la conseguenza si vede giocando, ed e' la
-          // peggiore che il player possa produrre. Il giocatore che indovina
-          // *l'azione giusta troppo presto* — cioe' quello che sta giocando
-          // bene — non riceve una risposta della storia ma una diagnostica fra
-          // parentesi. E' il caso in cui l'IR ha piu' bisogno di testo, non
-          // meno.
-          this.add(
-            'avviso',
-            `scena "${sc.id}", azione "${a.id}"`,
-            'azione condizionata senza blocked_narration: chiesta troppo presto, il player mostra una diagnostica invece di una risposta',
-          );
-        }
-      }
-    }
-
-    const schede = new Set((this.story.items ?? []).map((i) => i.id));
-    for (const it of [...addItems].sort()) {
-      if (!schede.has(it)) {
-        this.add('errore', '', `oggetto "${it}" usato ma senza scheda in items[]: niente nome, niente sinonimi`);
-      }
-    }
-    for (const i of this.story.items ?? []) {
-      if (!addItems.has(i.id)) {
-        this.add('info', '', `oggetto "${i.id}" con scheda in items[] ma che nessuna azione mette mai in inventario`);
-      }
-      if (!i.aliases?.length) {
-        this.add('avviso', '', `oggetto "${i.id}" senza aliases: a input libero si potra' nominare solo con "${i.name}"`);
-      }
-      // Un oggetto che si porta in giro e non si puo' guardare e' un oggetto
-      // muto: «guarda il coltello» e' fra le prime cose che si scrivono.
-      if (!i.description) {
-        this.add('errore', '', `oggetto "${i.id}" senza description: a chi lo guarda in inventario il player non ha niente da rispondere`);
-      }
-      for (const v of i.description_variants ?? []) {
-        if (!v.condition || Object.keys(v.condition).length === 0) {
-          this.add('avviso', '', `oggetto "${i.id}": description_variants con condition vuota, vince sempre e la description di base non si vedra' mai`);
-        }
-      }
-    }
-  }
-
-  // ------------------------------------------------------ quinta colonna
-
-  /**
-   * I controlli sul testo che il player mostra ma che non e' un `Effect`:
-   * fallback, `look` che cambia con lo stato, prosa dell'inventario, alias e
-   * frasi di prova.
-   *
-   * Tutto quello che si controlla qui esiste per la stessa ragione. Spente le
-   * chip, il giocatore non vede piu' l'elenco delle azioni: le chiede. Da quel
-   * momento ogni cosa che non e' scritta nell'IR e' una cosa a cui il gioco non
-   * sa rispondere — e l'alternativa, generarla a runtime, e' peggio del
-   * silenzio: un testo generato nomina scenario che non esiste e nessun linter
-   * puo' controllarlo. Questi avvisi sono il prezzo di quella scelta, ed e' un
-   * prezzo che si paga in compilazione, una volta.
-   */
-  checkQuintaColonna(): void {
-    const globali = new Set<Intent>((this.story.player_voice?.no_match_narration ?? []).map((n) => n.intent));
-    const scarsi: string[] = [];
-    let nonMisurate = 0;
-
-    if (!this.story.player_voice) {
-      this.add(
-        'errore',
-        '',
-        "manca player_voice: senza, \"cosa ho nello zaino\" non ha risposta e una frase non capita nemmeno",
-      );
+  // Un id per una cosa sola, in tutta la storia.
+  //
+  // Gli oggetti d'ambiente vivono nei luoghi, quindi due luoghi diversi
+  // *sembrano* poter avere ciascuno la propria `coscia` o la propria `porta`.
+  // Non possono: il player indicizza le entità per id in una mappa sola, e la
+  // seconda cancella la prima — l'azione del primo luogo si ritrova a puntare
+  // all'oggetto del secondo, che non è lì, e sparisce senza dire niente. Lo
+  // stesso vale fra specie diverse, dove l'ordine di ricerca è props →
+  // personaggi → oggetti e il perdente diventa irraggiungibile.
+  const visti = new Map<string, string>();
+  const dichiara = (id: string, dove: string) => {
+    const prima = visti.get(id);
+    if (prima) {
+      err(dove, `l'id "${id}" è già di ${prima}: un id vale per una cosa sola in tutta la storia, o la seconda cancella la prima`);
     } else {
-      if (!globali.has('generico')) {
-        this.add(
-          'errore',
-          '',
-          "player_voice.no_match_narration senza intenzione \"generico\": e' l'unica che serve sempre, perche' e' dove finisce tutto cio' che non si classifica",
-        );
+      visti.set(id, dove);
+    }
+  };
+  for (const c of idx.characters.values()) dichiara(c.id, `characters.${c.id}`);
+  for (const it of idx.items.values()) dichiara(it.id, `items.${it.id}`);
+  for (const act of s.acts) {
+    for (const pl of act.places) {
+      for (const o of pl.objects ?? []) dichiara(o.id, `places.${pl.id}.objects.${o.id}`);
+    }
+  }
+}
+
+// -------------------------------------------------------------------- atto
+
+function checkAct(idx: StoryIndex, act: Act, f: Finding[]): void {
+  const declared = new Set([...(act.flags ?? []), ...(act.reads_carry_flags ?? []), ...(act.writes_carry_flags ?? [])]);
+  const used = new Set<string>();
+  const set = new Set<string>();
+
+  const scan = (e: Effect | undefined) => {
+    if (!e) return;
+    if (e.set_flag) set.add(e.set_flag);
+    if (e.unset_flag) set.add(e.unset_flag);
+  };
+  const scanCond = (c: Condition | undefined) => {
+    if (!c) return;
+    if (c.flag_present) used.add(c.flag_present);
+    if (c.flag_absent) used.add(c.flag_absent);
+    // Una condizione composta ne contiene altre: senza scendere, un flag
+    // dentro un `all_of` risulterebbe non dichiarato da nessuno.
+    for (const sub of [...(c.all_of ?? []), ...(c.any_of ?? [])]) scanCond(sub);
+  };
+
+  for (const pl of act.places) {
+    scanCond(pl.completed_when);
+    for (const o of pl.objects ?? []) {
+      scanCond(o.present_when);
+      for (const v of o.description_variants ?? []) scanCond(v.condition);
+    }
+    for (const ex of pl.exits ?? []) {
+      scanCond(ex.known_when);
+      scanCond(ex.condition);
+      for (const t of ex.transitions ?? []) scanCond(t.condition);
+    }
+    for (const a of pl.actions ?? []) {
+      scanCond(a.condition);
+      scan(a.effect);
+    }
+    for (const ph of pl.phases) {
+      scanCond(ph.condition);
+      for (const v of ph.look_variants ?? []) scanCond(v.condition);
+      for (const fl of ph.on_enter_flags_set ?? []) set.add(fl);
+      for (const a of ph.actions ?? []) {
+        scanCond(a.condition);
+        scan(a.effect);
       }
-      if (!this.story.player_voice.inventory_intro?.length) {
-        this.add('info', '', "player_voice senza inventory_intro: \"cosa ho nello zaino\" non avra' risposta");
-      }
-      if (!this.story.player_voice.presence_intro?.length) {
-        this.add('info', '', "player_voice senza presence_intro: \"chi c'e' qui\" non avra' risposta");
-      }
-      const conta = new Map<Intent, number>();
-      for (const n of this.story.player_voice.no_match_narration ?? []) {
-        conta.set(n.intent, (conta.get(n.intent) ?? 0) + 1);
-      }
-      for (const [intent, n] of conta) {
-        if (n === 1) {
-          this.add('info', '', `player_voice: una sola frase per l'intenzione "${intent}", quindi si ripetera' identica ogni volta`);
+      for (const n of Object.values(ph.dialogue?.nodes ?? {})) {
+        scan(n.effect);
+        for (const c of n.choices ?? []) {
+          scanCond(c.condition);
+          scan(c.effect);
         }
       }
     }
+  }
 
-    for (const sc of this.story.scenes) {
-      if (sceneType(sc) !== SCENE_INTERACTIVE) continue;
-      const locali = new Set<Intent>((sc.no_match_narration ?? []).map((n) => n.intent));
+  const carryAll = new Set((idx.story.carry_flags ?? []).map((c) => c.id));
+  for (const fl of [...used, ...set]) {
+    if (declared.has(fl)) continue;
+    if (carryAll.has(fl)) {
+      f.push({
+        severity: 'errore',
+        where: `acts.${act.id}`,
+        message: `usa il carry flag "${fl}" senza dichiararlo in reads_carry_flags o writes_carry_flags`,
+      });
+    } else {
+      f.push({
+        severity: 'errore',
+        where: `acts.${act.id}`,
+        message: `il flag "${fl}" non è dichiarato in acts.${act.id}.flags — i flag sono locali all'atto, e uno di un altro atto qui non esisterebbe`,
+      });
+    }
+  }
+  for (const fl of used) {
+    if (!set.has(fl) && !carryAll.has(fl)) {
+      f.push({ severity: 'errore', where: `acts.${act.id}`, message: `il flag "${fl}" è richiesto da una condizione ma non lo imposta niente` });
+    }
+  }
+}
 
-      if (locali.size === 0 && globali.size === 0) {
-        this.add(
-          'errore',
-          sc.id,
-          "nessun no_match_narration, ne' qui ne' globale: una frase che non corrisponde a niente non ricevera' nessuna risposta",
-        );
+function checkCarryFlags(idx: StoryIndex, f: Finding[]): void {
+  const carry = idx.story.carry_flags ?? [];
+  if (carry.length > 3) {
+    f.push({ severity: 'errore', where: 'story.carry_flags', message: `sono ${carry.length}: il tetto è tre, e oltre quella soglia la verifica per atto smette di essere esaustiva` });
+  }
+  const written = new Set<string>();
+  const read = new Set<string>();
+  const order = new Map<string, number>();
+  idx.story.acts.forEach((a, i) => {
+    order.set(a.id, i);
+    for (const c of a.writes_carry_flags ?? []) written.add(c);
+    for (const c of a.reads_carry_flags ?? []) read.add(c);
+  });
+  for (const c of carry) {
+    if (!written.has(c.id)) f.push({ severity: 'errore', where: `carry_flags.${c.id}`, message: 'nessun atto lo dichiara in scrittura' });
+    if (!read.has(c.id)) {
+      f.push({ severity: 'errore', where: `carry_flags.${c.id}`, message: 'nessun atto lo legge: la memoria morta è il primo sintomo di un canale che si riempie per inerzia' });
+    }
+  }
+  // Chi lo legge deve venire dopo chi lo scrive, o non arriverà mai.
+  for (const c of carry) {
+    const w = Math.min(...idx.story.acts.filter((a) => (a.writes_carry_flags ?? []).includes(c.id)).map((a) => order.get(a.id) ?? 99));
+    const r = Math.max(...idx.story.acts.filter((a) => (a.reads_carry_flags ?? []).includes(c.id)).map((a) => order.get(a.id) ?? -1));
+    if (Number.isFinite(w) && r >= 0 && r < w) {
+      f.push({ severity: 'avviso', where: `carry_flags.${c.id}`, message: 'è letto da un atto che viene prima di quello che lo scrive' });
+    }
+  }
+}
+
+// ------------------------------------------------------------------- luogo
+
+function checkPlace(idx: StoryIndex, act: Act, pl: Place, f: Finding[]): void {
+  const err = (message: string, where = `places.${pl.id}`) => f.push({ severity: 'errore', where, message });
+  const warn = (message: string, where = `places.${pl.id}`) => f.push({ severity: 'avviso', where, message });
+
+  if (!pl.aliases?.length) warn('senza aliases: «vai al magazzino» non arriverebbe qui');
+
+  if (pl.same_as) {
+    const altro = idx.places.get(pl.same_as);
+    if (!altro) {
+      err(`same_as punta a "${pl.same_as}", che non esiste`);
+    } else if (idx.actOfPlace.get(pl.same_as) === act.id) {
+      // Due nodi dello stesso atto che sono lo stesso posto non sono due
+      // luoghi: sono un luogo con due fasi.
+      err(`same_as punta a "${pl.same_as}", che è nello stesso atto: due nodi dello stesso posto nello stesso atto vanno uniti in un luogo solo con più fasi`);
+    } else if (altro.same_as) {
+      err(`same_as punta a "${pl.same_as}", che a sua volta ne ha uno: la catena va appiattita sul luogo che porta l'aspetto`);
+    }
+    if (pl.visual_prompt) {
+      warn(`ha same_as e anche un visual_prompt suo: l'aspetto lo porta "${pl.same_as}", e due descrizioni della stessa stanza divergono alla prima modifica`);
+    }
+  } else if (!pl.visual_prompt) {
+    warn("senza visual_prompt: il modulo assets non ha un'ancora su cui tenere coerenti le viste di qui");
+  }
+
+  // Le fasi si valutano in ordine: l'ultima senza condizione è la rete.
+  const last = pl.phases[pl.phases.length - 1];
+  if (last?.condition && Object.keys(last.condition).length > 0) {
+    err('l\'ultima fase ha una condizione: in certi stati il luogo resterebbe senza niente da dire');
+  }
+  if (pl.completed_when && !pl.phases.some((ph) => sameCondition(ph.condition, pl.completed_when))) {
+    warn('completed_when non ha una fase corrispondente: qui non c\'è lo stato «esaurito», cioè cosa si legge tornandoci quando non resta niente');
+  }
+
+  // Un'azione del LUOGO che apre un dialogo lo apre in qualunque fase, perché
+  // vale in qualunque fase — ma l'albero sta sulla fase, e non tutte le fasi
+  // hanno lo stesso. Dove manca, l'azione c'è, si può chiedere, e non fa
+  // niente: il player lo segnala come diagnostica e il giocatore vede un
+  // buco. È il prezzo di `Place.actions`, e si paga una volta sola scrivendolo
+  // qui.
+  for (const a of pl.actions ?? []) {
+    const nodo = a.effect.goto_dialogue;
+    if (!nodo) continue;
+    for (const ph of pl.phases) {
+      if (!ph.dialogue?.nodes[nodo]) {
+        err(`l'azione "${a.id}" del luogo apre il nodo "${nodo}", che la fase "${ph.id}" non ha: lì l'azione si può chiedere e non fa niente`);
       }
+    }
+  }
 
-      for (const v of sc.look_variants ?? []) {
-        if (!v.condition || Object.keys(v.condition).length === 0) {
-          this.add('avviso', sc.id, "look_variants con condition vuota: vince sempre, quindi look di base non si vedra' mai");
+  for (const ex of pl.exits ?? []) {
+    const w = `places.${pl.id} → ${ex.to}`;
+    if (!ex.aliases?.length && !ex.label) warn('uscita senza aliases né label: non si può chiedere a parole', w);
+    if (ex.condition && Object.keys(ex.condition).length && !ex.blocked_narration) {
+      warn('uscita condizionata senza blocked_narration: chi ci prova riceve un non-ho-capito generico', w);
+    }
+    const destAct = idx.actOfPlace.get(ex.to);
+    if (destAct && destAct !== act.id) {
+      const items = requiredItemsDownstream(idx, destAct);
+      const chiesti = new Set<string>();
+      collectItems(ex.condition, chiesti);
+      const asked = chiesti.size > 0;
+      if (items.size > 0 && !asked) {
+        warn(`chiude l'atto senza chiedere nessun oggetto, ma a valle ne servono (${[...items].join(', ')}): «non posso usare ciò che non ho preso, e non posso tornare indietro a prenderlo»`, w);
+      }
+    }
+  }
+
+  const allActions = [...(pl.actions ?? []), ...pl.phases.flatMap((ph) => ph.actions ?? [])];
+  const ids = new Set<string>();
+  for (const a of allActions) {
+    if (ids.has(a.id)) err(`due azioni con lo stesso id "${a.id}"`);
+    ids.add(a.id);
+  }
+
+  for (const ph of pl.phases) checkPhase(idx, pl, ph, f);
+  for (const a of pl.actions ?? []) checkAction(idx, `places.${pl.id}.actions.${a.id}`, a, f);
+}
+
+function checkPhase(idx: StoryIndex, pl: Place, ph: Phase, f: Finding[]): void {
+  const where = `places.${pl.id}.phases.${ph.id}`;
+  const err = (message: string) => f.push({ severity: 'errore', where, message });
+  const warn = (message: string) => f.push({ severity: 'avviso', where, message });
+  const cutscene = ph.kind === 'cutscene';
+
+  if (!cutscene) {
+    if (!ph.look) err('fase interattiva senza look: «guardati intorno» e «dove sono» restano senza risposta');
+    const intents = new Set((ph.no_match_narration ?? []).map((n) => n.intent));
+    const globalGeneric = (idx.story.player_voice?.no_match_narration ?? []).some((n) => n.intent === 'generic');
+    if (!intents.size && !globalGeneric) err('nessun fallback raggiungibile: quando il gioco non capisce non ha niente da dire');
+  } else {
+    if (!ph.narration?.length) warn('cutscene senza narration: non c\'è niente da montare');
+    if (ph.dialogue) warn('cutscene con un dialogo: se ci sono scelte reali non è una cutscene');
+  }
+
+  if (!ph.background) warn('senza background: il palco non ha niente da mostrare né da descrivere');
+  for (const id of ph.background?.characters_in_frame ?? []) {
+    if (!idx.characters.has(id)) err(`characters_in_frame nomina "${id}", che non è nella roster`);
+  }
+  for (const c of ph.characters ?? []) {
+    if (!idx.characters.has(c.id)) err(`characters nomina "${c.id}", che non è nella roster`);
+  }
+
+  // La regola che vale doppio: se un flag prodotto QUI apre o chiude un'azione
+  // QUI, allora qui è cambiato qualcosa, e il look è l'unico posto in cui il
+  // giocatore può accorgersene.
+  const produced = new Set<string>();
+  for (const a of ph.actions ?? []) {
+    if (a.effect.set_flag) produced.add(a.effect.set_flag);
+    if (a.effect.unset_flag) produced.add(a.effect.unset_flag);
+  }
+  const gating = new Set<string>();
+  for (const a of [...(pl.actions ?? []), ...(ph.actions ?? [])]) {
+    for (const k of [a.condition?.flag_present, a.condition?.flag_absent]) if (k && produced.has(k)) gating.add(k);
+  }
+  const varied = new Set<string>();
+  for (const v of ph.look_variants ?? []) {
+    for (const k of [v.condition.flag_present, v.condition.flag_absent]) if (k) varied.add(k);
+  }
+  for (const flag of gating) {
+    if (!varied.has(flag)) {
+      warn(`il flag "${flag}" apre o chiude un'azione qui, ma il look non ha una variante che lo racconti: la scena non è difficile, è muta`);
+    }
+  }
+
+  for (const a of ph.actions ?? []) checkAction(idx, `${where}.actions.${a.id}`, a, f);
+  if (ph.dialogue) checkDialogue(idx, where, pl, ph, f);
+
+  for (const e of collectEffects(ph)) {
+    if (e.goto_place && !idx.places.has(e.goto_place)) err(`goto_place verso "${e.goto_place}", che non esiste`);
+    if (e.goto_dialogue && !ph.dialogue?.nodes[e.goto_dialogue]) {
+      err(`goto_dialogue verso "${e.goto_dialogue}", che non è un nodo del dialogo di questa fase`);
+    }
+    if (e.add_inventory && !idx.items.has(e.add_inventory)) err(`add_inventory di "${e.add_inventory}", che non è in items[]`);
+    if (e.remove_inventory && !idx.items.has(e.remove_inventory)) err(`remove_inventory di "${e.remove_inventory}", che non è in items[]`);
+  }
+}
+
+function checkAction(idx: StoryIndex, where: string, a: Action, f: Finding[]): void {
+  const err = (message: string) => f.push({ severity: 'errore', where, message });
+  const warn = (message: string) => f.push({ severity: 'avviso', where, message });
+
+  for (const t of [a.target, a.second_target]) {
+    if (!t) continue;
+    const e = idx.props.get(t) ?? idx.characters.get(t) ?? idx.items.get(t);
+    if (!e) {
+      err(`il bersaglio "${t}" non è un oggetto d'ambiente, un personaggio o un oggetto d'inventario`);
+      continue;
+    }
+    if (!('description' in e) || (!e.description && !e.description_variants?.length)) {
+      err(`il bersaglio "${t}" non ha description: tutto ciò con cui si interagisce deve essere osservabile`);
+    }
+    const aliases = e.aliases?.length ?? 0;
+    if (aliases < 5) {
+      warn(`il bersaglio "${t}" ha ${aliases} alias: con il modello a verbi la copertura sta sulle entità, e cinque sono pochi`);
+    }
+  }
+
+  if (a.condition && Object.keys(a.condition).length > 0 && !a.blocked_narration) {
+    warn('condizionata senza blocked_narration: chi la chiede troppo presto riceve un non-ho-capito invece della storia. Non esiste la deroga «questa nessuno la incontrerà mai al contrario»');
+  }
+  const tests = a.test_phrases?.length ?? 0;
+  if (tests < 3) warn(`ha ${tests} test_phrases: senza, la copertura del parser su questa azione non si misura`);
+  else {
+    const surfaces = new Set<string>();
+    for (const t of [a.target, a.second_target]) {
+      const e = t ? idx.props.get(t) ?? idx.characters.get(t) ?? idx.items.get(t) : undefined;
+      for (const s of e?.aliases ?? []) surfaces.add(s.toLowerCase().trim());
+    }
+    for (const p of a.test_phrases ?? []) {
+      if (surfaces.has(p.toLowerCase().trim())) {
+        warn(`la frase di prova "${p}" è identica a un alias: misura il lookup, non il richiamo`);
+      }
+    }
+  }
+}
+
+function checkDialogue(idx: StoryIndex, where: string, pl: Place, ph: Phase, f: Finding[]): void {
+  const tree = ph.dialogue!;
+  const err = (message: string) => f.push({ severity: 'errore', where: `${where}.dialogue`, message });
+
+  if (!tree.nodes[tree.start]) err(`start "${tree.start}" non è un nodo`);
+
+  // Le radici non sono una sola. `start` è dove il dialogo comincia se nessuno
+  // dice altrimenti, ma `goto_dialogue` apre l'albero **a partire da un nodo
+  // qualunque**, ed è così che una sola conversazione serve più momenti della
+  // stessa scena: il discorso sulla scatola e il bivio di quando Mark è già
+  // lassù sono due ingressi dello stesso albero. Contare solo `start` farebbe
+  // risultare morto tutto quello che si raggiunge da un'azione.
+  const reachable = new Set<string>();
+  const queue = [tree.start];
+  for (const a of [...(pl.actions ?? []), ...(ph.actions ?? [])]) {
+    if (a.effect.goto_dialogue) queue.push(a.effect.goto_dialogue);
+  }
+  while (queue.length) {
+    const id = queue.pop()!;
+    if (reachable.has(id) || !tree.nodes[id]) continue;
+    reachable.add(id);
+    const n = tree.nodes[id];
+    if (n.next) queue.push(n.next);
+    for (const c of n.choices ?? []) queue.push(c.goto);
+  }
+
+  let narratorNodes = 0;
+  for (const [id, n] of Object.entries(tree.nodes)) {
+    if (!reachable.has(id)) err(`il nodo "${id}" non è raggiungibile`);
+    if (n.speaker === 'narrator') narratorNodes++;
+    else if (!idx.characters.has(n.speaker)) err(`il nodo "${id}" ha speaker "${n.speaker}", che non è nella roster`);
+    if (!n.end && !n.next && !n.choices?.length && !n.effect?.goto_place) {
+      err(`il nodo "${id}" è monco: né scelte, né next, né end`);
+    }
+    if (n.next && !tree.nodes[n.next]) err(`il nodo "${id}" punta a "${n.next}", che non esiste`);
+    for (const c of n.choices ?? []) {
+      if (!tree.nodes[c.goto]) err(`una scelta di "${id}" punta a "${c.goto}", che non esiste`);
+    }
+  }
+
+  const total = Object.keys(tree.nodes).length;
+  if (total >= 4 && narratorNodes / total < 1 / 6) {
+    f.push({
+      severity: 'info',
+      where: `${where}.dialogue`,
+      message: `${narratorNodes} didascalie su ${total} nodi: un dialogo a cui sono state tolte si gioca benissimo, e non se ne accorge nessuno finché non lo si legge`,
+    });
+  }
+}
+
+// ------------------------------------------------------- raggiungibilità
+
+/**
+ * La chiusura in avanti: partendo da quello che si ha, cosa si riesce ad
+ * accumulare.
+ *
+ * È ottimista di proposito — ignora `unset_flag` e `remove_inventory`, e non
+ * considera l'ordine — quindi quello che **non** raggiunge non è raggiungibile
+ * davvero. Trova le porte chiuse a chiave: un flag richiesto che nessuno alza,
+ * un oggetto che serve e non si può prendere, un finale che non si tocca.
+ *
+ * Non trova invece il vicolo cieco *temporale*: prendere una cosa e poi perderla,
+ * o chiudersi una strada alle spalle. Quello lo trova giocare.
+ */
+interface Closure {
+  flags: Set<string>;
+  items: Set<string>;
+  places: Set<string>;
+  phases: Set<string>;
+}
+
+function closureOfAct(idx: StoryIndex, act: Act, incoming: Set<string>, carry: Set<string>): Closure {
+  const flags = new Set<string>(carry);
+  const items = new Set<string>(incoming);
+  const places = new Set<string>([act.start_place]);
+  const phases = new Set<string>();
+
+  const meets = (c?: Condition): boolean => {
+    if (!c) return true;
+    if (c.flag_present && !flags.has(c.flag_present)) return false;
+    if (c.has_item && !items.has(c.has_item)) return false;
+    // flag_absent è sempre soddisfacibile in una chiusura ottimista: c'è un
+    // momento in cui quel flag non c'è ancora.
+    if ((c.all_of ?? []).some((sub) => !meets(sub))) return false;
+    if (c.any_of?.length && !c.any_of.some(meets)) return false;
+    return true;
+  };
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const pl of act.places) {
+      if (!places.has(pl.id)) continue;
+      const grow = (s: Set<string>, v?: string) => {
+        if (v && !s.has(v)) {
+          s.add(v);
+          changed = true;
         }
-        if (!v.text) this.add('errore', sc.id, 'look_variants senza text');
-      }
-      if ((sc.look_variants?.length ?? 0) > 0 && !sc.look) {
-        this.add('avviso', sc.id, "look_variants senza look di base: se nessuna condizione e' soddisfatta la scena non ha descrizione");
-      }
-
-      for (const a of sc.actions) {
-        const aw = `${sc.id} / ${a.id}`;
-        const n = a.aliases?.length ?? 0;
-        if (n === 0) {
-          this.add(
-            'errore',
-            aw,
-            "azione senza aliases: si potra' chiedere solo dicendo quasi esattamente la label, cioe' quasi mai",
-          );
-        } else if (n < SOGLIA_ALIAS) {
-          // Aggregata piu' sotto: su una storia intera sarebbero centinaia di
-          // righe identiche, e un linter che grida a ogni riga smette di
-          // essere letto.
-          scarsi.push(`${aw} (${n})`);
+      };
+      const useAction = (a: Action) => {
+        if (!meets(a.condition)) return;
+        grow(flags, a.effect.set_flag);
+        grow(items, a.effect.add_inventory);
+        if (a.effect.goto_place) grow(places, a.effect.goto_place);
+      };
+      for (const a of pl.actions ?? []) useAction(a);
+      for (const ph of pl.phases) {
+        if (!meets(ph.condition)) continue;
+        if (!phases.has(ph.id)) {
+          phases.add(ph.id);
+          changed = true;
         }
-        for (const x of a.aliases ?? []) {
-          if (verboDelPlayer(x) !== 'nessuno') {
-            this.add(
-              'errore',
-              aw,
-              `l'alias "${x}" e' un verbo del player: il resolver gira per primo, quindi se lo prende questa azione la scena non risponde piu' a "guardati intorno" o all'inventario`,
-            );
+        for (const fl of ph.on_enter_flags_set ?? []) grow(flags, fl);
+        for (const a of ph.actions ?? []) useAction(a);
+        for (const n of Object.values(ph.dialogue?.nodes ?? {})) {
+          grow(flags, n.effect?.set_flag);
+          grow(items, n.effect?.add_inventory);
+          for (const c of n.choices ?? []) {
+            grow(flags, c.effect?.set_flag);
+            grow(items, c.effect?.add_inventory);
           }
         }
-        if (!a.test_phrases?.length) {
-          nonMisurate++;
-        } else {
-          // Una frase di prova che ricopia un alias non misura niente: fa
-          // sembrare bravo il matcher su una stringa che gli e' gia' stata
-          // data. E' l'errore che rende inutile tutta la misura, quindi e' un
-          // avviso e non un'informazione.
-          const alias = new Set((a.aliases ?? []).map((x) => x.toLowerCase().trim()));
-          for (const f of a.test_phrases) {
-            if (alias.has(f.toLowerCase().trim())) {
-              this.add('avviso', aw, `la frase di prova "${f}" e' identica a un alias: misura il lookup, non il richiamo`);
-            }
+      }
+      for (const ex of pl.exits ?? []) {
+        if (!meets(ex.condition)) continue;
+        if (idx.actOfPlace.get(ex.to) === act.id) grow(places, ex.to);
+      }
+    }
+  }
+  return { flags, items, places, phases };
+}
+
+function checkReachability(idx: StoryIndex, f: Finding[]): void {
+  const carry = new Set<string>();
+  let items = new Set<string>(idx.story.initial_inventory ?? []);
+
+  for (const act of idx.story.acts) {
+    const cl = closureOfAct(idx, act, items, carry);
+
+    for (const pl of act.places) {
+      if (!cl.places.has(pl.id)) {
+        f.push({ severity: 'errore', where: `places.${pl.id}`, message: `irraggiungibile dall'inizio dell'atto "${act.id}"` });
+        continue;
+      }
+      for (const ph of pl.phases) {
+        if (!cl.phases.has(ph.id)) {
+          f.push({ severity: 'avviso', where: `places.${pl.id}.phases.${ph.id}`, message: 'nessuno stato raggiungibile la rende valida' });
+        }
+      }
+    }
+
+    // L'atto si chiude prendendo un'uscita verso un altro atto.
+    const isLast = act === idx.story.acts[idx.story.acts.length - 1];
+    const closing = act.places
+      .filter((p) => cl.places.has(p.id))
+      .flatMap((p) => (p.exits ?? []).map((e) => ({ p, e })))
+      .filter(({ e }) => idx.actOfPlace.get(e.to) !== act.id);
+    if (!isLast && closing.length === 0) {
+      f.push({ severity: 'errore', where: `acts.${act.id}`, message: 'nessuna uscita raggiungibile porta a un altro atto: la storia si ferma qui' });
+    }
+    const usable = closing.filter(({ e }) => {
+      const chiesti = new Set<string>();
+      collectItems(e.condition, chiesti);
+      return [...chiesti].every((it) => cl.items.has(it));
+    });
+    if (!isLast && closing.length > 0 && usable.length === 0) {
+      f.push({ severity: 'errore', where: `acts.${act.id}`, message: 'l\'uscita che chiude l\'atto chiede un oggetto che in questo atto non si può ottenere' });
+    }
+
+    for (const c of act.writes_carry_flags ?? []) if (cl.flags.has(c)) carry.add(c);
+    items = cl.items;
+  }
+}
+
+function checkEndings(idx: StoryIndex, f: Finding[]): void {
+  const mode = idx.story.failure_mode ?? 'none';
+  let natural = 0;
+  for (const act of idx.story.acts) {
+    for (const pl of act.places) {
+      for (const ph of pl.phases) {
+        if (!ph.ending) continue;
+        if (ph.ending.kind === 'natural') natural++;
+        if (ph.ending.kind === 'premature') {
+          if (mode === 'none') {
+            f.push({
+              severity: 'errore',
+              where: `places.${pl.id}.phases.${ph.id}`,
+              message: 'finale prematuro in una storia con failure_mode "none": qui non si perde',
+            });
+          }
+          const byExit = idx.story.acts.some((a) =>
+            a.places.some((p) => (p.exits ?? []).some((e) => e.to === pl.id)),
+          );
+          if (byExit) {
+            f.push({
+              severity: 'errore',
+              where: `places.${pl.id}.phases.${ph.id}`,
+              message: 'un finale prematuro si raggiunge solo da un\'azione, mai da un\'uscita: qui basterebbe camminarci dentro',
+            });
           }
         }
       }
     }
-
-    if (scarsi.length) {
-      const primi = scarsi.slice(0, 8).join(', ');
-      this.add(
-        'info',
-        '',
-        `${scarsi.length} azioni con meno di ${SOGLIA_ALIAS} aliases — gli alias sono la copertura del resolver lessicale, e sotto la decina si sente: ${primi}${scarsi.length > 8 ? ', …' : ''}`,
-      );
-    }
-    if (nonMisurate) {
-      this.add('info', '', `${nonMisurate} azioni senza test_phrases: non entrano nella misura di copertura (--copertura)`);
-    }
   }
+  if (natural === 0) f.push({ severity: 'errore', where: 'story', message: 'nessun finale naturale: la storia non finisce' });
+}
 
-  // --------------------------------------------------------- provenienza
+// ------------------------------------------------------------------ utili
 
-  /**
-   * Da dove viene questo file.
-   *
-   * Non incide sulla giocabilita', per questo e' un avviso e non un errore. Ma
-   * un IR senza provenienza e' un file di cui, fra sei mesi, non si sapra' se
-   * va ricompilato, con cosa, e perche' differisce da un altro: il compilatore
-   * non e' deterministico fra sessioni, e senza firma non c'e' modo di
-   * ricostruirlo.
-   */
-  checkProvenance(): void {
-    const g = this.story.generated_by;
-    if (!g) {
-      this.add('avviso', '', 'manca generated_by: non si sa quale compilatore abbia prodotto questo IR');
-      return;
-    }
-    if (!g.compiler) this.add('errore', '', 'generated_by senza compiler');
-    if (!g.compiler_version) this.add('errore', '', 'generated_by senza compiler_version');
-    if (!g.model) {
-      this.add('info', '', 'generated_by senza model: compilatore deterministico, o modello non determinabile');
-    }
+function collectEffects(ph: Phase): Effect[] {
+  const out: Effect[] = [];
+  for (const a of ph.actions ?? []) out.push(a.effect);
+  for (const n of Object.values(ph.dialogue?.nodes ?? {})) {
+    if (n.effect) out.push(n.effect);
+    for (const c of n.choices ?? []) if (c.effect) out.push(c.effect);
   }
+  return out;
+}
 
-  // -------------------------------------------------------- inquadrature
-
-  /**
-   * I riferimenti su cui si regge la coerenza visiva.
-   *
-   * Un'immagine generata senza sapere DOVE si trova e CHI inquadra e' un'
-   * immagine che non puo' essere resa coerente con le altre: il modulo assets
-   * aggancia il ritratto di riferimento di un personaggio e la descrizione
-   * stabile di un luogo proprio a questi due campi. Un riferimento rotto o
-   * mancante non rompe la partita — il player e' testuale — ma rompe la
-   * generazione, ed e' meglio scoprirlo prima di pagare 59 immagini.
-   */
-  checkShots(): void {
-    const roster = new Map<string, string>();
-    for (const c of this.story.characters ?? []) roster.set(c.id, displayName(c));
-    const places = new Set((this.story.places ?? []).map((p) => p.id));
-    const usati = new Set<string>();
-
-    // La copertina: obbligatoria come i campi della 1.8.0 — opzionale nello
-    // schema, pretesa qui. Una storia senza locandina si apre su una pagina di
-    // testo, e non c'e' niente nell'IR che possa rimediare: la prima scena
-    // dice dove si comincia, non di cosa parla la storia.
-    if (!this.story.cover?.image_prompt) {
-      this.add('errore', '', "manca cover: la storia non ha una locandina, e nessun altro campo puo' farne le veci");
-    } else if (this.story.cover.ambient_sound_prompt) {
-      this.add('info', '', 'cover.ambient_sound_prompt: una copertina non suona, quel prompt non lo generera\' nessuno');
-    }
-
-    // La copertina passa dagli stessi controlli sui riferimenti, perche' e'
-    // un'inquadratura come le altre. Due differenze: chi puo' comparirci e'
-    // l'intera roster — non c'e' una scena intorno a cui appartenere, e la
-    // locandina e' anzi il posto del protagonista — e il controllo sui nomi
-    // citati nel prompt li' non si fa, perche' senza una scena a restringere
-    // il campo tornerebbe a gridare al lupo su ogni nome che e' una parola
-    // comune.
-    const cover = coverShot(this.story);
-    const inquadrature: Array<{ shot: Shot; presenti: Set<string>; nomiNelPrompt: boolean }> = [];
-    if (cover) inquadrature.push({ shot: cover, presenti: new Set(roster.keys()), nomiNelPrompt: false });
-
-    for (const sc of this.story.scenes) {
-      const presenti = new Set((sc.characters ?? []).map((c) => c.id));
-      for (const shot of shotsOf(sc)) inquadrature.push({ shot, presenti, nomiNelPrompt: true });
-    }
-
-    {
-      for (const { shot, presenti, nomiNelPrompt } of inquadrature) {
-        if (shot.place) {
-          if (places.has(shot.place)) usati.add(shot.place);
-          else this.add('errore', shot.where, `place punta al luogo inesistente "${shot.place}"`);
-        }
-
-        const inquadrati = new Set(shot.characters_in_frame ?? []);
-        for (const id of inquadrati) {
-          if (!roster.has(id)) {
-            this.add('errore', shot.where, `characters_in_frame cita "${id}", che non e' nella roster globale`);
-          } else if (!presenti.has(id)) {
-            this.add('info', shot.where, `"${id}" e' inquadrato ma non compare fra i presenti della scena`);
-          }
-        }
-
-        // Se il prompt nomina un personaggio ma l'inquadratura non lo dichiara,
-        // quel volto verra' generato senza riferimento — cioe' diverso ogni
-        // volta. E' il caso piu' facile da lasciarsi sfuggire scrivendo l'IR.
-        //
-        // Si guardano solo i presenti nella scena, non tutta la roster: il
-        // confronto e' sui nomi, e i nomi dei personaggi minori tendono a
-        // essere parole comuni ("anziano", "il dottore") che ricorrono nei
-        // prompt parlando di tutt'altro. Ristretto a chi in quella scena c'e'
-        // davvero, l'avviso smette di gridare al lupo.
-        for (const id of nomiNelPrompt ? presenti : []) {
-          if (inquadrati.has(id)) continue;
-          const nome = roster.get(id);
-          if (!nome || !mentions(shot.image_prompt, id, nome)) continue;
-          this.add(
-            'avviso',
-            shot.where,
-            `il prompt nomina "${nome}" ma characters_in_frame non lo elenca: il volto sara' generato senza riferimento`,
-          );
-        }
-      }
-    }
-
-    for (const p of this.story.places ?? []) {
-      if (!usati.has(p.id)) this.add('info', '', `luogo "${p.id}" dichiarato in places ma mai referenziato da un'inquadratura`);
-      if (!p.visual_prompt) this.add('errore', '', `luogo "${p.id}" senza visual_prompt: non puo' fare da riferimento`);
-    }
-  }
-
-  // ------------------------------------------------------------ personaggi
-
-  checkCharacters(): void {
-    const roster = new Set<string>();
-    for (const c of this.story.characters ?? []) {
-      if (roster.has(c.id)) this.add('avviso', '', `personaggio duplicato nella roster globale: "${c.id}"`);
-      roster.add(c.id);
-    }
-
-    // Chi il giocatore e'. Senza, «chi c'e' qui» elenca anche lui — cioe'
-    // risponde "in questa stanza ci sono: Laura, Mark e Tommy" a Laura.
-    if (this.story.protagonist && !roster.has(this.story.protagonist)) {
-      this.add('errore', '', `protagonist "${this.story.protagonist}" non e' nella roster globale`);
-    }
-    if (!this.story.protagonist) {
-      this.add('info', '', "manca protagonist: se il personaggio giocante compare in characters di una scena, \"chi c'e' qui\" elenchera' anche lui");
-    }
-
-    // Chi parla deve stare nella roster globale, sempre — anche una voce fuori
-    // campo con una sola battuta. Non e' pignoleria: il modulo assets assegna
-    // il timbro una volta per parlante, e un parlante che esiste solo come
-    // stringa in `speaker` non ha niente a cui agganciare quell'assegnazione.
-    // `narrator` e' l'eccezione: non e' un personaggio, la sua voce sta in
-    // global_style.narrator_voice.
-    const speakers = new Map<string, string>();
-    for (const sc of this.story.scenes) {
-      if (!sc.dialogue_tree) continue;
-      for (const [id, n] of Object.entries(sc.dialogue_tree.nodes)) {
-        if (!n.speaker || n.speaker === 'narrator' || roster.has(n.speaker)) continue;
-        if (!speakers.has(n.speaker)) speakers.set(n.speaker, `${sc.id} / nodo ${id}`);
-      }
-    }
-    for (const [speaker, where] of speakers) {
-      this.add(
-        'errore',
-        where,
-        `lo speaker "${speaker}" non e' nella roster globale: non avra' ne' aspetto ne' voce assegnabili`,
-      );
-    }
-
-    for (const sc of this.story.scenes) {
-      for (const c of sc.characters ?? []) {
-        if (!roster.has(c.id)) {
-          this.add(
-            'errore',
-            sc.id,
-            `personaggio "${c.id}" in scena ma non nella roster globale: gli override locali non sostituiscono la scheda globale`,
-          );
-        }
-      }
-    }
-  }
+function sameCondition(a?: Condition, b?: Condition): boolean {
+  if (!a || !b) return false;
+  return a.flag_present === b.flag_present && a.flag_absent === b.flag_absent && a.has_item === b.has_item;
 }
 
 /**
- * Dice se il testo di un prompt nomina un personaggio.
+ * Gli oggetti che da qui in avanti servono e **che da qui in avanti non si
+ * trovano**. Serve a sapere cosa deve chiedere l'uscita che chiude l'atto
+ * precedente.
  *
- * Volutamente grossolano — confronto su minuscole, senza regex: serve a un
- * avviso, e un falso positivo costa una riga di rumore mentre un falso negativo
- * costa un volto sbagliato. Si prova il nome intero, il suo primo pezzo e l'id
- * con gli underscore sciolti, scartando le parole troppo corte per essere
- * distintive.
+ * La sottrazione è tutto il senso della funzione. Il coltello serve nell'atto
+ * della campagna e nell'atto della campagna si trova, dentro una cassetta degli
+ * attrezzi: pretenderlo sulla porta dell'atto prima vorrebbe dire pretendere
+ * che il giocatore lo abbia preso prima di poterlo prendere. Quello che resta
+ * dopo la sottrazione è invece il vero elenco delle cose che si possono
+ * raccogliere solo prima e usare solo dopo — cioè l'unico modo in cui questa
+ * struttura ad atti può rendere una storia insolubile.
  */
-function mentions(prompt: string, id: string, nome: string): boolean {
-  const testo = prompt.toLowerCase();
-  const forme = new Set<string>();
-  const aggiungi = (v: string) => {
-    if (v.length >= 4) forme.add(v.toLowerCase());
-  };
-  aggiungi(nome);
-  aggiungi(nome.split(/\s+/)[0]);
-  aggiungi(id.replace(/_/g, ' '));
-  for (const f of forme) {
-    if (testo.includes(f)) return true;
+function requiredItemsDownstream(idx: StoryIndex, fromAct: string): Set<string> {
+  const serve = new Set<string>();
+  const si_trova = new Set<string>();
+  let seen = false;
+  for (const act of idx.story.acts) {
+    if (act.id === fromAct) seen = true;
+    if (!seen) continue;
+    for (const pl of act.places) {
+      for (const ex of pl.exits ?? []) collectItems(ex.condition, serve);
+      const azioni = [...(pl.actions ?? []), ...pl.phases.flatMap((p) => p.actions ?? [])];
+      for (const a of azioni) {
+        collectItems(a.condition, serve);
+        if (a.effect.add_inventory) si_trova.add(a.effect.add_inventory);
+      }
+      for (const ph of pl.phases) {
+        for (const e of collectEffects(ph)) if (e.add_inventory) si_trova.add(e.add_inventory);
+      }
+    }
   }
-  return false;
+  for (const it of si_trova) serve.delete(it);
+  return serve;
 }
 
-/** Esegue tutti i controlli statici sull'IR. */
-export function lintStory(story: Story): Finding[] {
-  const l = new Linter(story);
-  l.checkScenes();
-  l.checkReachability();
-  l.checkFlagsAndItems();
-  l.checkCharacters();
-  l.checkShots();
-  l.checkQuintaColonna();
-  l.checkProvenance();
-  return l.findings;
+/** Gli oggetti che una condizione richiede, rami composti compresi. */
+function collectItems(c: Condition | undefined, out: Set<string>): void {
+  if (!c) return;
+  if (c.has_item) out.add(c.has_item);
+  for (const sub of [...(c.all_of ?? []), ...(c.any_of ?? [])]) collectItems(sub, out);
 }

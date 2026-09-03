@@ -27,6 +27,17 @@ set -euo pipefail
 QUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLAYER="$QUI/player"
 STORIES="$QUI/stories"
+
+# Il file della storia si chiama <id>.zaistory.json: il nome porta l'id, quindi
+# si cerca a glob. Una cartella e' una storia, e ne contiene esattamente uno.
+storia_di() {
+  local trovati=("$1"/*.zaistory.json)
+  if [ "${#trovati[@]}" -ne 1 ] || [ ! -f "${trovati[0]}" ]; then
+    echo "in $1 non c'e' esattamente un file .zaistory.json" >&2
+    return 1
+  fi
+  echo "${trovati[0]}"
+}
 PORTA="${1:-8000}"
 shift || true
 
@@ -48,12 +59,12 @@ if [ "$#" -gt 0 ]; then
   done
 else
   for d in "$STORIES"/*/; do
-    [ -f "$d/story.ir.json" ] && STORIE+=("${d%/}")
+    [ -n "$(ls "$d"/*.zaistory.json 2>/dev/null)" ] && STORIE+=("${d%/}")
   done
 fi
 
 if [ "${#STORIE[@]}" -eq 0 ]; then
-  echo "nessuna storia con uno story.ir.json (ne' passata a mano, ne' in stories/)" >&2
+  echo "nessuna storia con un file .zaistory.json (ne' passata a mano, ne' in stories/)" >&2
   exit 2
 fi
 
@@ -61,8 +72,8 @@ fi
 # non deve costare una build intera per poi fallire alla riga dopo.
 mancanti=0
 for s in "${STORIE[@]}"; do
-  if [ ! -f "$s/story.ir.json" ]; then
-    echo "in $s non c'e' nessuno story.ir.json" >&2
+  if [ -z "$(ls "$s"/*.zaistory.json 2>/dev/null)" ]; then
+    echo "in $s non c'e' nessun file .zaistory.json" >&2
     mancanti=1
   fi
 done
@@ -82,7 +93,7 @@ for s in "${STORIE[@]}"; do
   nome="$(basename "$s")"
   immagini=$(ls "$s/assets/images"/*.webp 2>/dev/null | wc -l || true)
   echo "==> $nome ($immagini immagini pubblicate)"
-  node scripts/embed.mjs "$s/story.ir.json" "$s/play.html"
+  node scripts/embed.mjs "$(storia_di "$s")" "$s/play.html"
 done
 
 echo "==> servo su http://0.0.0.0:$PORTA"

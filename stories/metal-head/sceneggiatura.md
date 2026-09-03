@@ -6,9 +6,15 @@ Adattamento per sceneggiatura interattiva.
 
 Protagonista: Laura.
 
+## Locandina
+
+Laura in primo piano con Tommy accanto, Mark mezzo passo dietro; tutti e tre fermi in un corridoio del magazzino, immobili, con le torce basse. Nel buio in fondo al corridoio la sagoma bassa di un Cane-robot, un solo LED acceso. Luce da lucernario sporco, i tre a fuoco e il fondo piatto, nessun testo.
+
 ## Note di regia e produzione
 
-**Formato.** Bianco e nero, girato a colori e desaturato in post.
+**Formato.** illustrazione cel-shaded a colori piatti, contorni netti e marcati, palette limitata di colori smorzati e desaturati con un solo accento saturo, ombre a stacco netto, niente sfumature, niente texture fotografica, key art da videogioco.
+
+Tono di default: asciutto, teso, senza spiegazioni; poche parole, molto silenzio, paura pratica invece che spettacolare.
 
 **Cane-robot.** Mai chiamato per nome nei dialoghi. Quadrupede, in stile Boston Dynamics, altezza circa 50 cm, testa cieca — dei sensori, niente occhi. Si muove con l'inerzia di un animale vero, non di un robot: accelera male, frena peggio, corregge la traiettoria con piccoli scarti isterici. Ogni volta che si ferma, si sente un forte rumore di ventola.
 

@@ -1,5 +1,11 @@
 # assets-studio
 
+> ⚠️ **Modello precedente.** I percorsi e i nomi citati qui (`story.ir.json`, le
+> scene) sono quelli di prima del formato **zaistory 1.0.0**. Il contratto ai due
+> capi non cambia — prompt letti dal file della storia, lavoro in `_work/`,
+> pubblicazione in `assets/` — cambiano il nome del file e i nodi da cui i prompt
+> vengono estratti. Vedi `ARCHITECTURE.md`.
+
 Gli strumenti che trasformano i **prompt** dell'IR in **asset** veri, e che
 portano nella storia quelli approvati.
 

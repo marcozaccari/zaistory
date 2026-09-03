@@ -1,5 +1,10 @@
 # Generatore immagini
 
+> ⚠️ **Modello precedente.** Il file della storia si chiama ora
+> `<id>.zaistory.json` e la sua struttura è cambiata (luoghi come nodi, fasi,
+> oggetti d'ambiente). Le decisioni sulla catena delle immagini restano tutte
+> valide; cambia da dove si estraggono i prompt. Vedi `ARCHITECTURE.md`.
+
 Modulo assets limitato alle **immagini**. Voce, suoni e musica restano fuori.
 
 ```

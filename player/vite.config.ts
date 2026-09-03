@@ -1,16 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { defineConfig, type Plugin } from 'vite';
 
-/** Il numero di versione del player vive solo qui: nel package.json. */
+/** Il numero di versione del player vive in un posto solo: il package.json. */
 const version: string = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version;
 
 /**
- * Incolla CSS e JS dentro l'HTML, cosi' la build e' **un solo file**.
+ * Incolla CSS e JS dentro l'HTML, così la build è **un solo file**.
  *
- * Non e' un vezzo: e' il requisito del progetto. Un unico .html si apre da
+ * Non è un vezzo, è il requisito del progetto: un unico .html si apre da
  * `file://`, si manda in chat, si mette su qualunque static host e si gioca dal
- * telefono senza installare niente — che e' esattamente il motivo per cui il
- * player e' passato da Go al browser.
+ * telefono senza installare niente.
  */
 function singleFile(): Plugin {
   return {
@@ -37,7 +36,6 @@ function singleFile(): Plugin {
           delete bundle[file.fileName];
         }
       }
-
       html.source = source;
     },
   };
@@ -53,6 +51,11 @@ export default defineConfig({
   define: { __ZAIPLAY_VERSION__: JSON.stringify(version) },
   build: {
     target: 'es2022',
+    // La build produce UN file solo e lo sovrascrive: svuotare la cartella non
+    // serve, e dove il filesystem non concede la cancellazione — un repository
+    // montato da remoto, per dire — sarebbe l'unica cosa che impedisce di
+    // compilare.
+    emptyOutDir: false,
     cssCodeSplit: false,
     assetsInlineLimit: Number.MAX_SAFE_INTEGER,
     modulePreload: { polyfill: false },

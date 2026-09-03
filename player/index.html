@@ -5,67 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#12141a" />
-    <title>zaiplay — player di test ZAiStory</title>
+    <title>zaiplay</title>
   </head>
   <body>
-    <!-- Schermata iniziale: senza IR non c'e' niente da giocare. -->
+    <!-- Senza una storia non c'è niente da giocare. -->
     <section id="loader" class="loader">
       <div class="loader-card">
         <h1>zaiplay</h1>
-        <p class="sub">Player di test per <code>story.ir.json</code>. Nessun asset: solo l'IR.</p>
+        <p class="sub">Il player di <code>&lt;id&gt;.zaistory.json</code>. Nient'altro: la storia basta a sé.</p>
 
         <label class="drop" id="drop">
           <input type="file" id="file" accept=".json,application/json" hidden />
-          <strong>Scegli un file .ir.json</strong>
+          <strong>Scegli un file .zaistory.json</strong>
           <span>oppure trascinalo qui</span>
         </label>
 
         <details class="paste">
           <summary>Incolla il JSON</summary>
-          <textarea id="paste-area" rows="6" placeholder='{ "ir_version": "1.2.0", ... }'></textarea>
+          <textarea id="paste-area" rows="6" placeholder='{ "zaistory_version": "1.0.0", ... }'></textarea>
           <button id="paste-go" class="btn">Carica</button>
         </details>
 
-        <p class="hint">
-          Si puo' anche aprire con <code>?ir=URL</code> nella barra degli indirizzi.
-        </p>
+        <p class="hint">Si può anche aprire con <code>?story=URL</code> nella barra degli indirizzi.</p>
         <p class="err" id="loader-err" hidden></p>
       </div>
     </section>
 
-    <!-- Player -->
     <div id="app" class="app" hidden>
       <header class="topbar">
-        <button class="icon" id="btn-panel" aria-label="Pannello di debug">☰</button>
+        <button class="icon" id="btn-panel" aria-label="Menu">☰</button>
         <div class="titles">
           <strong id="story-title"></strong>
           <span id="story-meta"></span>
         </div>
         <!-- Testo o immagini: un interruttore, non una scheda del menu. Si
              cambia guardando quello che cambia, e nasce nascosto — compare
-             solo quando c'e' davvero qualcosa da scegliere. -->
+             solo quando c'è davvero qualcosa da scegliere. -->
         <button class="icon toggle immagini" id="btn-immagini" aria-pressed="true" hidden></button>
         <!-- Il carattere della prosa: accanto all'interruttore delle immagini
-             perche' e' la stessa specie di scelta — come si guarda la storia —
-             e si prende guardando quello che cambia. Non e' un interruttore ma
-             un giro: a ogni tocco passa al carattere dopo, e la scritta accanto
-             al segno dice sempre a quale si e' arrivati. Il contenuto lo mette
-             `main.ts`: il segno e' un disegno, non un carattere da stampare. -->
+             perché è la stessa specie di scelta — come si guarda la storia — e
+             si prende guardando quello che cambia. Non è un interruttore ma un
+             giro: a ogni tocco passa al carattere dopo, e la scritta accanto
+             al segno dice sempre a quale si è arrivati. Il contenuto lo mette
+             `main.ts`: il segno è un disegno, non un carattere da stampare. -->
         <button class="icon carattere" id="btn-font"></button>
-        <button class="icon toggle" id="btn-debug" aria-pressed="false" title="Modalita' debug">debug</button>
+        <button class="icon toggle" id="btn-debug" aria-pressed="false" title="Modalità debug">debug</button>
       </header>
 
-      <!-- Il palco: l'inquadratura corrente e cio' che la descrive, fermi in
-           alto. La figura (o, senza immagini, il suo prompt), le facce del
-           cast di lato, e sotto la riga che dice sempre il tono, dove siamo e
-           chi e' in campo. Il testo scorre sotto, e la maniglia riduce la
-           figura quando serve piu' spazio per leggere. Nasce chiuso: sulla
-           copertina non c'e' ancora nessuna scena. -->
+      <!--
+        Il palco: l'inquadratura corrente e ciò che la descrive, ferme in alto.
+        La riga delle coordinate sta in cima, sopra la figura: è la prima cosa
+        che si legge entrando, e da lì fa da chiave a tutto quello che scorre
+        sotto. La maniglia riduce la figura quando serve più spazio per
+        leggere; il tono resta in tutte e due le misure.
+      -->
       <section id="palco" class="palco" hidden aria-label="l'inquadratura corrente">
         <div class="palco-riga" id="palco-riga"></div>
         <div class="palco-corpo">
           <div class="palco-tela" id="palco-tela"></div>
-          <div class="palco-cast" id="palco-cast" aria-label="chi c'e' in questa scena"></div>
+          <div class="palco-cast" id="palco-cast" aria-label="chi c'è qui"></div>
         </div>
         <button
           class="palco-maniglia"
@@ -85,10 +83,19 @@
       <footer id="dock" class="dock"></footer>
     </div>
 
+    <!-- La mappa: ci si muove a scelte, come si parla a scelte. -->
+    <aside id="mappa" class="mappa" hidden aria-label="dove andare">
+      <div class="mappa-testa">
+        <button class="icon" id="btn-chiudi-mappa" aria-label="Chiudi la mappa">✕</button>
+        <strong>dove andare</strong>
+      </div>
+      <div class="mappa-corpo" id="mappa-corpo"></div>
+    </aside>
+
     <!-- Pannello laterale -->
     <aside id="panel" class="panel" hidden>
       <div class="panel-head">
-        <!-- Stessa icona e stessa posizione del bottone che apre: e' un
+        <!-- Stessa icona e stessa posizione del bottone che apre: è un
              interruttore, non due comandi diversi. -->
         <button class="icon" id="btn-close-panel" aria-label="Chiudi il menu">☰</button>
         <nav class="tabs" id="tabs">
@@ -110,10 +117,10 @@
         <div class="piede-azioni">
           <button class="icon toggle immagini" id="btn-immagini-panel" aria-pressed="true" hidden></button>
           <!-- Il giro dei caratteri anche qui: su telefono verticale la barra
-               in testa tiene solo il titolo, e questo e' l'unico posto dove il
+               in testa tiene solo il titolo, e questo è l'unico posto dove il
                comando resta raggiungibile. -->
           <button class="icon carattere" id="btn-font-panel"></button>
-          <button class="icon toggle" id="btn-debug-panel" aria-pressed="false" title="Modalita' debug">debug</button>
+          <button class="icon toggle" id="btn-debug-panel" aria-pressed="false" title="Modalità debug">debug</button>
         </div>
       </div>
     </aside>

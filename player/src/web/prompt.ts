@@ -9,8 +9,8 @@
  */
 
 import { el } from './dom.js';
-import { icona, iconaGruppo } from './icone.js';
-import { nomeCampo, type Doppio } from './nomi.js';
+import { icona, iconaGruppo } from './icons.js';
+import { nomeCampo, type Doppio } from './names.js';
 
 /** Il tipo di risorsa che un prompt descrive: da' il colore all'etichetta, e
  * basta scorrere per vedere dove mancano le immagini o i suoni.

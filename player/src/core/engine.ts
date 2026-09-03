@@ -1,464 +1,300 @@
 /**
- * Il loop che fa avanzare una partita.
+ * Il motore: che luogo, che fase, cosa si può fare, dove si può andare.
  *
- * L'engine non sa chi lo sta guidando: parla solo con una `PlayerUI`. Le
- * implementazioni sono tre — il terminale, l'esecutore di script di
- * playthrough e il player web — e nessuna di loro cambia una virgola di questa
- * logica. E' il motivo per cui il core sta in un modulo separato: la stessa
- * partita, giocata a mano su un telefono o rigiocata da uno script in CI, deve
- * dare lo stesso risultato.
- *
- * I metodi della UI sono asincroni perche' un browser non puo' bloccarsi in
- * attesa di un tap: e' l'unica differenza rispetto al loop sincrono da cui
- * questo codice deriva.
+ * Tutto quello che qui si chiama «corrente» è **derivato dallo stato**, mai
+ * memorizzato: la fase non si sceglie e non si ricorda, si calcola valutando le
+ * condizioni nell'ordine in cui l'autore le ha scritte. È la proprietà che
+ * rende naturale il ritorno libero in un luogo — entrando si ottiene com'è
+ * adesso, non com'era — e che toglie di mezzo il router condizionale che
+ * servirebbe se il nodo di gioco fosse la scena.
  */
 
-import type { Action, DialogueChoice, DialogueNode, Scene, Story } from './types.js';
-import { findAction, findScene, isOsservazione, isRepeatable, sceneHasExit } from './types.js';
-import { GameState, type EffectSink, type Transition } from './state.js';
+import type {
+  Action,
+  Exit,
+  NarrationBeat,
+  Phase,
+  Place,
+  Prop,
+  StoryIndex,
+  Transition,
+} from './types.js';
+import { textNow } from './types.js';
+import type { EffectSink, GameState } from './state.js';
 
-/** Uscita volontaria dal player. */
-export class QuitError extends Error {
-  constructor() {
-    super('uscita richiesta');
-  }
+// --------------------------------------------------------------- luogo
+
+export function place(idx: StoryIndex, id: string): Place | undefined {
+  return idx.places.get(id);
 }
 
-/** Uno script di playthrough e' finito mentre il gioco chiedeva ancora input. */
-export class ScriptEndedError extends Error {
-  constructor() {
-    super('script di playthrough esaurito');
-  }
+export function currentPlace(idx: StoryIndex, st: GameState): Place | undefined {
+  return idx.places.get(st.place);
 }
 
 /**
- * Un'azione che adesso non si puo' fare, con il motivo.
+ * La fase che vale adesso: la prima la cui condizione è soddisfatta.
  *
- * `perche'` distingue i due casi, e la distinzione non e' cosmetica: a una
- * **condizione** non soddisfatta l'autore risponde con `blocked_narration`, e
- * se non l'ha scritta e' un buco vero dell'IR; a un'azione **gia' usata** non
- * risponde niente, perche' lo schema non ha un campo per dirlo e non deve
- * averlo — chiedere di nuovo una cosa gia' fatta non e' un caso da coprire con
- * un testo per ogni azione. Confondere i due casi faceva accusare di un buco
- * un IR che non ne aveva.
+ * L'ordine è significativo e sta nelle mani di chi compila — le più specifiche
+ * prima, l'ultima senza condizione. Se nessuna matcha il luogo non ha niente da
+ * dire, e non è una cosa che il player possa aggiustare: è un buco, e il linter
+ * lo segnala come tale.
  */
-export type PerCheNascosta = 'condizione' | 'gia-usata';
-
-export interface HiddenAction {
-  action: Action;
-  reason: string;
-  perche: PerCheNascosta;
+export function currentPhase(pl: Place | undefined, st: GameState): Phase | undefined {
+  if (!pl) return undefined;
+  for (const ph of pl.phases) if (st.ok(ph.condition)) return ph;
+  return undefined;
 }
 
-/** Una scelta di dialogo filtrata da una condizione. */
-export interface HiddenChoice {
-  choice: DialogueChoice;
-  reason: string;
+/** Il `look` com'è adesso, varianti comprese. */
+export function lookNow(ph: Phase | undefined, st: GameState): string | undefined {
+  if (!ph) return undefined;
+  return textNow(ph.look, ph.look_variants, st.ok);
 }
 
-export interface ActionPrompt {
-  story: Story;
-  scene: Scene;
-  state: GameState;
-  available: Action[];
-  hidden: HiddenAction[];
-  /** Vero se dalla scena non esce nessun goto_scene: e' un finale della
-   * storia, non un vicolo cieco. */
-  terminal: boolean;
-  /**
-   * Le uscite da mostrare, quando nella scena non resta piu' niente da fare.
-   *
-   * Normalmente vuoto, ed e' il caso interessante: finche' c'e' qualcosa da
-   * fare, l'elenco delle azioni non si mostra (decisione 1.8.0) e l'uscita si
-   * chiede a parole come tutto il resto. Ma quando ogni altra azione
-   * disponibile e' gia' stata fatta o e' pura osservazione, la scena e'
-   * finita: continuare a chiedere di indovinare la frase giusta non protegge
-   * piu' nessun enigma — non ce n'e' rimasto nessuno — e diventa solo un muro.
-   *
-   * Il player non decide niente al posto del giocatore: mostra le uscite che
-   * l'IR ha gia' li', con la label che l'autore ha scritto.
-   */
-  uscite: Action[];
+/** Gli oggetti d'ambiente presenti adesso. Un prop assente non è un bersaglio:
+ * il parser non lo considera nemmeno. */
+export function visibleProps(pl: Place | undefined, st: GameState): Prop[] {
+  return (pl?.objects ?? []).filter((o) => st.ok(o.present_when));
 }
 
-export interface ChoicePrompt {
-  story: Story;
-  scene: Scene;
-  state: GameState;
-  nodeId: string;
-  node: DialogueNode;
-  available: DialogueChoice[];
-  hidden: HiddenChoice[];
+// -------------------------------------------------------------- azioni
+
+/**
+ * Il bersaglio di un'azione è qui, adesso?
+ *
+ * Non è logica narrativa inventata: è la stessa cosa che `present_when` dice
+ * per un oggetto d'ambiente, estesa alle altre due specie di bersaglio. Una
+ * cosa che non c'è non è un bersaglio — e chiedere all'autore di ripetere
+ * `has_item: lanterna` su ogni azione che usa la lanterna sarebbe scrivere due
+ * volte lo stesso fatto, con il secondo che prima o poi si dimentica.
+ *
+ * Il caso che l'ha fatta scrivere: dopo aver acceso la lanterna, «cosa posso
+ * fare» continuava a elencare *la lanterna spenta* — un oggetto che il
+ * giocatore non aveva più in mano, perché accenderla lo aveva sostituito con
+ * un altro oggetto.
+ */
+export function targetPresent(
+  idx: StoryIndex,
+  pl: Place | undefined,
+  ph: Phase | undefined,
+  st: GameState,
+  targetId: string | undefined,
+): boolean {
+  if (!targetId) return true;
+
+  const prop = idx.props.get(targetId);
+  if (prop) {
+    // Un oggetto d'ambiente vale solo nel suo luogo, e solo quando c'è.
+    if (idx.placeOfProp.get(targetId) !== pl?.id) return false;
+    return st.ok(prop.present_when);
+  }
+  if (idx.items.has(targetId)) return st.hasItem(targetId);
+  if (idx.characters.has(targetId)) {
+    // Solo se la fase dichiara chi c'è: una fase senza elenco non sta dicendo
+    // «non c'è nessuno», sta tacendo, e su un silenzio non si filtra.
+    const roster = ph?.characters;
+    if (!roster?.length) return true;
+    return roster.some((c) => c.id === targetId);
+  }
+  return true; // un id che non è nessuna delle tre: è il linter a doverlo dire
 }
 
-/** La risposta della UI a un prompt. */
-export interface Command {
-  quit?: boolean;
-  actionId?: string;
-  choiceIndex?: number;
+/** Tutte le azioni giocabili adesso, comprese quelle la cui **condizione** non
+ * è soddisfatta.
+ *
+ * Le bloccate restano candidate ed è la differenza fra un menu e una
+ * conversazione: in un menu un'azione filtrata sparisce e non c'è niente da
+ * dire; a parole il giocatore la chiede lo stesso, e riceve la risposta
+ * d'autore. Diverso è un'azione il cui **bersaglio** non c'è: lì non c'è niente
+ * da raccontare sulla cosa, perché la cosa non è qui. */
+export function candidateActions(
+  idx: StoryIndex,
+  pl: Place | undefined,
+  ph: Phase | undefined,
+  st: GameState,
+): Action[] {
+  // Le azioni del luogo valgono in ogni fase e vengono per prime: sono i gesti
+  // che il posto permette finché è quel posto. Quelle della fase si aggiungono.
+  // Senza questa somma, un'azione necessaria che vive in una fase sola sparisce
+  // appena lo stato cambia la fase — ed è un vicolo cieco che nessuno vede
+  // finché non ci finisce dentro.
+  return [...(pl?.actions ?? []), ...(ph?.actions ?? [])].filter(
+    (a) =>
+      !st.consumed(a.id) &&
+      targetPresent(idx, pl, ph, st, a.target) &&
+      targetPresent(idx, pl, ph, st, a.second_target),
+  );
 }
 
-/** L'esito della partita. */
-export interface Outcome {
-  reason: string;
-  /** Scena in cui ci si e' fermati. */
-  scene: string;
-  /** Scelte effettuate. */
-  steps: number;
-  /** La storia e' finita in modo previsto. */
-  ended: boolean;
-  /** Il giocatore ha abbandonato. */
-  quit: boolean;
-  /** Bug di giocabilita' incontrati durante la partita. */
-  problems: string[];
-  /** Sequenza di token rigiocabile. */
-  trace: string[];
+/** Le azioni effettivamente eseguibili adesso. */
+export function availableActions(
+  idx: StoryIndex,
+  pl: Place | undefined,
+  ph: Phase | undefined,
+  st: GameState,
+): Action[] {
+  return candidateActions(idx, pl, ph, st).filter((a) => st.ok(a.condition));
 }
 
-/** Tutto cio' che l'engine sa del mondo esterno. */
-export interface PlayerUI extends EffectSink {
-  /**
-   * Delimitano l'applicazione di un singolo `Effect`.
-   *
-   * Servono solo alla presentazione: `State.apply` chiama `narration`,
-   * `stateChange` e `sound` nell'ordine fissato dallo schema, che e' l'ordine
-   * *di applicazione* e non necessariamente quello in cui conviene mostrarli.
-   * Sapere dove un effetto comincia e finisce permette a una UI di raccoglierne
-   * l'esito e disporlo come vuole — per esempio i prompt delle risorse prima
-   * del testo — senza che l'ordine con cui lo stato cambia venga toccato.
-   * Sono opzionali: una UI che non ha esigenze di impaginazione le ignora.
-   */
-  beginEffect?(): void;
-  endEffect?(): void;
-
-  sceneEnter(state: GameState, scene: Scene): void | Promise<void>;
-  beat(scene: Scene, beat: NonNullable<Scene['narration']>[number], index: number, total: number): void | Promise<void>;
-  line(scene: Scene, nodeId: string, node: DialogueNode): void | Promise<void>;
-  notice(text: string): void;
-  problem(text: string): void;
-  chooseAction(p: ActionPrompt): Promise<Command>;
-  chooseChoice(p: ChoicePrompt): Promise<Command>;
-  finish(o: Outcome): void;
+/** Un'azione è una pura osservazione se il suo effetto non muove niente: si può
+ * rileggere per sempre senza che la storia si sposti. */
+export function isPureObservation(a: Action): boolean {
+  const e = a.effect;
+  return !e.set_flag && !e.unset_flag && !e.add_inventory && !e.remove_inventory && !e.goto_dialogue && !e.goto_place;
 }
 
-export class Engine {
-  readonly story: Story;
-  readonly state = new GameState();
-  readonly ui: PlayerUI;
-  maxSteps = 10000;
+/**
+ * Qui non resta più niente da fare?
+ *
+ * Definizione precisa, ed è la sola che regge: ogni azione disponibile è già
+ * stata eseguita almeno una volta, oppure è una pura osservazione. Senza la
+ * prima metà la regola non scatterebbe mai dove serve — l'azione che apre un
+ * dialogo resta disponibile anche dopo averlo ascoltato, e riascoltarlo non è
+ * qualcosa che *resta da fare*.
+ */
+export function nothingLeftToDo(
+  idx: StoryIndex,
+  pl: Place | undefined,
+  ph: Phase | undefined,
+  st: GameState,
+): boolean {
+  const acts = availableActions(idx, pl, ph, st);
+  return acts.every((a) => st.executed(a.id) || isPureObservation(a));
+}
 
-  private outcome: Outcome = {
-    reason: '',
-    scene: '',
-    steps: 0,
-    ended: false,
-    quit: false,
-    problems: [],
-    trace: [],
-  };
+// -------------------------------------------------------------- uscite
 
-  constructor(story: Story, ui: PlayerUI) {
-    this.story = story;
-    this.ui = ui;
+/** Le uscite che il giocatore sa che esistono. Una sconosciuta non compare da
+ * nessuna parte: si scopre dal testo, con un effetto d'autore, mai da un
+ * elemento di interfaccia che si accende. */
+export function knownExits(pl: Place | undefined, st: GameState): Exit[] {
+  return (pl?.exits ?? []).filter((e) => st.ok(e.known_when));
+}
+
+/** Le uscite percorribili adesso. */
+export function openExits(pl: Place | undefined, st: GameState): Exit[] {
+  return knownExits(pl, st).filter((e) => st.ok(e.condition));
+}
+
+/** Come si chiama un'uscita per chi legge: l'etichetta se c'è, altrimenti il
+ * nome della destinazione. */
+export function exitLabel(idx: StoryIndex, e: Exit): string {
+  if (e.label && e.label.trim()) return e.label;
+  return idx.places.get(e.to)?.name ?? e.to;
+}
+
+/** Le superfici lessicali di un'uscita: i suoi alias, la sua etichetta, e nome
+ * e alias del luogo di destinazione — «vai al magazzino» deve funzionare anche
+ * se l'uscita non si chiama così. */
+export function exitSurfaces(idx: StoryIndex, e: Exit): string[] {
+  const out: string[] = [];
+  if (e.label) out.push(e.label);
+  for (const a of e.aliases ?? []) out.push(a);
+  const dest = idx.places.get(e.to);
+  if (dest) {
+    out.push(dest.name);
+    for (const a of dest.aliases ?? []) out.push(a);
+  }
+  return out;
+}
+
+/** La cutscene di passaggio che vale adesso, se non è già stata vista. */
+export function transitionFor(
+  from: string,
+  e: Exit,
+  st: GameState,
+): { transition: Transition; key: string } | undefined {
+  const list = e.transitions ?? [];
+  for (let i = 0; i < list.length; i++) {
+    const t = list[i];
+    if (!st.ok(t.condition)) continue;
+    const key = `${from}>${e.to}#${i}`;
+    if (!t.replay && st.transitionSeen(key)) return undefined;
+    return { transition: t, key };
+  }
+  return undefined;
+}
+
+// ------------------------------------------------------------- ingresso
+
+export interface EnterResult {
+  /** I beat da mostrare entrando: la transizione, poi la narrazione della fase. */
+  beats: NarrationBeat[];
+  place?: Place;
+  phase?: Phase;
+  /** Valorizzato se la fase in cui si è entrati chiude la storia. */
+  ending?: { kind: 'natural' | 'premature'; label?: string };
+  /** Se il luogo non ha nessuna fase valida: è un buco della storia, non un
+   * caso da gestire in silenzio. */
+  problem?: string;
+}
+
+/**
+ * Entra in un luogo. È l'unico posto da cui si cambia `st.place`.
+ *
+ * Fa tre cose in quest'ordine, e l'ordine conta: cambia atto se serve (e lì i
+ * flag locali muoiono), alza i flag d'ingresso della fase, e raccoglie i beat
+ * da leggere. La transizione, se c'è, l'ha già messa in coda chi ha attraversato
+ * l'uscita: entrare non sa da dove si arriva, ed è giusto che non lo sappia.
+ */
+export function enterPlace(
+  idx: StoryIndex,
+  st: GameState,
+  placeId: string,
+  sink: EffectSink,
+  before: NarrationBeat[] = [],
+): EnterResult {
+  const pl = idx.places.get(placeId);
+  if (!pl) {
+    return { beats: before, problem: `il luogo "${placeId}" non esiste nella storia` };
   }
 
-  /** La sequenza di token giocata finora. */
-  trace(): string[] {
-    return this.outcome.trace;
+  const actId = idx.actOfPlace.get(placeId);
+  if (actId && actId !== st.act) {
+    st.enterAct(actId);
+    sink.stateChange(`atto: ${actId}`);
   }
 
-  /** Applica un Effect segnalando alla UI dove comincia e dove finisce. */
-  private applyEffect(e: Parameters<GameState['apply']>[0]): Transition {
-    this.ui.beginEffect?.();
-    try {
-      return this.state.apply(e, this.ui);
-    } finally {
-      this.ui.endEffect?.();
-    }
+  st.place = placeId;
+  st.history.push(placeId);
+
+  // I flag d'ingresso si alzano, e la fase resta questa.
+  //
+  // Prima si rileggeva la fase subito dopo averli alzati, e la conseguenza era
+  // che una fase capace di marcarsi da sola come vista **perdeva la propria
+  // narrazione**: cedeva il posto alla successiva allo stesso ingresso, e il
+  // testo che avrebbe dovuto leggersi quella volta lì non si leggeva mai. È il
+  // caso di ogni cosa che succede una volta quando si entra — la casa che si
+  // sveglia, la stanza che al secondo giro è un'altra stanza — cioè il pane di
+  // un atto in cui si gira per una casa.
+  //
+  // Ed era anche un disaccordo interno: `settlePhase`, che è l'altra metà dello
+  // stesso meccanismo, ha sempre fatto il contrario — alza i flag e mostra la
+  // narrazione di QUESTA fase, e passa alla successiva al giro dopo. Adesso le
+  // due strade dicono la stessa cosa, ed è quella giusta: la fase che si marca
+  // vista si vede, una volta.
+  const ph = currentPhase(pl, st);
+  if (ph?.on_enter_flags_set?.length) {
+    for (const f of ph.on_enter_flags_set) st.flags.add(f);
   }
 
-  private problem(msg: string): void {
-    this.outcome.problems.push(msg);
-    this.ui.problem(msg);
+  if (!ph) {
+    return { beats: before, place: pl, problem: `il luogo "${placeId}" non ha nessuna fase valida in questo stato` };
   }
 
-  private record(tok: string): void {
-    this.outcome.trace.push(tok);
-    this.outcome.steps++;
+  const beats = [...before, ...(ph.narration ?? [])];
+  return { beats, place: pl, phase: ph, ending: ph.ending };
+}
+
+/** Il primo ingresso della partita: atto iniziale, luogo iniziale, inventario
+ * di partenza. */
+export function start(idx: StoryIndex, st: GameState, sink: EffectSink): EnterResult {
+  const act = idx.acts.get(idx.story.start_act);
+  if (!act) return { beats: [], problem: `l'atto iniziale "${idx.story.start_act}" non esiste` };
+  for (const it of idx.story.initial_inventory ?? []) {
+    if (!st.hasItem(it)) st.inventory.push(it);
   }
-
-  /** Gioca la storia dall'inizio fino a un finale, a un vicolo cieco o
-   * all'uscita del giocatore. */
-  async run(): Promise<Outcome> {
-    // L'inventario iniziale e' l'unico stato che non nasce da un Effect: non e'
-    // logica narrativa aggiunta dal player, e' un dato dell'IR applicato prima
-    // che la partita cominci.
-    for (const item of this.story.initial_inventory ?? []) {
-      if (!this.state.hasItem(item)) this.state.inventory.push(item);
-    }
-
-    let sceneId = this.story.start_scene;
-
-    for (;;) {
-      const sc = findScene(this.story, sceneId);
-      if (!sc) {
-        this.problem(`goto verso la scena inesistente "${sceneId}"`);
-        this.outcome.reason = 'transizione verso una scena inesistente';
-        break;
-      }
-
-      await this.enterScene(sc);
-
-      try {
-        await this.playNarration(sc);
-        const next = await this.playScene(sc);
-        if (!next) break;
-        sceneId = next;
-      } catch (err) {
-        this.finishErr(err, sc);
-        break;
-      }
-    }
-
-    this.outcome.scene = this.state.scene;
-    this.ui.finish(this.outcome);
-    return this.outcome;
-  }
-
-  private finishErr(err: unknown, sc: Scene): void {
-    this.outcome.scene = sc.id;
-    if (err instanceof QuitError) {
-      this.outcome.quit = true;
-      this.outcome.reason = 'partita abbandonata dal giocatore';
-    } else if (err instanceof ScriptEndedError) {
-      this.outcome.reason = 'script di playthrough esaurito prima della fine della storia';
-    } else {
-      this.outcome.reason = err instanceof Error ? err.message : String(err);
-    }
-  }
-
-  private async enterScene(sc: Scene): Promise<void> {
-    this.state.scene = sc.id;
-    this.state.history.push(sc.id);
-    for (const f of sc.on_enter_flags_set ?? []) this.state.flags.add(f);
-    await this.ui.sceneEnter(this.state, sc);
-  }
-
-  private async playNarration(sc: Scene): Promise<void> {
-    const beats = sc.narration ?? [];
-    for (let i = 0; i < beats.length; i++) {
-      await this.ui.beat(sc, beats[i], i, beats.length);
-    }
-  }
-
-  /** Gestisce azioni e dialoghi di una scena. Ritorna l'id della scena
-   * successiva, oppure "" se la partita si ferma qui. */
-  private async playScene(sc: Scene): Promise<string> {
-    for (;;) {
-      if (this.outcome.steps > this.maxSteps) {
-        throw new Error(`superati ${this.maxSteps} passi: la storia sembra in loop`);
-      }
-
-      const { available, hidden } = this.actions(sc);
-      if (available.length === 0) {
-        // Nessuna azione disponibile. Se dalla scena non esce comunque nessuna
-        // transizione e' un finale della storia; altrimenti e' il bug che
-        // questo player esiste per trovare.
-        if (!sceneHasExit(sc)) {
-          this.outcome.ended = true;
-          this.outcome.reason = 'fine della storia';
-          return '';
-        }
-        this.problem(
-          `scena "${sc.id}": nessuna azione disponibile ma la scena avrebbe un'uscita (condizioni mai soddisfatte?)`,
-        );
-        this.outcome.reason = 'vicolo cieco: nessuna azione disponibile';
-        return '';
-      }
-
-      let cmd: Command;
-      try {
-        cmd = await this.ui.chooseAction({
-          story: this.story,
-          scene: sc,
-          state: this.state,
-          available,
-          hidden,
-          terminal: !sceneHasExit(sc),
-          uscite: this.usciteDaMostrare(sc, available),
-        });
-      } catch (err) {
-        // Uno script che finisce in una scena terminale non e' un test
-        // fallito: e' una storia arrivata al suo finale.
-        if (err instanceof ScriptEndedError && !sceneHasExit(sc)) {
-          this.outcome.ended = true;
-          this.outcome.reason = 'fine della storia (scena terminale)';
-          return '';
-        }
-        throw err;
-      }
-      if (cmd.quit) throw new QuitError();
-
-      const act = findAction(sc, cmd.actionId ?? '');
-      if (!act) {
-        this.problem(`azione "${cmd.actionId}" inesistente nella scena "${sc.id}"`);
-        continue;
-      }
-      this.record(`a:${act.id}`);
-      this.state.segnaEseguita(sc.id, act.id);
-      if (!isRepeatable(act)) this.state.consume(sc.id, act.id);
-
-      const tr = this.applyEffect(act.effect);
-      const followed = await this.follow(sc, tr);
-      if (followed.done) return followed.next;
-    }
-  }
-
-  /**
-   * Le uscite da mostrare, se la scena non ha piu' niente da dare.
-   *
-   * "Niente da fare" ha una definizione precisa, ed e' la sola che regge:
-   * ogni azione disponibile che non sia un'uscita e' **gia' stata eseguita**
-   * almeno una volta, oppure e' una pura osservazione (`isOsservazione`), che
-   * si puo' rileggere per sempre senza che la storia si muova. Senza la prima
-   * meta' la regola non scatterebbe mai dove serve: nella scena in auto di
-   * "Metal Head" l'azione che apre il dialogo resta disponibile anche dopo
-   * averlo ascoltato, e riascoltarlo non e' qualcosa che resta da fare.
-   *
-   * **Una sola uscita, altrimenti niente.** La prima versione le mostrava
-   * tutte, con l'idea che fra piu' uscite non ci sia un enigma da proteggere
-   * ma una decisione da prendere. E' sbagliato, e si vede appena si incontra
-   * una scena il cui *unico* contenuto e' un bivio: in "Metal Head" la cabina
-   * del furgone ha quattro azioni e tutte e quattro portano fuori, nessuna
-   * condizionata. Li' non resta niente da fare fin dal primo istante — non
-   * perche' la scena sia esaurita, ma perche' non ha mai avuto altro — e la
-   * regola sputava fuori l'elenco completo delle quattro scelte: esattamente
-   * il menu che le chip sotto debug esistono per non mostrare.
-   *
-   * Con una sola uscita quel caso non puo' presentarsi: mostrarla non svela
-   * nessuna alternativa, perche' alternative non ce ne sono.
-   */
-  private usciteDaMostrare(sc: Scene, available: Action[]): Action[] {
-    const uscite = available.filter((a) => !!a.effect?.goto_scene);
-    if (uscite.length !== 1) return [];
-    const restaDaFare = available.some(
-      (a) => !a.effect?.goto_scene && !isOsservazione(a) && !this.state.giaEseguita(sc.id, a.id),
-    );
-    return restaDaFare ? [] : uscite;
-  }
-
-  /** Esegue una transizione. */
-  private async follow(sc: Scene, tr: Transition): Promise<{ next: string; done: boolean }> {
-    if (tr.kind === 'scene') return { next: tr.target, done: true };
-    if (tr.kind === 'dialogue') {
-      const next = await this.playDialogue(sc, tr.target);
-      if (next) return { next, done: true };
-      return { next: '', done: false };
-    }
-    return { next: '', done: false };
-  }
-
-  /** Percorre il dialogue tree della scena a partire da un nodo. Ritorna l'id
-   * di una scena se il dialogo porta fuori, "" se si torna alle azioni. */
-  private async playDialogue(sc: Scene, nodeId: string): Promise<string> {
-    for (;;) {
-      if (this.outcome.steps > this.maxSteps) {
-        throw new Error(`superati ${this.maxSteps} passi: il dialogo sembra in loop`);
-      }
-      if (!sc.dialogue_tree) {
-        this.problem(`scena "${sc.id}": goto_dialogue "${nodeId}" ma la scena non ha dialogue_tree`);
-        return '';
-      }
-      const node = sc.dialogue_tree.nodes[nodeId];
-      if (!node) {
-        this.problem(`scena "${sc.id}": nodo di dialogo inesistente "${nodeId}"`);
-        return '';
-      }
-
-      await this.ui.line(sc, nodeId, node);
-
-      const tr = this.applyEffect(node.effect);
-      if (tr.kind === 'scene') return tr.target;
-      if (tr.kind === 'dialogue') {
-        nodeId = tr.target;
-        continue;
-      }
-
-      const { available, hidden } = this.choices(node);
-      if (available.length > 0) {
-        const cmd = await this.ui.chooseChoice({
-          story: this.story,
-          scene: sc,
-          state: this.state,
-          nodeId,
-          node,
-          available,
-          hidden,
-        });
-        if (cmd.quit) throw new QuitError();
-        const idx = cmd.choiceIndex ?? -1;
-        if (idx < 0 || idx >= available.length) {
-          this.problem(`scelta fuori range nel nodo "${nodeId}"`);
-          continue;
-        }
-        const ch = available[idx];
-        this.record(`c:${ch.goto}`);
-
-        const chTr = this.applyEffect(ch.effect);
-        if (chTr.kind === 'scene') return chTr.target;
-        nodeId = chTr.kind === 'dialogue' ? chTr.target : ch.goto;
-        continue;
-      }
-
-      if (node.end) return '';
-      if (node.next) {
-        nodeId = node.next;
-        continue;
-      }
-
-      // Nodo senza scelte disponibili, senza next e senza end: o le condizioni
-      // hanno filtrato tutto, o il compilatore ha lasciato un ramo monco. In
-      // entrambi i casi e' un bug da segnalare, non da nascondere tornando in
-      // silenzio alle azioni.
-      if (node.choices && node.choices.length > 0) {
-        this.problem(
-          `scena "${sc.id}", nodo "${nodeId}": tutte le scelte sono filtrate da una condizione e non c'e' next/end`,
-        );
-      } else {
-        this.problem(`scena "${sc.id}", nodo "${nodeId}": nessuna scelta, nessun next, nessun end`);
-      }
-      this.ui.notice('(il dialogo si interrompe: si torna alle azioni della scena)');
-      return '';
-    }
-  }
-
-  /** Divide le azioni della scena tra disponibili e nascoste. */
-  actions(sc: Scene): { available: Action[]; hidden: HiddenAction[] } {
-    const available: Action[] = [];
-    const hidden: HiddenAction[] = [];
-    for (const a of sc.actions) {
-      if (!isRepeatable(a) && this.state.consumed(sc.id, a.id)) {
-        hidden.push({ action: a, reason: "gia' usata (repeatable: false)", perche: 'gia-usata' });
-        continue;
-      }
-      const { ok, why } = this.state.meets(a.condition);
-      if (!ok) {
-        hidden.push({ action: a, reason: why, perche: 'condizione' });
-        continue;
-      }
-      available.push(a);
-    }
-    return { available, hidden };
-  }
-
-  private choices(n: DialogueNode): { available: DialogueChoice[]; hidden: HiddenChoice[] } {
-    const available: DialogueChoice[] = [];
-    const hidden: HiddenChoice[] = [];
-    for (const c of n.choices ?? []) {
-      const { ok, why } = this.state.meets(c.condition);
-      if (!ok) hidden.push({ choice: c, reason: why });
-      else available.push(c);
-    }
-    return { available, hidden };
-  }
+  st.enterAct(act.id);
+  return enterPlace(idx, st, act.start_place, sink);
 }

@@ -1,25 +1,27 @@
 #!/usr/bin/env node
 /**
  * Compone il sito statico da pubblicare: una cartella per storia, con dentro
- * il player gia' incorporato e le immagini pubblicate accanto a lui.
+ * il player già incorporato e le immagini pubblicate accanto a lui.
  *
  *   npm run build:web && npm run build:site      # esce in ../_site
  *   node scripts/build-site.mjs ../_site
  *
  * Quello che ne esce:
  *   _site/index.html            l'elenco delle storie giocabili
- *   _site/<id>/index.html       il player con l'IR gia' dentro
+ *   _site/<id>/index.html       il player con la storia già dentro
  *   _site/<id>/assets/images/   le immagini, dove il player le cerca
  *   _site/.nojekyll             senza, Pages nasconde i file con l'underscore
  *
- * Perche' `<id>/index.html` e non `<id>.html`: il player cerca le immagini
- * accanto a se stesso e l'IR le nomina per id, non per percorso. Deve quindi
+ * Perché `<id>/index.html` e non `<id>.html`: il player cerca le immagini
+ * accanto a sé e la storia le nomina per id, non per percorso. Deve quindi
  * stare *dentro* la cartella della storia — la stessa ragione per cui
- * start_local_player.sh mette play.html in stories/<id>/.
+ * `start_local_player.sh` mette `play.html` in `stories/<id>/`.
  *
- * Le storie senza story.ir.json (sceneggiatura e basta) si saltano: non sono
- * ancora giocabili, e una voce nell'elenco che porta a un errore e' peggio di
- * una voce che non c'e'.
+ * **Si pubblica solo ciò che è giocabile.** Una cartella senza
+ * `<id>.zaistory.json` — una sceneggiatura e basta, o una storia ancora nel
+ * formato vecchio — si salta: una voce nell'elenco che porta a un errore è
+ * peggio di una voce che non c'è. E siccome saltare in silenzio è il modo di
+ * accorgersene un mese dopo, ogni cartella scartata dice perché.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -40,25 +42,37 @@ if (!existsSync(dist)) {
 }
 
 // Si riparte da zero: un sito che si accumula si porta dietro storie
-// rinominate o tolte, e nessuno se ne accorge finche' non le trova online.
+// rinominate o tolte, e nessuno se ne accorge finché non le trova online.
 await rm(uscita, { recursive: true, force: true });
 await mkdir(uscita, { recursive: true });
 await writeFile(path.join(uscita, '.nojekyll'), '');
 
 const cartelle = (await readdir(storie, { withFileTypes: true }))
-  .filter((d) => d.isDirectory())
+  .filter((d) => d.isDirectory() && !d.name.startsWith('_'))
   .map((d) => d.name)
   .sort();
 
 const pubblicate = [];
+const saltate = [];
+
 for (const id of cartelle) {
   const cartella = path.join(storie, id);
-  const ir = path.join(cartella, 'story.ir.json');
-  if (!existsSync(ir)) continue;
+
+  const file = await storiaIn(cartella);
+  if (!file) {
+    saltate.push(`${id}: nessun <id>.zaistory.json`);
+    continue;
+  }
+  if (Array.isArray(file)) {
+    // Due storie nella stessa cartella: sceglierne una a caso vorrebbe dire
+    // pubblicare per mesi quella sbagliata senza che nessuno se ne accorga.
+    saltate.push(`${id}: più di una storia nella cartella (${file.join(', ')})`);
+    continue;
+  }
 
   const dentro = path.join(uscita, id);
   await mkdir(dentro, { recursive: true });
-  execFileSync(process.execPath, [path.join(qui, 'embed.mjs'), ir, path.join(dentro, 'index.html'), dist], {
+  execFileSync(process.execPath, [path.join(qui, 'embed.mjs'), file, path.join(dentro, 'index.html'), dist], {
     stdio: 'inherit',
   });
 
@@ -67,23 +81,40 @@ for (const id of cartelle) {
   if (existsSync(assets)) {
     await cp(assets, path.join(dentro, 'assets'), { recursive: true });
     immagini = (await readdir(path.join(assets, 'images')).catch(() => [])).filter((f) =>
-      f.endsWith('.webp'),
+      /\.(webp|png|jpe?g|avif)$/i.test(f),
     ).length;
   }
 
-  const meta = JSON.parse(await readFile(ir, 'utf8'));
+  const meta = JSON.parse(await readFile(file, 'utf8'));
   pubblicate.push({ id, titolo: meta.title ?? id, immagini });
 }
 
+for (const s of saltate) console.log(`saltata ${s}`);
+
 if (pubblicate.length === 0) {
-  console.error(`nessuna storia con uno story.ir.json in ${path.relative(radice, storie)}`);
+  console.error(`nessuna storia giocabile in ${path.relative(radice, storie)}`);
   process.exit(2);
 }
 
 await writeFile(path.join(uscita, 'index.html'), indice(pubblicate));
 console.log(`\nsito in ${path.relative(radice, uscita) || '.'}: ${pubblicate.map((s) => s.id).join(', ')}`);
 
-/** L'elenco delle storie. Poca roba: e' una porta, non una vetrina. */
+/**
+ * La storia dentro una cartella, se ce n'è **una sola**.
+ *
+ * `undefined` = nessuna; un array = più d'una, e i nomi servono al messaggio.
+ * Non si pretende che il nome del file combaci con quello della cartella: a
+ * dire come si chiama la storia è il campo `id` dentro di lei, e un controllo
+ * in più qui sarebbe una seconda verità da tenere allineata alla prima.
+ */
+async function storiaIn(cartella) {
+  const trovate = (await readdir(cartella)).filter((f) => f.endsWith('.zaistory.json')).sort();
+  if (trovate.length === 0) return undefined;
+  if (trovate.length > 1) return trovate;
+  return path.join(cartella, trovate[0]);
+}
+
+/** L'elenco delle storie. Poca roba: è una porta, non una vetrina. */
 function indice(storie) {
   const voci = storie
     .map(

@@ -32,11 +32,22 @@
 #
 # Il banco di lavoro sta dentro la storia (`<storia>/_work`), quindi lo studio
 # sa da solo dove pubblicare: le immagini marcate come definitive finiscono in
-# `<storia>/assets/images/` e i loro id nello `story.ir.json`.
+# `<storia>/assets/images/` e i loro id nel file della storia.
 
 set -euo pipefail
 
 QUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Il file della storia si chiama <id>.zaistory.json: il nome porta l'id, quindi
+# si cerca a glob. Una cartella e' una storia, e ne contiene esattamente uno.
+storia_di() {
+  local trovati=("$1"/*.zaistory.json)
+  if [ "${#trovati[@]}" -ne 1 ] || [ ! -f "${trovati[0]}" ]; then
+    echo "in $1 non c'e' esattamente un file .zaistory.json" >&2
+    return 1
+  fi
+  echo "${trovati[0]}"
+}
 STUDIO="$QUI/assets-studio/images/studio.py"
 PORTA=8765
 STORIE=()
@@ -62,17 +73,17 @@ done
 
 if [ "${#STORIE[@]}" -eq 0 ]; then
   for d in "$QUI"/stories/*/; do
-    [ -f "$d/story.ir.json" ] && STORIE+=("${d%/}")
+    [ -n "$(ls "$d"/*.zaistory.json 2>/dev/null)" ] && STORIE+=("${d%/}")
   done
 fi
 
 if [ "${#STORIE[@]}" -eq 0 ]; then
-  echo "nessuna storia in stories/ (serve almeno uno story.ir.json)" >&2
+  echo "nessuna storia in stories/ (serve almeno un file .zaistory.json)" >&2
   exit 2
 fi
 
 comando_estrazione() {
-  echo "  python3 assets-studio/images/extract_manifest.py $1/story.ir.json \\"
+  echo "  python3 assets-studio/images/extract_manifest.py $(storia_di "$1") \\"
   echo "      -o $1/_work/assets_manifest.json"
 }
 
@@ -82,7 +93,7 @@ comando_estrazione() {
 estrai() {
   echo ""
   echo "==> estraggo il manifest di $(basename "$1")"
-  python3 "$QUI/assets-studio/images/extract_manifest.py" "$1/story.ir.json" \
+  python3 "$QUI/assets-studio/images/extract_manifest.py" "$(storia_di "$1")" \
       -o "$1/_work/assets_manifest.json"
   echo ""
 }

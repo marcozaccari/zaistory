@@ -5,12 +5,12 @@ Quello che deve restare vero, e che a mano si verificherebbe male:
 
 - solo le immagini **approvate** finiscono nella storia;
 - un'approvazione decade se l'immagine viene rigenerata dopo;
-- l'id scritto nell'IR sta nel nodo giusto, e una variante d'ancora ripetuta
-  in piu' scene li raggiunge tutti;
+- l'id scritto nella storia sta nel nodo giusto, e una variante d'ancora
+  ripetuta in piu' fasi le raggiunge tutte;
 - ripubblicare senza cambiamenti non riscrive niente;
-- togliere un'approvazione toglie l'id anche dall'IR;
+- togliere un'approvazione toglie l'id anche dalla storia;
 - se il manifest e' vecchio e gli indici non tornano piu', ci si ferma invece
-  di scrivere la faccia sbagliata nella scena sbagliata.
+  di scrivere la faccia sbagliata nella fase sbagliata.
 """
 import json, pathlib, shutil, sys, tempfile
 from PIL import Image
@@ -20,31 +20,43 @@ import extract_manifest
 import publish as pubblica
 
 IR = {
-    "ir_version": "1.9.0",
+    "zaistory_version": "1.0.0",
     "id": "prova", "title": "Prova", "language": "it",
     "global_style": {"image_style_suffix": "stile", "anchor_framing": "waist-up"},
     "characters": [
         {"id": "ada", "name": "Ada", "visual_prompt": "donna in cappotto"},
         {"id": "bo", "name": "Bo", "visual_prompt": "uomo con cappello"},
     ],
-    "places": [{"id": "molo", "name": "Il molo", "visual_prompt": "un molo di legno"}],
     "items": [{"id": "chiave", "name": "chiave", "visual_prompt": "una chiave di ottone"}],
-    "start_scene": "uno",
-    "scenes": [
-        {"id": "uno", "title": "Uno",
-         "background": {"image_prompt": "il molo all'alba", "place": "molo",
-                        "characters_in_frame": ["ada"]},
-         "narration": [{"text": "Comincia.", "image_prompt": "ada di spalle",
-                        "place": "molo", "characters_in_frame": ["ada"]}],
-         "characters": [{"id": "ada", "visual_prompt": "donna in cappotto, fradicia"}],
-         "actions": [{"id": "vai", "label": "vai", "effect": {"goto_scene": "due"}}]},
-        {"id": "due", "title": "Due",
-         "background": {"image_prompt": "il molo a mezzogiorno", "place": "molo"},
-         # Stesso override della scena uno: l'estrattore ne fa UNA sola ancora,
-         # e la pubblicazione deve raggiungere anche questa scena.
-         "characters": [{"id": "ada", "visual_prompt": "donna in cappotto, fradicia"}],
-         "actions": [{"id": "fine", "label": "fine", "effect": {"goto_scene": "uno"}}]},
-    ],
+    "start_act": "atto",
+    "acts": [{
+        "id": "atto", "start_place": "molo",
+        "places": [{
+            "id": "molo", "name": "Il molo", "visual_prompt": "un molo di legno",
+            "objects": [{"id": "bitta", "name": "la bitta", "description": "ferro arrugginito",
+                         "visual_prompt": "una bitta di ferro"}],
+            "phases": [
+                {"id": "uno", "title": "Uno",
+                 "condition": {"flag_absent": "visto"},
+                 "background": {"image_prompt": "il molo all'alba",
+                                "characters_in_frame": ["ada"]},
+                 "narration": [{"text": "Comincia.", "image_prompt": "ada di spalle",
+                                "characters_in_frame": ["ada"]}],
+                 "characters": [{"id": "ada", "visual_prompt": "donna in cappotto, fradicia"}],
+                 "look": "Un molo.",
+                 "actions": [{"id": "guarda_bitta", "verb": "look", "target": "bitta",
+                              "effect": {"set_flag": "visto"}}]},
+                {"id": "due", "title": "Due",
+                 "background": {"image_prompt": "il molo a mezzogiorno"},
+                 # Stesso override della fase uno: l'estrattore ne fa UNA sola
+                 # ancora, e la pubblicazione deve raggiungere anche questa fase.
+                 "characters": [{"id": "ada", "visual_prompt": "donna in cappotto, fradicia"}],
+                 "look": "Il molo, piu' tardi.",
+                 "kind": "cutscene",
+                 "ending": {"kind": "natural"}},
+            ],
+        }],
+    }],
 }
 
 
@@ -61,11 +73,11 @@ tmp = pathlib.Path(tempfile.mkdtemp())
 storia_dir = tmp / "stories" / "prova"
 work = storia_dir / pubblica.WORK_DIR
 (storia_dir).mkdir(parents=True)
-(storia_dir / "story.ir.json").write_text(
+(storia_dir / "prova.zaistory.json").write_text(
     json.dumps(IR, ensure_ascii=False, indent=2), encoding="utf-8")
 
 manifest = extract_manifest.Extractor(
-    IR, "story.ir.json",
+    IR, "prova.zaistory.json",
     {"width": 1024, "height": 1024, "steps": 8, "cfg": 0.0},
     {"anchors": "grok-imagine", "shots": "nanobanana-2-lite"}).build()
 work.mkdir(parents=True)
@@ -106,15 +118,15 @@ approva(["anchor.char.ada", "shot.uno.bg", variante])
 r = pubblica.publish(storia)
 print(f"2. pubblicate {len(r['nuove'])}: {sorted(r['nuove'])}")
 assert len(r["nuove"]) == 3, r
-ir = json.loads((storia_dir / "story.ir.json").read_text(encoding="utf-8"))
+ir = json.loads((storia_dir / "prova.zaistory.json").read_text(encoding="utf-8"))
 assert nodo(ir, "characters[0]")["image"] == "anchor.char.ada"
-assert nodo(ir, "scenes[0].background")["image"] == "shot.uno.bg"
+assert nodo(ir, "acts[0].places[0].phases[0].background")["image"] == "shot.uno.bg"
 assert "image" not in nodo(ir, "characters[1]")
 # la variante ripetuta raggiunge entrambe le scene
-uno = nodo(ir, "scenes[0].characters[0]")["image"]
-due = nodo(ir, "scenes[1].characters[0]")["image"]
+uno = nodo(ir, "acts[0].places[0].phases[0].characters[0]")["image"]
+due = nodo(ir, "acts[0].places[0].phases[1].characters[0]")["image"]
 assert uno == due == pubblica.asset_id(variante), (uno, due)
-print(f"   variante ripetuta in due scene -> {uno}  ok")
+print(f"   variante ripetuta in due fasi -> {uno}  ok")
 
 # --- 3. il file: webp, lato lungo 1024 -----------------------------------
 f = storia.images / "shot.uno.bg.webp"
@@ -128,7 +140,7 @@ r = pubblica.publish(storia)
 assert len(r["invariate"]) == 3 and not r["nuove"], r
 assert f.stat().st_mtime_ns == prima
 assert not r["ir_modificato"]
-print("4. seconda pubblicazione: 3 invariate, IR intatto  ok")
+print("4. seconda pubblicazione: 3 invariate, storia intatta  ok")
 
 # --- 5. approvata e poi rigenerata: non passa ----------------------------
 img(work / jobs["shot.uno.bg"]["file"], (200, 10, 10))
@@ -144,23 +156,28 @@ print("   con --force passa  ok")
 approva(["shot.uno.bg"], value=False)
 r = pubblica.publish(storia)
 assert r["rimosse"] == ["shot.uno.bg"], r
-ir = json.loads((storia_dir / "story.ir.json").read_text(encoding="utf-8"))
-assert "image" not in nodo(ir, "scenes[0].background")
+ir = json.loads((storia_dir / "prova.zaistory.json").read_text(encoding="utf-8"))
+assert "image" not in nodo(ir, "acts[0].places[0].phases[0].background")
 assert r["orfane"] == ["shot.uno.bg.webp"], r["orfane"]
-print("6. approvazione tolta -> id via dall'IR, file segnalato come orfano  ok")
+print("6. approvazione tolta -> id via dalla storia, file segnalato come orfano  ok")
 r = pubblica.publish(storia, prune=True)
 assert not (storia.images / "shot.uno.bg.webp").exists()
 print("   con --prune il file sparisce  ok")
 
 # --- 7. manifest vecchio: ci si ferma ------------------------------------
-ir = json.loads((storia_dir / "story.ir.json").read_text(encoding="utf-8"))
-ir["scenes"].insert(0, {"id": "zero", "background": {"image_prompt": "buio"}, "actions": []})
-(storia_dir / "story.ir.json").write_text(
+ir = json.loads((storia_dir / "prova.zaistory.json").read_text(encoding="utf-8"))
+# Una fase inserita davanti: `phases[0]` adesso indica un'altra fase, e
+# scriverci dentro l'id di un'immagine sarebbe la faccia sbagliata nella fase
+# sbagliata.
+ir["acts"][0]["places"][0]["phases"].insert(
+    0, {"id": "zero", "condition": {"flag_present": "mai"},
+        "background": {"image_prompt": "buio"}, "look": "Buio."})
+(storia_dir / "prova.zaistory.json").write_text(
     json.dumps(ir, ensure_ascii=False, indent=2), encoding="utf-8")
 approva(["shot.uno.bg"])
 r = pubblica.publish(storia)
 assert r["errori"], r
-print(f"7. IR cambiato sotto il manifest -> errore invece di scrittura sbagliata")
+print("7. storia cambiata sotto il manifest -> errore invece di scrittura sbagliata")
 for job_id, why in r["errori"]:
     print(f"   {job_id}: {why}")
 

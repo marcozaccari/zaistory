@@ -1,15 +1,23 @@
 #!/usr/bin/env python3
-"""Estrae da uno story.ir.json il manifest delle immagini da generare.
+"""Estrae da un file zaistory il manifest delle immagini da generare.
 
 Passo 1 dei due descritti in ARCHITECTURE.md ("Modulo assets"): qui NON si
-genera niente, si attraversa l'IR e si risolvono le **ancore** (personaggi,
-luoghi, oggetti) e le **inquadrature** che le referenziano. La generazione
-vera e' un passo separato, che consuma solo questo file.
+genera niente, si attraversa la storia e si risolvono le **ancore**
+(personaggi, luoghi, oggetti d'ambiente, oggetti d'inventario) e le
+**inquadrature** che le referenziano. La generazione vera e' un passo
+separato, che consuma solo questo file.
 
 Uso:
-    python extract_manifest.py stories/metal-head/story.ir.json -o out/manifest.json
-    python extract_manifest.py stories/metal-head/story.ir.json --level anchors
-    python extract_manifest.py stories/metal-head/story.ir.json --sample 6 -o out/sample.json
+    python extract_manifest.py stories/metal-head/metal-head.zaistory.json -o out/manifest.json
+    python extract_manifest.py stories/metal-head/metal-head.zaistory.json --level anchors
+    python extract_manifest.py stories/metal-head/metal-head.zaistory.json --sample 6
+
+La gerarchia da attraversare e' `Story > Act > Place > Phase`, e i luoghi
+stanno dentro gli atti invece che in un elenco globale. Gli **id degli
+scatti** restano pero' agganciati alla **fase**, non alla sua posizione:
+`shot.<fase>.bg` e non `shot.acts[0].places[2]...`. E' quello che permette a
+una ricompilazione che eredita gli id di ritrovarsi le immagini gia' prodotte
+al loro posto, invece di doverle rigenerare.
 """
 
 from __future__ import annotations
@@ -177,8 +185,25 @@ class Extractor:
         self.style_suffix_en = gs.get("image_style_suffix_en") or ""
         self.langs: dict[str, int] = {"en": 0, "it": 0}
         self.characters = {c["id"]: c for c in ir.get("characters", []) if "id" in c}
-        self.places = {p["id"]: p for p in ir.get("places", []) if "id" in p}
         self.items = {i["id"]: i for i in ir.get("items", []) if "id" in i}
+        # I luoghi stanno dentro gli atti: qui si appiattiscono una volta, con
+        # accanto il percorso da cui vengono — serve a `source`, che e' come la
+        # pubblicazione ritrova il nodo in cui scrivere l'id.
+        self.places: dict[str, dict] = {}
+        self.place_paths: dict[str, str] = {}
+        # Un luogo con `same_as` e' lo stesso posto di un altro, in un altro
+        # atto: non ha un'ancora sua, usa quella dell'altro. Senza questa mappa
+        # la stessa stanza verrebbe disegnata due volte, e le due versioni
+        # divergerebbero alla prima rigenerazione.
+        self.place_anchor: dict[str, str] = {}
+        for a_idx, act in enumerate(ir.get("acts", []) or []):
+            for p_idx, place in enumerate(act.get("places", []) or []):
+                pid = place.get("id")
+                if not pid:
+                    continue
+                self.places[pid] = place
+                self.place_paths[pid] = f"acts[{a_idx}].places[{p_idx}]"
+                self.place_anchor[pid] = f"anchor.place.{place.get('same_as') or pid}"
         self.anchors: dict[str, dict] = {}
         self.variants: dict[tuple[str, str], str] = {}
         self.shots: list[dict] = []
@@ -257,13 +282,6 @@ class Extractor:
                 f"characters[{idx}]", lang=lang,
                 framing=char.get("anchor_framing"),
             )
-        for idx, place in enumerate(self.ir.get("places", [])):
-            prompt, lang = pick_lang(place, "visual_prompt")
-            self._add_anchor(
-                f"anchor.place.{place['id']}", "place", place["id"],
-                place.get("name", place["id"]), prompt,
-                f"places[{idx}]", lang=lang,
-            )
         for idx, item in enumerate(self.ir.get("items", [])):
             prompt, lang = pick_lang(item, "visual_prompt")
             self._add_anchor(
@@ -271,33 +289,56 @@ class Extractor:
                 item.get("name", item["id"]), prompt,
                 f"items[{idx}]", lang=lang,
             )
-        # Override locali: un personaggio che in una scena e' descritto in modo
+        for pid, place in self.places.items():
+            if place.get("same_as"):
+                continue  # l'aspetto lo porta l'altro: nessuna seconda ancora
+            prompt, lang = pick_lang(place, "visual_prompt")
+            self._add_anchor(
+                f"anchor.place.{pid}", "place", pid,
+                place.get("name", pid), prompt,
+                self.place_paths[pid], lang=lang,
+            )
+            # Gli oggetti d'ambiente stanno nel luogo, e la loro icona si
+            # genera come quella di un oggetto d'inventario: isolato su fondo
+            # neutro. Nel gioco compaiono quando si guardano, non in una fila
+            # di miniature — ma l'immagine, se l'autore l'ha descritta, si
+            # produce qui come tutte le altre.
+            for o_idx, prop in enumerate(place.get("objects", []) or []):
+                pprompt, plang = pick_lang(prop, "visual_prompt")
+                self._add_anchor(
+                    f"anchor.prop.{prop['id']}", "item", prop["id"],
+                    prop.get("name", prop["id"]), pprompt,
+                    f"{self.place_paths[pid]}.objects[{o_idx}]", lang=plang,
+                )
+
+        # Override locali: un personaggio che in una fase e' descritto in modo
         # diverso (ferito, travestito) e' una VARIANTE d'ancora, non una
         # inquadratura. Deve comunque passare dal livello di assegnazione,
         # altrimenti l'inquadratura resta senza riferimento risolvibile.
-        for s_idx, scene in enumerate(self.ir.get("scenes", [])):
-            for c_idx, entry in enumerate(scene.get("characters", []) or []):
-                override, lang = pick_lang(entry, "visual_prompt")
-                if not override:
-                    continue
-                cid = entry.get("id")
-                base = self.characters.get(cid, {})
-                # L'id della variante viene dal CONTENUTO dell'override, non
-                # dalla scena: uno stato che dura — ferita, travestimento —
-                # si ripete identico in tutte le scene da li' in poi, e con
-                # un id per scena diventerebbe una trentina di ancore uguali,
-                # generate e pagate una per una. Cosi' invece e' una sola,
-                # riusata da tutte le scene che la dichiarano.
-                digest = hashlib.sha1(" ".join(override.split()).encode()).hexdigest()[:8]
-                anchor_id = f"anchor.char.{cid}@{digest}"
-                self._add_anchor(
-                    anchor_id, "character_variant", cid,
-                    base.get("name", cid), override,
-                    f"scenes[{s_idx}].characters[{c_idx}]",
-                    variant_of=f"anchor.char.{cid}", lang=lang,
-                    framing=base.get("anchor_framing"),
-                )
-                self.variants[(cid, scene["id"])] = anchor_id
+        for pid, place in self.places.items():
+            for f_idx, phase in enumerate(place.get("phases", []) or []):
+                for c_idx, entry in enumerate(phase.get("characters", []) or []):
+                    override, lang = pick_lang(entry, "visual_prompt")
+                    if not override:
+                        continue
+                    cid = entry.get("id")
+                    base = self.characters.get(cid, {})
+                    # L'id della variante viene dal CONTENUTO dell'override,
+                    # non dalla fase: uno stato che dura — una ferita, un
+                    # travestimento — si ripete identico in tutte le fasi da li'
+                    # in poi, e con un id per fase diventerebbe una trentina di
+                    # ancore uguali, generate e pagate una per una. Cosi' invece
+                    # e' una sola, riusata da tutte le fasi che la dichiarano.
+                    digest = hashlib.sha1(" ".join(override.split()).encode()).hexdigest()[:8]
+                    anchor_id = f"anchor.char.{cid}@{digest}"
+                    self._add_anchor(
+                        anchor_id, "character_variant", cid,
+                        base.get("name", cid), override,
+                        f"{self.place_paths[pid]}.phases[{f_idx}].characters[{c_idx}]",
+                        variant_of=f"anchor.char.{cid}", lang=lang,
+                        framing=base.get("anchor_framing"),
+                    )
+                    self.variants[(cid, phase["id"])] = anchor_id
 
     def _anchor_for_character(self, cid, scene_id):
         variant = self.variants.get((cid, scene_id))
@@ -306,7 +347,7 @@ class Extractor:
         base = f"anchor.char.{cid}"
         if base in self.anchors:
             return base
-        self.warnings.append(f"scena {scene_id}: characters_in_frame cita '{cid}', che non ha un'ancora")
+        self.warnings.append(f"fase {scene_id}: characters_in_frame cita '{cid}', che non ha un'ancora")
         return None
 
     # --------------------------------------------------------- inquadrature
@@ -316,9 +357,9 @@ class Extractor:
         self.langs[lang] += 1
         anchor_place = None
         if place_id:
-            anchor_place = f"anchor.place.{place_id}"
+            anchor_place = self.place_anchor.get(place_id, f"anchor.place.{place_id}")
             if anchor_place not in self.anchors:
-                self.warnings.append(f"scena {scene['id']}: place '{place_id}' non ha un'ancora")
+                self.warnings.append(f"fase {scene['id']}: place '{place_id}' non ha un'ancora")
                 anchor_place = None
 
         anchor_chars = [a for a in (self._anchor_for_character(c, scene["id"]) for c in chars or []) if a]
@@ -418,26 +459,57 @@ class Extractor:
                 "cover", lang=cover_lang,
             )
 
-        for s_idx, scene in enumerate(self.ir.get("scenes", [])):
-            bg = scene.get("background") or {}
-            bg_place = bg.get("place")
-            bg_prompt, bg_lang = pick_lang(bg, "image_prompt")
-            if bg_prompt:
-                self._add_shot(
-                    f"shot.{scene['id']}.bg", "background", scene,
-                    bg_prompt, bg_place, bg.get("characters_in_frame"),
-                    f"scenes[{s_idx}].background", lang=bg_lang,
-                )
-            for n_idx, node in enumerate(scene.get("narration", []) or []):
-                prompt, lang = pick_lang(node, "image_prompt")
-                if not prompt:
-                    continue
-                self._add_shot(
-                    f"shot.{scene['id']}.n{n_idx}", "narration", scene,
-                    prompt, node.get("place") or bg_place,
-                    node.get("characters_in_frame"),
-                    f"scenes[{s_idx}].narration[{n_idx}]", lang=lang,
-                )
+        for pid, place in self.places.items():
+            base = self.place_paths[pid]
+
+            for f_idx, phase in enumerate(place.get("phases", []) or []):
+                # La fase e' l'unita' di autoraggio, e il suo id e' quello che
+                # gli scatti si portano dietro: e' l'aggancio che sopravvive a
+                # una ricompilazione.
+                bg = phase.get("background") or {}
+                # Dentro una fase il luogo lo dice la struttura, e il campo
+                # `place` va omesso: qui si ricava da dove siamo, non si chiede
+                # a chi ha compilato di ripeterlo.
+                bg_place = bg.get("place") or pid
+                bg_prompt, bg_lang = pick_lang(bg, "image_prompt")
+                if bg_prompt:
+                    self._add_shot(
+                        f"shot.{phase['id']}.bg", "background", phase,
+                        bg_prompt, bg_place, bg.get("characters_in_frame"),
+                        f"{base}.phases[{f_idx}].background", lang=bg_lang,
+                    )
+                for n_idx, node in enumerate(phase.get("narration", []) or []):
+                    prompt, lang = pick_lang(node, "image_prompt")
+                    if not prompt:
+                        continue
+                    self._add_shot(
+                        f"shot.{phase['id']}.n{n_idx}", "narration", phase,
+                        prompt, node.get("place") or bg_place,
+                        node.get("characters_in_frame"),
+                        f"{base}.phases[{f_idx}].narration[{n_idx}]", lang=lang,
+                    )
+
+            # Le cutscene di passaggio: sono beat come gli altri, ma stanno
+            # sull'uscita e non in una fase. L'id porta la coppia di luoghi
+            # perche' sono direzionali — calarsi nel pozzo e risalirne non sono
+            # la stessa sequenza — e perche' quella coppia e' l'unica cosa
+            # stabile che le identifica.
+            for e_idx, exit_ in enumerate(place.get("exits", []) or []):
+                to = exit_.get("to", "?")
+                for t_idx, tr in enumerate(exit_.get("transitions", []) or []):
+                    for n_idx, node in enumerate(tr.get("narration", []) or []):
+                        prompt, lang = pick_lang(node, "image_prompt")
+                        if not prompt:
+                            continue
+                        pseudo = {"id": f"{pid}-{to}", "title": f"{pid} → {to}"}
+                        suffix = f"t{t_idx}n{n_idx}" if len(exit_.get("transitions") or []) > 1 else f"n{n_idx}"
+                        self._add_shot(
+                            f"shot.{pid}-{to}.{suffix}", "transition", pseudo,
+                            prompt, node.get("place") or pid,
+                            node.get("characters_in_frame"),
+                            f"{base}.exits[{e_idx}].transitions[{t_idx}].narration[{n_idx}]",
+                            lang=lang,
+                        )
 
     # ------------------------------------------------------------- manifest
 
@@ -468,7 +540,7 @@ class Extractor:
             "manifest_version": MANIFEST_VERSION,
             "story_id": self.ir.get("id"),
             "title": self.ir.get("title"),
-            "ir_file": self.ir_path,
+            "story_file": self.ir_path,
             "generated_at": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
             "level": level,
             "style_suffix": self.style_suffix,
@@ -523,8 +595,8 @@ class Extractor:
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="story.ir.json -> assets_manifest.json")
-    ap.add_argument("ir", help="percorso di story.ir.json")
+    ap = argparse.ArgumentParser(description="<id>.zaistory.json -> assets_manifest.json")
+    ap.add_argument("ir", help="percorso del file <id>.zaistory.json")
     ap.add_argument("-o", "--out", help="file di output (default: accanto all'IR)")
     ap.add_argument("--level", choices=["all", "anchors", "shots"], default="all")
     ap.add_argument("--sample", type=int, help="tieni solo N job, misti per tipo (per le prove)")
@@ -550,7 +622,7 @@ def main(argv=None):
     extractor = Extractor(ir, ir_path.name, defaults, models)
     manifest = extractor.build(level=args.level, sample=args.sample)
 
-    out_path = pathlib.Path(args.out) if args.out else ir_path.with_suffix(".assets_manifest.json")
+    out_path = pathlib.Path(args.out) if args.out else ir_path.parent / "_work" / "assets_manifest.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 

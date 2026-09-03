@@ -26,3 +26,8 @@ __pycache__/
 
 # impostazioni locali di Claude Code, per macchina
 .claude/settings.local.json
+
+# Cestino di servizio: il ponte verso questa macchina non puo' cancellare file,
+# quindi ci sposta dentro cio' che va rimosso (e i lock di git rimasti orfani).
+# Si svuota a mano.
+_to_delete/

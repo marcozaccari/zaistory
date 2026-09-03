@@ -22,7 +22,7 @@ on:
     # non ha motivo di far ripartire una build e un deploy.
     paths:
       - 'player/**'
-      - 'stories/*/story.ir.json'
+      - 'stories/*/*.zaistory.json'
       - 'stories/*/assets/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:

@@ -1,28 +1,18 @@
 #!/usr/bin/env node
 /**
- * Serve la cartella `dist/` su http, e stampa gli indirizzi con cui
- * raggiungerla dal telefono.
+ * Serve una cartella su http, e stampa gli indirizzi con cui raggiungerla dal
+ * telefono.
  *
- * A cosa serve, visto che il player e' un file HTML che si apre da solo: a
- * far funzionare il backend a **vettori** da mobile. Aperto da `file://` o
- * dalla pagina pubblicata, quel backend non puo' scaricare il modello — nel
- * primo caso per le regole sulle origini opache, nel secondo perche' quella
- * pagina non fa richieste verso l'esterno. Servito da http, invece, e' una
- * pagina web come un'altra e il modello arriva.
+ *   npm run serve                  # -> dist/ sulla porta 8000
+ *   npm run serve -- 8080 ../stories
  *
- *   npm run serve                 # -> dist/ sulla porta 8000
- *   npm run serve -- 8080 dist    # porta e cartella
+ * A cosa serve, visto che il player è un file HTML che si apre da solo: a
+ * provarlo dal telefono sulla stessa rete senza mandarsi niente, e a servire
+ * una storia intera — pagina più `assets/images/` — così le immagini si vedono.
  *
- * Poi, dal telefono sulla stessa rete, si apre uno degli indirizzi stampati.
- *
- * Nessuna dipendenza: e' node e basta, come tutto il resto del player.
- *
- * Una nota che evita mezz'ora di perplessita': su `http://` senza TLS il
- * browser non considera la pagina un contesto sicuro, quindi **WebGPU non e'
- * disponibile** e l'inferenza ripiega su WASM. E' piu' lenta, ma per una frase
- * di cinque parole resta nell'ordine dei millisecondi: non e' un problema, e'
- * solo una cosa da sapere prima di concludere che il telefono e' lento.
+ * Nessuna dipendenza: è node e basta, come tutto il resto del player.
  */
+
 
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';

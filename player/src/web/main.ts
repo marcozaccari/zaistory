@@ -1,195 +1,695 @@
 /**
- * Avvio del player web.
+ * Il player web: mette insieme i pezzi e tiene il giro dei turni.
  *
- * Tre modi di ricevere l'IR, in ordine di precedenza: incorporato nella pagina
- * (`window.__ZAISTORY_IR__`, come fa `scripts/embed.mjs`), scaricato da
- * `?ir=URL`, oppure scelto a mano — file, trascinamento o incolla. Nessun
- * server richiesto: la build e' un unico file HTML che si apre anche da
- * `file://`, ed e' il motivo per cui questo player esiste — testare una storia
- * dal telefono senza installare niente.
+ * Qui non c'è nessuna regola di gioco — stanno tutte in `core/`. Questa è
+ * un'interfaccia: legge una riga, la passa alla sessione, e dispone quello che
+ * torna.
+ *
+ * Le decisioni che si vedono in questo file:
+ *
+ * - **l'app è alta quanto il viewport *visuale*, non quanto la finestra.**
+ *   `100dvh` misura la finestra, e la tastiera di sistema non la rimpicciolisce:
+ *   sale sopra la pagina, e i tasti coprivano il dock — cioè proprio la riga in
+ *   cui si scrive cosa fare.
+ * - **si comincia con un tocco.** Il trascritto insegue il fondo, e senza
+ *   qualcosa che trattenga la lettura la copertina scorrerebbe via prima di
+ *   essere vista. Vale doppio con la voce accesa: il primo suono di una pagina
+ *   deve venire da un gesto, o il browser lo blocca.
+ * - **ricaricare non butta via la partita.** La sequenza di quello che il
+ *   giocatore ha scritto *è* la partita, e sta in `localStorage`: su un telefono
+ *   ricaricare non è quasi mai un gesto deliberato.
+ * - **le impostazioni non sono la partita.** Voce, carattere, immagini e
+ *   backend dell'interprete vivono quanto la pagina e non quanto la sessione:
+ *   ricominciare non deve costringere a risceglierli.
  */
 
 import './styles.css';
-import {
-  Engine,
-  IRError,
-  LexicalResolver,
-  ScriptDriver,
-  countFindings,
-  lintStory,
-  makeResolver,
-  parseScript,
-  parseStory,
-  scriviSalvataggio,
-  validateStory,
-  type Finding,
-  type Resolver,
-  type Story,
-} from '../core/index.js';
-import {
-  configPlayerSerializzabile,
-  leggiConfigPlayer,
-  FONT_VALIDI,
-  type Font,
-  type ConfigPlayer,
-} from './config.js';
-import { CONFIG_DEFAULT, caricaEmbedder, type ConfigEmbedder } from './embedder.js';
-import { ASCOLTO_DEFAULT, Ascolto, type ImpostazioniAscolto } from './ascolto.js';
-import { Immagini, baseDegliAsset } from './immagini.js';
-import { dimenticaRipresa, leggiRipresa, salvaRipresa } from './ripresa.js';
-import { Palco } from './palco.js';
-import { Voce } from './voce.js';
-import { PLAYER_VERSION } from '../version.js';
-import { $, clear, el, staScrivendo } from './dom.js';
-import { icona } from './icone.js';
-import { TAB_DEBUG, perNiente, renderPanel, type PanelContext, type Tab } from './panel.js';
-import { WebUI } from './webui.js';
 
+import type { Resolution, Session as SessionType, TurnResult } from '../core/index.js';
+import { LoadError, Session, VectorResolver, displayName, loadStory, parseStory, systemQuestion } from '../core/index.js';
+import { byId, clear, el, premi, show, staScrivendo } from './dom.js';
+import { CONFIG_DEFAULT, caricaEmbedder, type ConfigEmbedder } from './embedder.js';
+import { Fonts } from './fonts.js';
+import { icona } from './icons.js';
+import { Images, hasPublishedImages } from './images.js';
+import type { Origin } from './images.js';
+import { ASCOLTO_DEFAULT, Listen, type ImpostazioniAscolto } from './listen.js';
+import { Panel } from './panel.js';
+import { Stage } from './stage.js';
+import { Transcript } from './transcript.js';
+import { Voce } from './voice.js';
+
+declare const __ZAIPLAY_VERSION__: string;
 declare global {
   interface Window {
-    /** IR incorporato nella pagina al momento della build. */
-    __ZAISTORY_IR__?: unknown;
+    __ZAISTORY__?: unknown;
   }
 }
 
-const loader = $('#loader');
-const loaderErr = $('#loader-err');
-const app = $('#app');
-const transcript = $('#transcript');
-const dock = $('#dock');
-const panel = $('#panel');
-const panelBody = $('#panel-body');
-const scrim = $('#scrim');
-const lintBadge = $('#lint-badge');
-
-$('#panel-version').textContent = `zaiplay v${PLAYER_VERSION}`;
-
-let session: Session | undefined;
-let tab: Tab = 'principale';
+const VERSION = typeof __ZAIPLAY_VERSION__ === 'string' ? __ZAIPLAY_VERSION__ : 'dev';
 
 /**
- * Il carattere della prosa.
+ * La voce e il giro dei caratteri vivono quanto la pagina, non quanto la
+ * partita: sono l'altoparlante e una scelta di lettura, e non hanno ragione di
+ * nascere e morire con la sessione.
  *
- * Vive qui e non in `webui.ts` per la stessa ragione delle immagini: non e'
- * stato di gioco, e ricominciare non deve costringere a risceglierlo. Chi lo
- * applica e' il CSS, da un attributo sul `body` — cosi' vale anche per il
- * transcript gia' scorso, come per il debug.
- */
-let font: Font = 'charter';
-
-function impostaFont(f: Font): void {
-  font = f;
-  document.body.dataset.font = f;
-  aggiornaFontUI();
-}
-
-/**
- * Il bottone del carattere: un segno e, accanto, il nome di quello corrente.
- *
- * Il nome sta scritto sul bottone e non dietro un menu perche' e' meta' di cio'
- * che serve sapere — l'altra meta' e' come si legge, e quella e' sotto, nella
- * pagina. Tre nomi in un giro sono pochi abbastanza da non aver bisogno di
- * un elenco: si tocca finche' non si e' contenti, e a ogni tocco cambia sotto
- * gli occhi la stessa scena che si stava leggendo. Un elenco avrebbe chiesto un
- * pannello, e un pannello su telefono copre esattamente cio' su cui si sta
- * decidendo.
- */
-function aggiornaFontUI(): void {
-  const etichetta = `carattere: ${font}`;
-  for (const b of [btnFont, btnFontPannello]) {
-    clear(b);
-    const segno = icona('font');
-    if (segno) b.append(segno);
-    b.append(el('span', 'nome', font));
-    b.setAttribute('aria-label', etichetta);
-    b.title = etichetta;
-  }
-}
-
-// L'attributo si scrive subito, prima di qualsiasi partita: senza, comparirebbe
-// solo alla prima scelta, e un carattere ripreso dal deposito arriverebbe dopo
-// che la copertina si e' gia' disegnata. Il `:root` porta comunque lo stesso
-// default, cosi' nemmeno il primo istante resta senza.
-//
-// Qui **solo** l'attributo, e non `impostaFont`: quella disegna anche il
-// bottone, che a questo punto del file non esiste ancora — e' un `const` piu'
-// in basso, quindi leggerlo da qui non darebbe `undefined` ma un errore secco
-// che ferma il modulo. Il bottone si disegna da se' appena e' dichiarato.
-document.body.dataset.font = font;
-
-/**
- * Il backend attivo. Parte dal lessicale: deterministico, nessuna rete,
- * nessun byte scaricato — e con gli alias scritti in compilazione copre le
- * frasi centrali. L'embedder si accende dal pannello, quando serve saperlo.
- */
-let resolver: Resolver = new LexicalResolver();
-let nomeResolver = 'lessicale';
-let statoResolver = '';
-let configEmbedder: ConfigEmbedder = { ...CONFIG_DEFAULT };
-
-/**
- * La modalita' ascolto.
- *
- * La `Voce` sta qui, viva quanto la pagina: e' l'altoparlante, e non ha
- * ragione di nascere e morire con la partita. L'`Ascolto` invece nasce con
- * l'IR — i suoi registri sono "cosa e' gia' stato descritto in *questa*
- * partita" — mentre le impostazioni restano fuori da entrambi, perche'
- * ricominciare non deve costringere a riscegliere la voce.
+ * Il carattere si scrive sul `body` subito, prima di qualsiasi partita: senza,
+ * comparirebbe solo alla prima scelta e la copertina si sarebbe già disegnata
+ * con un altro. Il `:root` del foglio porta comunque lo stesso default, così
+ * nemmeno il primo istante resta scoperto.
  */
 const voce = new Voce();
-/**
- * Le immagini.
- *
- * Come la voce, vive quanto la pagina e non quanto la partita: dove stanno
- * gli asset non cambia perche' si ricomincia. La base si fissa quando si sa
- * da dove arriva l'IR — e resta indefinita se l'IR e' stato scelto a mano,
- * perche' in quel caso non esiste nessuna cartella storia intorno.
- */
-const immagini = new Immagini(undefined, true);
-/**
- * Il palco, cioe' dove l'inquadratura corrente sta ferma.
- *
- * Vive quanto la pagina per la stessa ragione delle immagini: e' un pezzo di
- * interfaccia, non un pezzo di partita. Quello che invece appartiene alla
- * partita — quale figura ci sta sopra — se ne va quando si ricomincia.
- */
-const palco = new Palco($('#palco'), immagini);
-let impAscolto: ImpostazioniAscolto = { ...ASCOLTO_DEFAULT };
-let ascolto = new Ascolto({ ir_version: '', id: '', title: '', start_scene: '', scenes: [] }, voce);
-
-/**
- * Accende un backend.
- *
- * Il lessicale non puo' fallire — non va da nessuna parte — quindi il caso
- * interessante e' l'altro, ed e' l'unico posto del player dove qualcosa
- * dipende dalla rete. Quando salta, si resta su quello che funzionava e si
- * dice **dove** e' saltato: senza, l'unica diagnosi che arriva all'utente e'
- * "Failed to fetch", che non dice ne' quale dei tre indirizzi era sbagliato
- * ne' se il problema e' suo.
- */
-async function scegliResolver(nome: string, riprova = false): Promise<void> {
-  if (nome === nomeResolver && !riprova) return;
-  try {
-    if (nome === 'lessicale') {
-      resolver = new LexicalResolver();
-    } else {
-      statoResolver = 'attivo i vettori…';
-      refreshPanel();
-      const { embed, etichetta } = await caricaEmbedder(configEmbedder, (m) => {
-        statoResolver = m;
-        refreshPanel();
-      });
-      resolver = makeResolver(nome, { embed, modello: etichetta });
+const fonts = new Fonts(
+  [byId<HTMLButtonElement>('btn-font'), byId<HTMLButtonElement>('btn-font-panel')],
+  // Dal piede del menu il giro chiude il pannello, e non è un'incoerenza con
+  // gli altri due interruttori che lo lasciano aperto: quelli si giudicano dal
+  // bottone — acceso o spento è scritto lì — mentre un carattere si giudica
+  // solo leggendoci, e su telefono il pannello copre per intero la pagina su
+  // cui si sta decidendo.
+  (b) => {
+    if (b.id === 'btn-font-panel') {
+      show(byId('panel'), false);
+      show(byId('scrim'), false);
     }
-    nomeResolver = nome;
-    statoResolver = '';
-  } catch (err) {
-    resolver = new LexicalResolver();
-    nomeResolver = 'lessicale';
-    statoResolver = spiega(err as Error);
+  },
+);
+void fonts;
+
+// --------------------------------------------------------------- avvio
+
+async function boot(): Promise<void> {
+  fitToKeyboard();
+
+  if (window.__ZAISTORY__) return startGame(window.__ZAISTORY__, { kind: 'embedded' });
+
+  const param = new URLSearchParams(location.search).get('story');
+  if (param) {
+    try {
+      const res = await fetch(param);
+      return startGame(await res.json(), { kind: 'url', href: param });
+    } catch (e) {
+      return loaderError(`non riesco a leggere ${param}: ${(e as Error).message}`);
+    }
   }
-  session?.ui.usaResolver(resolver);
-  refresh();
+
+  wireLoader();
+}
+
+function wireLoader(): void {
+  const drop = byId('drop');
+  const file = byId<HTMLInputElement>('file');
+  file.addEventListener('change', () => {
+    const f = file.files?.[0];
+    if (f) void f.text().then((t) => startText(t));
+  });
+  drop.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    drop.classList.add('over');
+  });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    drop.classList.remove('over');
+    const f = e.dataTransfer?.files?.[0];
+    if (f) void f.text().then((t) => startText(t));
+  });
+  byId('paste-go').addEventListener('click', () => startText(byId<HTMLTextAreaElement>('paste-area').value));
+}
+
+function startText(text: string): void {
+  try {
+    startGame(JSON.parse(text), { kind: 'hand' });
+  } catch (e) {
+    loaderError(e instanceof LoadError ? e.problems.join('\n') : (e as Error).message);
+  }
+}
+
+function loaderError(msg: string): void {
+  const box = byId('loader-err');
+  box.hidden = false;
+  box.textContent = msg;
+}
+
+function startGame(raw: unknown, origin: Origin): void {
+  let session: SessionType;
+  try {
+    session = new Session(loadStory(raw));
+  } catch (e) {
+    return loaderError(e instanceof LoadError ? e.problems.join('\n') : (e as Error).message);
+  }
+  show(byId('loader'), false);
+  show(byId('app'), true);
+  new Game(session, new Images(origin, hasPublishedImages(raw))).begin();
+}
+
+// ------------------------------------------------------------- la partita
+
+class Game {
+  private dock = byId('dock');
+  private transcript = new Transcript();
+  private stage: Stage;
+  private panel: Panel;
+  private listen: Listen;
+  private trace: string[] = [];
+  private choices: { index: number; text: string }[] = [];
+  private ended = false;
+  private key: string;
+
+  /** Il secondo interprete, quando è acceso. Parte spento: il lessicale è
+   * deterministico, non va da nessuna parte e non scarica un byte. */
+  private vettori?: VectorResolver;
+  private nomeResolver = 'lessicale';
+  private statoResolver = '';
+  private configEmbedder: ConfigEmbedder = { ...CONFIG_DEFAULT };
+  private impAscolto: ImpostazioniAscolto = { ...ASCOLTO_DEFAULT };
+
+  constructor(private session: SessionType, private images: Images) {
+    this.key = `zaistory:${session.idx.story.id}`;
+    this.stage = new Stage(session.idx, images, (src, cap) => this.fullscreen(src, cap));
+    this.listen = new Listen(session.idx, voce);
+    this.listen.configura(this.impAscolto);
+    this.panel = new Panel(session, {
+      trace: () => this.trace.join('\n'),
+      resume: (t) => void this.replay(t.split('\n')),
+      restart: () => this.restart(),
+      lookAt: (id) => void this.lookAt(id),
+      version: VERSION,
+      imagesWhy: images.available ? '' : images.why,
+      listen: this.listen,
+      onAscolto: (imp) => {
+        this.impAscolto = imp;
+        this.listen.configura(imp);
+        // Niente ridisegno: i controlli mostrano già il valore che l'utente ha
+        // appena mosso, e rifarli sotto il dito farebbe perdere il
+        // trascinamento di un cursore a metà.
+      },
+      resolver: () => ({ nome: this.nomeResolver, stato: this.statoResolver, config: this.configEmbedder }),
+      onResolver: (nome) => void this.scegliResolver(nome),
+      onConfigEmbedder: (c) => {
+        this.configEmbedder = c;
+        // Si riprova con la modalità che l'utente aveva scelto; se non ne aveva
+        // scelta nessuna coi vettori, l'ibrido è quella con cui si gioca.
+        void this.scegliResolver(this.nomeResolver === 'lessicale' ? 'ibrido' : this.nomeResolver, true);
+      },
+      onResetEmbedder: () => {
+        this.configEmbedder = { ...CONFIG_DEFAULT };
+        this.statoResolver = '';
+        this.panel.render();
+      },
+    });
+    this.panel.refreshLint();
+
+    const story = session.idx.story;
+    byId('story-title').textContent = story.title;
+    this.header();
+
+    this.wireToggles();
+    this.wireTasti();
+    this.wireMappa();
+  }
+
+  // ------------------------------------------------------------ copertina
+
+  begin(): void {
+    const story = this.session.idx.story;
+    this.transcript.clear();
+    this.listen.ricomincia();
+
+    if (story.cover) this.stage.frame(story.cover);
+    this.transcript.cover(story.title, story.description, story.global_style);
+
+    clear(this.dock);
+    const go = this.bottone('inizia', 'choice continue start');
+    go.addEventListener('click', () => {
+      void (async () => {
+        await premi(go);
+        // Il primo suono di una pagina deve venire da un gesto: la copertina
+        // si recita qui, non al caricamento, o il browser la zittisce.
+        this.listen.copertina();
+        const saved = localStorage.getItem(this.key);
+        if (saved) await this.replay(saved.split('\n'));
+        else {
+          this.transcript.clear();
+          this.render(this.session.begin());
+        }
+      })();
+    });
+    this.dock.append(go);
+  }
+
+  private restart(): void {
+    localStorage.removeItem(this.key);
+    this.session = new Session(this.session.idx);
+    this.trace = [];
+    this.ended = false;
+    this.listen.ricomincia();
+    this.stage.hide();
+    this.begin();
+  }
+
+  /** Rigioca una partita. Sul web una traccia esaurita non è un errore: è il
+   * punto in cui si riprende a giocare. */
+  private async replay(lines: string[]): Promise<void> {
+    this.session = new Session(this.session.idx);
+    this.trace = [];
+    this.ended = false;
+    this.listen.ricomincia();
+    this.transcript.clear();
+    // Muta, e non per pudore: rigiocare venti passi vuol dire venti risposte
+    // che nessuno ha chiesto adesso, e la voce le direbbe tutte prima di
+    // arrivare al punto in cui si riprende a giocare.
+    const eraAttiva = this.impAscolto.attiva;
+    this.listen.configura({ ...this.impAscolto, attiva: false });
+    this.render(this.session.begin(), true);
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) continue;
+      await this.feed(line, true);
+      if (this.ended) break;
+    }
+    this.listen.configura({ ...this.impAscolto, attiva: eraAttiva });
+    this.save();
+  }
+
+  // ---------------------------------------------------------------- turno
+
+  private async feed(line: string, silent = false): Promise<void> {
+    if (this.ended) return;
+    if (!silent) {
+      this.transcript.echo(line);
+      // La voce di prima si ferma: senza, un tocco veloce lascerebbe indietro
+      // la risposta al turno precedente, che continuerebbe a parlare sopra
+      // quella nuova.
+      this.listen.taci();
+    }
+    this.trace.push(line);
+
+    const n = Number(line);
+    const scelta = Number.isInteger(n) && n > 0 && this.session.inDialogue;
+    const res = scelta ? this.session.choose(n - 1) : await this.turno(line);
+    // «Guardati intorno» è il contrappeso del collapse acustico: a schermo la
+    // composizione resta scritta e si rilegge, all'orecchio si riapre
+    // chiedendola. Vedi `listen.ts`.
+    this.render(res, silent, !scelta && systemQuestion(line) === 'look_around');
+    if (!silent) this.save();
+  }
+
+  /**
+   * Un turno di prosa libera: il lessicale, e — se acceso — il secondo
+   * interprete.
+   *
+   * L'ordine non è negoziabile e sta scritto in `core/vectors.ts`: il lessicale
+   * decide sempre per primo, i vettori parlano solo dove lui è muto, e la scelta
+   * del fallback è l'unico posto in cui decidono sempre — perché è l'unico in
+   * cui sbagliare non cambia niente.
+   */
+  private async turno(line: string): Promise<TurnResult> {
+    const v = this.vettori;
+    if (!v) return this.session.input(line);
+
+    const cosa = this.session.preview(line);
+    // Una domanda sull'interfaccia non è un tentativo di agire sul mondo, e
+    // nemmeno in modalità di misura ha senso passarla ai vettori.
+    if (cosa === 'sistema') return this.session.input(line);
+    if (v.modo === 'ibrido' && cosa !== 'muto') return this.session.input(line);
+
+    try {
+      const { actions, exits } = this.session.candidates();
+      const vicina = await v.vicina(this.session.idx, line, actions, exits);
+      if (vicina) return this.session.takeResolution(vicina.res as Resolution);
+      const scelto = await v.fallback(line, this.session.fallbackPool());
+      return this.session.input(line, { chooseFallback: () => scelto });
+    } catch (e) {
+      // Un modello che smette di rispondere a metà partita non deve fermare la
+      // partita: si torna al lessicale e si dice dove è saltato.
+      this.statoResolver = spiega(e as Error);
+      this.panel.render();
+      return this.session.input(line);
+    }
+  }
+
+  private render(res: TurnResult, silent = false, riosserva = false): void {
+    const snap = this.session.snapshot();
+    // Prima dove siamo, poi gli stacchi: i beat con un'inquadratura salgono sul
+    // palco in ordine, e l'ultimo resta. Al contrario — il contesto per ultimo —
+    // l'inquadratura di base della fase cancellerebbe a ogni turno lo stacco
+    // appena fatto.
+    this.stage.setContext(snap.place, snap.phase);
+    for (const e of res.events) if (e.beat) this.stage.frame(e.beat, snap.place?.id);
+
+    this.transcript.events(res.events);
+    this.choices = res.choices ?? [];
+    if (!silent) {
+      if (riosserva) this.listen.riosserva(snap.place, snap.phase);
+      this.listen.turno(res.events, snap.place, snap.phase);
+    }
+    this.header();
+
+    if (res.ended) {
+      this.ended = true;
+      this.transcript.ending(res.ended.label);
+      if (!silent) this.listen.finale(res.ended.label);
+      clear(this.dock);
+      const again = this.bottone('ricomincia', 'choice continue start');
+      again.addEventListener('click', () => {
+        void premi(again).then(() => this.restart());
+      });
+      this.dock.append(again);
+      return;
+    }
+    this.paintDock(res, silent);
+  }
+
+  /**
+   * La riga sotto il titolo: dove si è, e — col debug — di quale file si tratta.
+   *
+   * Due righe per lo stesso posto, come per i nomi dei campi. A chi gioca
+   * interessa dove si trova; la versione del formato e il conto del linter sono
+   * informazioni sul *file*, non sulla storia, e stanno col debug.
+   */
+  private header(): void {
+    const s = this.session.snapshot();
+    const story = this.session.idx.story;
+    const umano: string[] = [];
+    if (s.place) umano.push(displayName(s.place));
+
+    const meta = [`zaistory ${story.zaistory_version}`, story.id];
+    if (s.place) meta.push(`${s.place.id}/${s.phase?.id ?? '—'}`);
+
+    const box = byId('story-meta');
+    clear(box);
+    box.append(el('span', 'umano', umano.join(' · ')), el('span', 'ir', meta.join(' · ')));
+  }
+
+  // ----------------------------------------------------------------- dock
+
+  private paintDock(res: TurnResult, silent = false): void {
+    clear(this.dock);
+
+    if (this.choices.length) {
+      // Nel dialogo l'elenco delle battute si vede sempre: si agisce a parole,
+      // si parla a scelte.
+      for (const c of this.choices) {
+        const b = el('button', 'choice');
+        b.append(el('span', 'idx', String(c.index + 1)), document.createTextNode(c.text));
+        b.addEventListener('click', () => void this.premi(b, () => this.feed(String(c.index + 1))));
+        this.dock.append(b);
+      }
+      return;
+    }
+
+    if (res.suggestedExit) {
+      // Quando gli enigmi sono finiti non c'è più niente da proteggere, e
+      // continuare a chiedere di indovinare la frase giusta è solo un muro.
+      const uscita = res.suggestedExit;
+      const b = this.bottone(uscita.label, 'choice continue');
+      const vai = () => void this.premi(b, () => this.feed(uscita.label));
+      b.addEventListener('click', vai);
+      this.dock.append(b);
+      // L'unica parte del dock che si recita, e l'unico posto in cui
+      // l'avanzamento automatico ha senso: qui il passo è uno solo.
+      if (!silent) {
+        this.listen.uscite([uscita.label]);
+        if (this.listen.attiva && this.impAscolto.avanzamento) {
+          voce.quandoFinisce(() => {
+            if (this.dock.contains(b)) vai();
+          });
+        }
+      }
+    }
+
+    const row = el('form', 'riga-input');
+    const input = el('input', 'campo');
+    input.type = 'text';
+    input.placeholder = 'scrivi cosa fare';
+    input.autocomplete = 'off';
+    input.autocapitalize = 'none';
+    input.spellcheck = false;
+    // Il palco si ritira mentre si scrive: chi ha il dito sui tasti non sta
+    // guardando la figura, sta leggendo cosa è appena successo per decidere
+    // cosa scrivere.
+    // ...ma solo dove i tasti sono davvero sullo schermo. Con un mouse il
+    // fuoco nel campo non copre niente, e ritirare il palco lì vorrebbe dire
+    // far sparire l'inquadratura per tutta la partita: il fuoco, su desktop, il
+    // campo non lo perde mai.
+    const tastiSuSchermo = !matchMedia('(pointer: fine)').matches;
+    if (tastiSuSchermo) {
+      input.addEventListener('focus', () => document.body.classList.add('tastiera'));
+      input.addEventListener('blur', () => document.body.classList.remove('tastiera'));
+    }
+    input.addEventListener('keydown', (e) => {
+      // I numeri sono la scorciatoia delle scelte, ma solo a campo vuoto:
+      // scrivere «2 passi indietro» non deve scegliere la seconda battuta.
+      if (!input.value && this.choices.length && /^[1-9]$/.test(e.key)) {
+        e.preventDefault();
+        void this.feed(e.key);
+      }
+    });
+
+    const send = el('button', 'invia', '▸');
+    send.type = 'submit';
+    send.setAttribute('aria-label', 'esegui');
+
+    const mappa = el('button', 'mappa-apri');
+    mappa.type = 'button';
+    mappa.title = 'dove andare';
+    mappa.setAttribute('aria-label', 'dove andare');
+    const segno = icona('map');
+    if (segno) mappa.append(segno);
+    mappa.addEventListener('click', () => this.apriMappa());
+
+    row.append(input, send, mappa);
+    row.onsubmit = (e) => {
+      e.preventDefault();
+      const v = input.value.trim();
+      if (!v) return;
+      input.value = '';
+      void this.feed(v);
+    };
+    this.dock.append(row);
+
+    // Il fuoco automatico vale solo dove la tastiera non costa niente: su un
+    // telefono rimettercelo dopo una frase che non ha fatto match significa
+    // riaprire i tasti addosso alla risposta appena arrivata.
+    if (matchMedia('(pointer: fine)').matches) input.focus();
+  }
+
+  /** Il segno davanti a «inizia», «continua» e all'uscita rimasta: cresce da
+   * solo senza portarsi dietro il bottone, ed è per questo che sta in un suo
+   * `span`. */
+  private bottone(testo: string, cls: string): HTMLButtonElement {
+    const b = el('button', cls);
+    b.type = 'button';
+    b.append(el('span', 'segno', '▸'), document.createTextNode(testo));
+    return b;
+  }
+
+  /** Mentre un tocco è in corso il dock non accetta altro: due azioni partite
+   * insieme sarebbero due passi di storia. */
+  private async premi(b: HTMLElement, poi: () => void | Promise<void>): Promise<void> {
+    this.dock.classList.add('bloccato');
+    await premi(b);
+    this.dock.classList.remove('bloccato');
+    await poi();
+  }
+
+  private async lookAt(itemId: string): Promise<void> {
+    const it = this.session.idx.items.get(itemId);
+    if (it) await this.feed(`guarda ${it.name}`);
+  }
+
+  private save(): void {
+    try {
+      localStorage.setItem(this.key, this.trace.join('\n'));
+    } catch {
+      // Una scheda in incognito, o lo spazio finito: non è un motivo per
+      // fermare la partita.
+    }
+  }
+
+  // ----------------------------------------------------------------- mappa
+
+  /**
+   * La mappa: ci si muove a scelte, come si parla a scelte.
+   *
+   * Non è una seconda interfaccia che scavalca il parser — «vai al magazzino»
+   * scritto a mano fa la stessa identica cosa — è la scorciatoia che salta la
+   * digitazione, e per questo il bottone che la apre sta accanto al campo e non
+   * in barra. Una destinazione chiusa non sparisce: si vede che c'è una strada
+   * e che adesso non si passa.
+   */
+  private apriMappa(): void {
+    const mappa = byId('mappa');
+    const corpo = byId('mappa-corpo');
+    clear(corpo);
+    const snap = this.session.snapshot();
+    const idx = this.session.idx;
+
+    if (!snap.exits.length) {
+      corpo.append(el('p', 'empty', 'Non conosci nessuna strada da qui.'));
+    } else {
+      const grid = el('div', 'luoghi');
+      for (const e of snap.exits) {
+        const dest = idx.places.get(e.to);
+        const aperta = this.session.state.meets(e.condition);
+        const b = el('button', `luogo${aperta.ok ? '' : ' chiuso'}`);
+        b.type = 'button';
+        const img = this.images.usable ? this.images.element(dest?.image, dest?.name ?? e.to) : undefined;
+        if (img) b.append(img);
+        b.append(el('span', 'nome', e.label || displayName(dest ?? { id: e.to })));
+        b.append(el('span', 'stato', aperta.ok ? 'aperto' : 'chiuso'));
+        b.addEventListener('click', () => {
+          void (async () => {
+            await premi(b);
+            this.chiudiMappa();
+            await this.feed(e.label || displayName(dest ?? { id: e.to }));
+          })();
+        });
+        grid.append(b);
+      }
+      corpo.append(grid);
+    }
+    show(mappa, true);
+    show(byId('scrim'), true);
+  }
+
+  private chiudiMappa(): void {
+    show(byId('mappa'), false);
+    show(byId('scrim'), false);
+  }
+
+  private wireMappa(): void {
+    byId('btn-chiudi-mappa').addEventListener('click', () => this.chiudiMappa());
+    // Lo stesso velo chiude la mappa e il pannello: sono due cassetti della
+    // stessa applicazione, e due modi di chiudersi si noterebbero.
+    byId('scrim').addEventListener('click', () => this.chiudiMappa());
+  }
+
+  // ------------------------------------------------------------ interruttori
+
+  private wireToggles(): void {
+    const debugButtons = [byId<HTMLButtonElement>('btn-debug'), byId<HTMLButtonElement>('btn-debug-panel')];
+    const setDebug = (on: boolean) => {
+      document.body.classList.toggle('debug', on);
+      for (const b of debugButtons) b.setAttribute('aria-pressed', String(on));
+      const snap = this.session.snapshot();
+      this.stage.setContext(snap.place, snap.phase);
+      this.panel.suDebug(on);
+    };
+    for (const b of debugButtons) {
+      b.addEventListener('click', () => setDebug(b.getAttribute('aria-pressed') !== 'true'));
+    }
+
+    // La scelta fra testo e immagini compare solo quando c'è davvero qualcosa
+    // da scegliere: un interruttore che non cambia niente è peggio della sua
+    // assenza — chi lo trova lo prova, non vede succedere nulla e conclude che
+    // il player è rotto.
+    const imgButtons = [byId<HTMLButtonElement>('btn-immagini'), byId<HTMLButtonElement>('btn-immagini-panel')];
+    for (const b of imgButtons) {
+      // Il segno è quello che il trascritto usa già per i prompt d'immagine: la
+      // stessa cosa deve avere lo stesso disegno ovunque compaia.
+      const segno = icona('image');
+      if (segno) b.append(segno);
+      b.hidden = !this.images.available;
+      b.addEventListener('click', () => {
+        const on = b.getAttribute('aria-pressed') !== 'true';
+        this.images.off = !on;
+        for (const o of imgButtons) {
+          o.setAttribute('aria-pressed', String(on));
+          const etichetta = on ? 'immagini: accese' : 'immagini: spente (solo i prompt)';
+          o.setAttribute('aria-label', etichetta);
+          o.title = etichetta;
+        }
+        const snap = this.session.snapshot();
+        this.stage.setContext(snap.place, snap.phase);
+      });
+    }
+  }
+
+  /**
+   * Frecce e cifre sul dock.
+   *
+   * È il modo naturale di scorrere un elenco di battute — ed è l'elenco delle
+   * battute il posto dove serve davvero, perché nel dialogo le voci *sono*
+   * l'interfaccia, mentre nelle azioni si scrive.
+   *
+   * Si sposta il fuoco vero del documento invece di tenere una selezione per
+   * conto proprio: così l'invio lo gestisce il bottone da solo, lo screen reader
+   * annuncia la voce, e il contorno di `:focus-visible` che c'è già fa da
+   * evidenziazione.
+   */
+  private wireTasti(): void {
+    const voci = () => [...this.dock.querySelectorAll<HTMLButtonElement>('button.choice:not([disabled])')];
+
+    document.addEventListener('keydown', (e) => {
+      if (staScrivendo(e)) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        const v = voci();
+        if (!v.length) return;
+        e.preventDefault();
+        const i = v.indexOf(document.activeElement as HTMLButtonElement);
+        const giu = e.key === 'ArrowDown';
+        v[i < 0 ? (giu ? 0 : v.length - 1) : (i + (giu ? 1 : -1) + v.length) % v.length].focus();
+        return;
+      }
+      // Le cifre restano: sono le stesse stampate accanto a ogni voce.
+      if (/^[1-9]$/.test(e.key)) {
+        const b = voci()[Number(e.key) - 1];
+        if (b) {
+          e.preventDefault();
+          b.click();
+        }
+      }
+    });
+  }
+
+  // ---------------------------------------------------- il secondo interprete
+
+  /**
+   * Accende un backend.
+   *
+   * Il lessicale non può fallire — non va da nessuna parte — quindi il caso
+   * interessante è l'altro, ed è l'unico posto del player dove qualcosa dipende
+   * dalla rete. Quando salta, si resta su quello che funzionava e si dice
+   * **dove** è saltato: senza, l'unica diagnosi che arriva a chi gioca è
+   * «Failed to fetch», che non dice né quale dei tre indirizzi fosse sbagliato
+   * né se il problema sia suo.
+   */
+  private async scegliResolver(nome: string, riprova = false): Promise<void> {
+    if (nome === this.nomeResolver && !riprova) return;
+    try {
+      if (nome === 'lessicale') {
+        this.vettori = undefined;
+      } else {
+        this.statoResolver = 'attivo i vettori…';
+        this.panel.render();
+        const { embed, etichetta } = await caricaEmbedder(this.configEmbedder, (m) => {
+          this.statoResolver = m;
+          this.panel.render();
+        });
+        this.vettori = new VectorResolver(embed, nome === 'vettori' ? 'puro' : 'ibrido', etichetta);
+      }
+      this.nomeResolver = nome;
+      this.statoResolver = '';
+    } catch (err) {
+      this.vettori = undefined;
+      this.nomeResolver = 'lessicale';
+      this.statoResolver = spiega(err as Error);
+    }
+    this.panel.render();
+  }
+
+  private fullscreen(src: string, caption: string): void {
+    const box = el('div', 'pieno');
+    const img = new Image();
+    img.src = src;
+    box.append(img);
+    if (caption) box.append(el('p', 'didascalia', caption));
+    // Si chiude con un tocco ovunque: su un telefono un popup che si chiude in
+    // un punto solo è il modo più rapido di far uscire qualcuno dalla partita.
+    box.addEventListener('click', () => box.remove());
+    document.body.append(box);
+  }
 }
 
 /**
@@ -197,564 +697,63 @@ async function scegliResolver(nome: string, riprova = false): Promise<void> {
  *
  * Il caso che capita davvero: la pagina pubblicata gira sotto una politica che
  * blocca le richieste verso l'esterno, quindi la libreria si carica ma i pesi
- * del modello no. Chi lo incontra vede "Failed to fetch" e non ha nessun modo
- * di sapere che il problema non e' il suo indirizzo.
+ * del modello no. Chi lo incontra vede «Failed to fetch» e non ha nessun modo
+ * di sapere che il problema non è il suo indirizzo.
  */
 function spiega(err: Error): string {
   const msg = err.message || String(err);
   if (/fetch|network|load|import|cors|blocked/i.test(msg)) {
     return (
       `Non riesco a caricarlo: ${msg}\n\n` +
-      "Se stai giocando dalla pagina pubblicata, e' probabile che sia questo: quella pagina non puo' " +
-      "fare richieste verso l'esterno, quindi il modello non si scarica. Il backend a vettori funziona " +
-      'aprendo il file del player in locale, o servendolo da http — oppure puntando gli indirizzi qui ' +
-      'sotto a una copia raggiungibile.'
+      'Se stai giocando dalla pagina pubblicata, è probabile che sia questo: quella pagina non può fare ' +
+      'richieste verso l’esterno, quindi il modello non si scarica. Il backend a vettori funziona aprendo il ' +
+      'file del player in locale, o servendolo da http — oppure puntando gli indirizzi qui sotto a una copia ' +
+      'raggiungibile.'
     );
   }
   return `Non riesco ad attivarlo: ${msg}`;
 }
 
-interface Session {
-  story: Story;
-  findings: Finding[];
-  engine: Engine;
-  ui: WebUI;
-
-}
-
-// --------------------------------------------------------------- pannello
-
-function panelContext(s: Session): PanelContext {
-  return {
-    story: s.story,
-    findings: s.findings,
-    ui: s.ui,
-    trace: () => s.engine.trace(),
-    // Ricominciare e rigiocare fanno ripartire la partita *dietro* al
-    // pannello: lasciarlo aperto significa coprire con un pannello di
-    // ispezione la prima scena che si voleva vedere.
-    onRestart: ricomincia,
-    onReplay: (text) => {
-      closePanel();
-      start(s.story, s.findings, new ScriptDriver(parseScript(text)));
-    },
-    onLoadOther: () => {
-      closePanel();
-      showLoader();
-    },
-    // Guardare una cosa che si ha in mano: il menu si chiude perche' la
-    // risposta e' testo della storia, e il posto del testo della storia e' il
-    // transcript, non un pannello che gli sta sopra.
-    onEsamina: (id) => {
-      closePanel();
-      s.ui.esaminaOggetto(id);
-    },
-    debug: document.body.classList.contains('debug'),
-    // Il codice si ricalcola a ogni disegno del pannello, che e' anche a ogni
-    // mossa: quello che si copia e' sempre la partita fino a un istante fa.
-    codiceSalvataggio: () =>
-      scriviSalvataggio({
-        salvato: new Date().toISOString(),
-        partita: {
-          story_id: s.story.id,
-          ir_version: s.story.ir_version,
-          title: s.story.title,
-          trace: s.engine.trace(),
-        },
-        config: configPlayerSerializzabile(configCorrente()),
-      }),
-    // Le impostazioni prima della partita: `start` fa nascere un `Ascolto`
-    // nuovo e lo configura con quelle correnti, quindi applicarle dopo
-    // significherebbe cominciare la partita con la voce sbagliata.
-    onCarica: (salv, cosa) => {
-      if (cosa.config) applicaConfig(leggiConfigPlayer(salv.config, configCorrente()));
-      if (cosa.partita && salv.partita) {
-        closePanel();
-        start(s.story, s.findings, new ScriptDriver([...salv.partita.trace]));
-      }
-    },
-    immagini,
-    ascolto,
-    onAscolto: (imp) => {
-      impAscolto = imp;
-      ascolto.configura(imp);
-      // Niente `refreshPanel()`: i controlli mostrano gia' il valore che
-      // l'utente ha appena mosso, e ridisegnarli sotto il dito farebbe
-      // perdere il trascinamento di un cursore a meta'.
-    },
-    resolver: nomeResolver,
-    statoResolver,
-    configEmbedder,
-    onResolver: (nome) => void scegliResolver(nome),
-    onConfigEmbedder: (c) => {
-      configEmbedder = c;
-      // Si riprova con la modalita' che l'utente aveva scelto; se non ne aveva
-      // scelta nessuna coi vettori, l'ibrido e' quella con cui si gioca.
-      void scegliResolver(nomeResolver === 'lessicale' ? 'ibrido' : nomeResolver, true);
-    },
-    onResetEmbedder: () => {
-      configEmbedder = { ...CONFIG_DEFAULT };
-      statoResolver = '';
-      refreshPanel();
-    },
-  };
-}
-
-// ------------------------------------------------------- impostazioni del player
-
 /**
- * Le impostazioni vive, raccolte dai tre posti dove stanno.
- *
- * Non hanno una casa unica in memoria di proposito: ognuna vive accanto a chi
- * la usa. Questa funzione e' l'unico punto in cui si guardano insieme, perche'
- * e' l'unico momento in cui servono insieme — quando si salvano.
- */
-function configCorrente(): ConfigPlayer {
-  return {
-    ascolto: impAscolto,
-    embedder: configEmbedder,
-    resolver: nomeResolver,
-    immagini: immagini.accese,
-    font,
-    debug: document.body.classList.contains('debug'),
-  };
-}
-
-function applicaConfig(c: ConfigPlayer): void {
-  impAscolto = c.ascolto;
-  ascolto.configura(impAscolto);
-  immagini.imposta(c.immagini);
-  impostaFont(c.font);
-  palco.rileggi();
-  aggiornaImmaginiUI();
-  configEmbedder = c.embedder;
-  impostaDebug(c.debug);
-  // Il backend si riaccende solo se cambia davvero: `scegliResolver` esce
-  // subito quando il nome e' lo stesso, e cosi' il pannello non si ridisegna
-  // sotto le dita di chi ha appena premuto «carica».
-  void scegliResolver(c.resolver);
-}
-
-/**
- * Ricominciare da capo.
- *
- * Sta qui e non nel pannello perche' ha due punti di partenza — la scheda
- * principale, sotto l'inventario, e la scheda «traccia» — e sono la stessa
- * cosa: la domanda si fa una volta sola, in `chiediSeRicominciare`, e la
- * partita riparte in un modo solo.
- */
-function ricomincia(): void {
-  const s = session;
-  if (!s) return;
-  closePanel();
-  // La partita salvata se ne va **prima** che la nuova cominci: chi ha appena
-  // confermato «ricomincia» non deve ritrovarsi quella di prima al prossimo
-  // ricaricamento della pagina.
-  dimenticaRipresa(s.story);
-  start(s.story, s.findings);
-}
-
-/**
- * Testo o immagini: l'interruttore, non piu' una scheda del menu.
- *
- * Sta in barra e nel piede del menu accanto al debug, che e' l'altro
- * interruttore della stessa specie: due modi di guardare la stessa storia, e
- * si scelgono guardando quello che cambia. Dentro un pannello che su telefono
- * copre tutto lo schermo, invece, si sceglieva alla cieca — il menu si
- * chiudeva apposta per far vedere l'effetto.
- *
- * Il menu resta chiuso anche adesso se era aperto: si e' toccato un
- * interruttore, non si e' entrati in una scheda.
- */
-function impostaImmagini(on: boolean): void {
-  immagini.imposta(on);
-  closePanel();
-  // Le immagini gia' stampate nel transcript restano: quello e' il resoconto
-  // di cio' che e' successo, non una vista che si ridisegna, e l'interruttore
-  // vale da qui in avanti come tutto il resto. Il palco no: quello e' una
-  // vista, e obbedisce subito. Non sparisce pero' — in solo testo la testa
-  // dello schermo continua a dire dove siamo, con i prompt al posto della
-  // figura e le iniziali al posto delle facce.
-  palco.rileggi();
-  // La copertina e' una schermata come il palco, non resoconto: se ci si sta
-  // sopra deve obbedire subito. Sotto, il transcript gia' stampato resta.
-  session?.ui.rileggiCopertina();
-  aggiornaImmaginiUI();
-}
-
-/**
- * L'interruttore si vede solo quando c'e' davvero qualcosa da scegliere.
- *
- * Un interruttore che non cambia niente e' peggio della sua assenza: chi lo
- * trova lo prova, non vede succedere nulla e conclude che il player e' rotto.
- * Quando non c'e' scelta sparisce, e il perche' resta scritto nel menu.
- */
-function aggiornaImmaginiUI(): void {
-  const scelta = session ? !perNiente({ immagini, story: session.story }) : false;
-  const on = immagini.accese;
-  for (const b of [btnImmagini, btnImmaginiPannello]) {
-    b.hidden = !scelta;
-    b.setAttribute('aria-pressed', String(on));
-    const etichetta = on ? 'immagini: accese' : 'immagini: spente (solo i prompt)';
-    b.setAttribute('aria-label', etichetta);
-    b.title = etichetta;
-  }
-}
-
-function impostaDebug(on: boolean): void {
-  document.body.classList.toggle('debug', on);
-  for (const b of [btnDebug, btnDebugPannello]) b.setAttribute('aria-pressed', String(on));
-  // Spegnendo il debug le schede di ispezione spariscono dalla striscia: se si
-  // era fermi su una di quelle, restare li' vorrebbe dire guardare un pannello
-  // che non ha piu' nessuna linguetta accesa.
-  if (!on && TAB_DEBUG.includes(tab)) selezionaTab('principale');
-  else refreshPanel();
-}
-
-function refreshPanel(): void {
-  if (panel.hidden || !session) return;
-  renderPanel(panelBody, tab, panelContext(session));
-}
-
-// ----------------------------------------------------------- barra in testa
-
-/**
- * La riga sotto il titolo: che cosa si sta giocando (IR, linter, script) e a
- * che punto si e' arrivati (scena, beat).
- *
- * La scena porta il suo numero d'ordine in `scenes[]`, non quante se ne sono
- * viste: e' la stessa base del totale che le sta accanto, e resta vera anche
- * ripassando da una scena gia' visitata. Prima che la partita cominci — cioe'
- * sulla copertina — non c'e' nessuna scena corrente e resta il solo totale.
- */
-function refreshHeader(): void {
-  if (!session) return;
-  const { story, findings, ui } = session;
-
-  const i = ui.scene ? story.scenes.findIndex((s) => s.id === ui.scene?.id) : -1;
-  const dove = i >= 0 ? `scena ${i + 1}/${story.scenes.length}` : `${story.scenes.length} scene`;
-
-  // Due righe per lo stesso posto, come per i nomi dei campi. A chi gioca
-  // interessa a che punto e' — e, se sta rigiocando una traccia, che la sta
-  // rigiocando. La versione dell'IR e il conto del linter sono informazioni
-  // sul *file*, non sulla storia: stanno col debug.
-  // A chi gioca la barra dice **dove si e'**, non a che punto della lista.
-  // Il titolo della scena e' un nome d'autore e appartiene alla storia; il suo
-  // numero e i passaggi che le restano sono misure del file, e sapere che si e'
-  // alla 41esima di 43 e' un anticipo su come andra' a finire che nessuno ha
-  // chiesto. Quelli restano col debug, dove servono per sapere dove si e'
-  // mentre si collauda.
-  //
-  // Una scena senza titolo non fa comparire l'id al suo posto: quello e' una
-  // chiave per cercare nel JSON, non un nome da leggere.
-  const umano: string[] = [];
-  if (ui.scene?.title) umano.push(`Scena: ${ui.scene.title}`);
-
-  const ir = [`IR ${story.ir_version}`, dove];
-  if (ui.beatCorrente && ui.beatTotali) ir.push(`beat ${ui.beatCorrente}/${ui.beatTotali}`);
-  const { errors, warnings } = countFindings(findings);
-  if (errors || warnings) ir.push(`linter: ${errors} errori, ${warnings} avvisi`);
-
-  // Il marchio sparisce quando la traccia si esaurisce e la partita torna in
-  // mano al giocatore: da quel momento non e' piu' una partita rigiocata.
-  if (ui.sottoTraccia) {
-    umano.push('traccia');
-    ir.push('traccia');
-  }
-
-  const meta = $('#story-meta');
-  clear(meta);
-  meta.append(el('span', 'umano', umano.join(' · ')), el('span', 'ir', ir.join(' · ')));
-}
-
-/**
- * Stato e scena sono cambiati: si aggiornano insieme la barra e il pannello, e
- * la partita finisce nel deposito del browser.
- *
- * Qui e non altrove perche' questo e' l'unico punto per cui passano *tutti* i
- * cambiamenti di stato: un salvataggio agganciato ai singoli gestori
- * dimenticherebbe esattamente il caso che non si e' pensato.
- */
-function refresh(): void {
-  refreshHeader();
-  refreshPanel();
-  if (session) {
-    salvaRipresa(session.story, session.engine.trace(), configPlayerSerializzabile(configCorrente()));
-  }
-}
-
-function openPanel(): void {
-  panel.hidden = false;
-  scrim.hidden = false;
-  refreshPanel();
-}
-
-function closePanel(): void {
-  panel.hidden = true;
-  scrim.hidden = true;
-}
-
-$('#btn-panel').addEventListener('click', () => (panel.hidden ? openPanel() : closePanel()));
-$('#btn-close-panel').addEventListener('click', closePanel);
-scrim.addEventListener('click', closePanel);
-
-function selezionaTab(nome: Tab): void {
-  tab = nome;
-  for (const b of document.querySelectorAll<HTMLButtonElement>('#tabs button')) {
-    b.classList.toggle('on', b.dataset.tab === nome);
-  }
-  refreshPanel();
-}
-
-for (const b of document.querySelectorAll<HTMLButtonElement>('#tabs button')) {
-  b.addEventListener('click', () => selezionaTab(b.dataset.tab as Tab));
-}
-
-// Il carattere della prosa: non un interruttore ma un giro. Sta in due posti
-// come il debug e le immagini — in barra sotto il pollice mentre si gioca, e
-// nel piede del menu. Su telefono verticale il secondo e' l'unico che resta:
-// li' la barra tiene solo il titolo, e i comandi si vanno a cercare nel menu.
-// Che sia un giro e non un interruttore non cambia niente per la copia: il
-// nome del carattere corrente e' scritto su tutti e due i bottoni, quindi
-// anche da menu chiuso non c'e' uno stato nascosto da indovinare.
-const btnFont = $<HTMLButtonElement>('#btn-font');
-const btnFontPannello = $<HTMLButtonElement>('#btn-font-panel');
-for (const b of [btnFont, btnFontPannello]) {
-  b.addEventListener('click', () => {
-    const i = FONT_VALIDI.indexOf(font);
-    impostaFont(FONT_VALIDI[(i + 1) % FONT_VALIDI.length]);
-    // Dal piede del menu il giro chiude il pannello, e non e' un'incoerenza con
-    // gli altri due che lo lasciano aperto: quelli si giudicano dal bottone —
-    // acceso o spento e' scritto li' — mentre un carattere si giudica solo
-    // leggendoci, e su telefono il pannello copre per intero la pagina su cui
-    // si sta decidendo. Chiudere e' il gesto che fa vedere la scelta; restare
-    // aperti vorrebbe dire toccare al buio e poi chiudere per controllare.
-    // Il bottone in barra non chiude niente perche' li' la pagina si vede gia'.
-    if (b === btnFontPannello) closePanel();
-    // La partita non si tocca: e' una scelta su come si guarda, e finisce nelle
-    // impostazioni insieme alle immagini e alla voce.
-    refresh();
-  });
-}
-aggiornaFontUI();
-
-// Due bottoni per lo stesso interruttore: quello in barra, sempre a portata di
-// pollice mentre si gioca, e quello in fondo al menu accanto alla versione —
-// che e' dove lo si va a cercare quando il player lo si sta usando e non
-// programmando.
-const btnDebug = $<HTMLButtonElement>('#btn-debug');
-const btnDebugPannello = $<HTMLButtonElement>('#btn-debug-panel');
-for (const b of [btnDebug, btnDebugPannello]) {
-  b.addEventListener('click', () => impostaDebug(!document.body.classList.contains('debug')));
-}
-
-// Lo stesso interruttore in due posti, come il debug: in barra sotto il
-// pollice mentre si gioca, e nel piede del menu dove lo si va a cercare.
-const btnImmagini = $<HTMLButtonElement>('#btn-immagini');
-const btnImmaginiPannello = $<HTMLButtonElement>('#btn-immagini-panel');
-for (const b of [btnImmagini, btnImmaginiPannello]) {
-  // Il segno e' quello che il transcript usa gia' per i prompt d'immagine: la
-  // stessa cosa deve avere lo stesso disegno ovunque compaia.
-  const segno = icona('image');
-  if (segno) b.append(segno);
-  b.addEventListener('click', () => impostaImmagini(!immagini.accese));
-}
-
-// ---------------------------------------------------------------- partita
-
-function start(story: Story, findings: Finding[], script?: ScriptDriver, ripresa = false): void {
-  session?.ui.cancel();
-  clear(transcript);
-  clear(dock);
-  // L'ultima inquadratura della partita di prima non e' la prima di questa: il
-  // palco riparte vuoto e ricompare da se' alla prossima immagine.
-  palco.svuota();
-
-  // Una partita nuova, una memoria nuova: i registri del collapse acustico
-  // sono lunghi quanto la partita, come quello visivo dentro `WebUI`.
-  ascolto = new Ascolto(story, voce);
-  ascolto.configura(impAscolto);
-
-  const ui = new WebUI({
-    story,
-    resolver,
-    transcript,
-    dock,
-    onUpdate: refresh,
-    script,
-    ripresa,
-    ascolto,
-    immagini,
-    palco,
-  });
-  const engine = new Engine(story, ui);
-  session = { story, findings, engine, ui };
-
-  $('#story-title').textContent = story.title;
-  refreshHeader();
-  aggiornaImmaginiUI();
-
-  const { errors, warnings } = countFindings(findings);
-  if (errors || warnings) {
-    lintBadge.hidden = false;
-    lintBadge.textContent = String(errors || warnings);
-    lintBadge.classList.toggle('warn', errors === 0);
-  } else {
-    lintBadge.hidden = true;
-  }
-
-  loader.hidden = true;
-  app.hidden = false;
-
-  // La copertina precede la partita e si chiude con un tocco; una partita
-  // rifiutata (ricomincia, cambio IR) risolve con QuitError, che non e' un
-  // errore da mostrare ma la partita precedente che si chiude.
-  void (async () => {
-    await ui.intro();
-    await engine.run();
-  })().catch(() => {});
-}
-
-// -------------------------------------------------------------- caricamento
-
-function showLoader(): void {
-  session?.ui.cancel();
-  loader.hidden = false;
-  app.hidden = true;
-  loaderErr.hidden = true;
-}
-
-function load(data: unknown | string): void {
-  try {
-    const story = typeof data === 'string' ? parseStory(data) : validateStory(data);
-
-    // La partita di prima, se questa pagina ne aveva una. Le impostazioni si
-    // riprendono con lei — meno il backend del resolver, che vale un download
-    // e va chiesto: `leggiConfigPlayer` lo legge, e qui lo si rimette su
-    // quello che c'e' adesso.
-    const salv = leggiRipresa(story);
-    if (salv?.config) {
-      applicaConfig({ ...leggiConfigPlayer(salv.config, configCorrente()), resolver: nomeResolver });
-    }
-    start(story, lintStory(story), salv?.partita ? new ScriptDriver([...salv.partita.trace]) : undefined, true);
-  } catch (err) {
-    loader.hidden = false;
-    app.hidden = true;
-    loaderErr.hidden = false;
-    loaderErr.textContent =
-      err instanceof IRError ? `IR non conforme allo schema:\n${err.message}` : `Errore: ${(err as Error).message}`;
-  }
-}
-
-async function loadFile(file: File): Promise<void> {
-  load(await file.text());
-}
-
-const fileInput = $<HTMLInputElement>('#file');
-fileInput.addEventListener('change', () => {
-  const f = fileInput.files?.[0];
-  if (f) void loadFile(f);
-});
-
-const drop = $('#drop');
-for (const evt of ['dragenter', 'dragover'] as const) {
-  drop.addEventListener(evt, (e) => {
-    e.preventDefault();
-    drop.classList.add('over');
-  });
-}
-for (const evt of ['dragleave', 'drop'] as const) {
-  drop.addEventListener(evt, () => drop.classList.remove('over'));
-}
-drop.addEventListener('drop', (e) => {
-  e.preventDefault();
-  const f = (e as DragEvent).dataTransfer?.files?.[0];
-  if (f) void loadFile(f);
-});
-
-$('#paste-go').addEventListener('click', () => {
-  const text = $<HTMLTextAreaElement>('#paste-area').value.trim();
-  if (text) load(text);
-});
-
-// L'IR puo' arrivare gia' con la pagina: e' il caso del file HTML autonomo
-// prodotto da `npm run embed`, quello che si manda a chi deve solo giocare.
-const embedded = window.__ZAISTORY_IR__;
-const fromUrl = new URLSearchParams(location.search).get('ir');
-
-if (embedded) {
-  // La pagina con l'IR dentro sta *nella* cartella della storia: e' cosi' che
-  // `start_local_player.sh` la mette, ed e' anche cio' che rende la cartella
-  // copiabile su una chiavetta e ancora giocabile.
-  immagini.impostaBase(baseDegliAsset());
-  load(embedded);
-} else if (fromUrl) {
-  immagini.impostaBase(baseDegliAsset(fromUrl));
-  fetch(fromUrl)
-    .then((r) => {
-      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-      return r.text();
-    })
-    .then(load)
-    .catch((err: Error) => {
-      loaderErr.hidden = false;
-      loaderErr.textContent = `Non riesco a scaricare ${fromUrl}: ${err.message}`;
-    });
-}
-
-/**
- * L'app alta quanto lo spazio che la tastiera lascia scoperto.
+ * L'altezza dell'app segue il viewport visuale.
  *
  * `100dvh` misura la finestra, e la tastiera di sistema non la rimpicciolisce:
- * sale **sopra** la pagina. Il risultato era che i tasti coprivano il dock,
- * cioe' proprio la riga in cui si scrive cosa fare — l'interfaccia del gioco —
- * e per rivederla bisognava chiudere la tastiera, scrivere di nuovo, e cosi'
- * via. `visualViewport` invece misura quello che si vede davvero, e l'app ci si
- * adatta: il dock resta appoggiato al bordo dei tasti e il transcript si
- * accorcia sopra di lui.
+ * sale **sopra** la pagina. Il risultato era che i tasti coprivano il dock, cioè
+ * proprio la riga in cui si scrive cosa fare, e per rivederla bisognava
+ * chiudere la tastiera, scrivere di nuovo, e così via. `visualViewport` invece
+ * misura quello che si vede davvero.
  *
- * `scrollTo(0, 0)` insieme: quando la tastiera si apre iOS scorre il viewport
- * di layout per portare il campo in vista, e siccome la pagina non scorre —
- * l'altezza e' fissa e a scorrere e' il transcript dentro di se' — quello
- * scorrimento sposta tutta l'applicazione lasciando una striscia bianca in
- * cima.
+ * `scrollTo(0, 0)` insieme: quando la tastiera si apre iOS scorre il viewport di
+ * layout per portare il campo in vista, e siccome la pagina non scorre —
+ * l'altezza è fissa e a scorrere è il trascritto dentro di sé — quello
+ * scorrimento sposta tutta l'applicazione lasciando una striscia vuota in cima.
  */
-const vv = window.visualViewport;
-if (vv) {
+function fitToKeyboard(): void {
+  const vv = window.visualViewport;
+  if (!vv) return;
+
   /**
-   * Vero quando la tastiera e' chiusa da un gesto di sistema invece che dal
-   * fuoco.
+   * Il palco si ritira quando il campo prende il fuoco e torna quando lo perde
+   * — ma chiudendo la tastiera con il tasto del sistema operativo il campo il
+   * fuoco **non lo perde**: `blur` non arriva mai. Il fuoco da solo non è
+   * quindi un buon segnale: quello che conta è se i tasti sono sullo schermo, e
+   * a dirlo è l'altezza del viewport visuale rispetto a quella della finestra,
+   * che la tastiera non tocca.
    *
-   * Il palco si ritira quando il campo prende il fuoco e torna quando lo
-   * perde — ma chiudendo la tastiera con il tasto del sistema operativo il
-   * campo il fuoco **non lo perde**: `blur` non arriva mai, e il palco
-   * restava nascosto per il resto della partita. Il fuoco, da solo, non e'
-   * quindi un buon segnale: quello che conta e' se i tasti sono sullo
-   * schermo, e a dirlo e' l'altezza del viewport visuale rispetto a quella
-   * della finestra, che la tastiera non tocca.
-   *
-   * `ridottoVisto` serve a non fidarsi di questa misura dove non funziona:
-   * su qualche browser il viewport visuale non si stringe affatto, e li' una
-   * regola che toglie la classe «appena il viewport e' pieno» la toglierebbe
-   * sempre, cioe' subito. Finche' una riduzione non si e' vista almeno una
-   * volta non si conclude niente, e il fuoco resta l'unico comando.
+   * `ridottoVisto` serve a non fidarsi di questa misura dove non funziona: su
+   * qualche browser il viewport visuale non si stringe affatto, e lì una regola
+   * che toglie la classe «appena il viewport è pieno» la toglierebbe sempre.
    */
   let ridottoVisto = false;
   const nelCampo = () => document.activeElement?.classList.contains('campo') === true;
 
   const adatta = () => {
     document.documentElement.style.setProperty('--altezza-app', `${vv.height}px`);
-    // Quando la tastiera si apre iOS scorre il viewport di layout per portare
-    // il campo in vista, e siccome la pagina non scorre — l'altezza e' fissa e
-    // a scorrere e' il transcript dentro di se' — quello scorrimento sposta
-    // tutta l'applicazione lasciando una striscia vuota in cima.
     if (window.scrollY !== 0) window.scrollTo(0, 0);
 
     const ridotto = vv.height < window.innerHeight - 100;
     if (ridotto) {
       ridottoVisto = true;
-      // I tasti sono tornati su un campo che aveva gia' il fuoco: nessun
-      // `focus` da intercettare, ma il palco deve ritirarsi lo stesso.
       if (nelCampo()) document.body.classList.add('tastiera');
     } else if (ridottoVisto) {
       ridottoVisto = false;
@@ -766,54 +765,10 @@ if (vv) {
   adatta();
 }
 
-/**
- * Le voci del dock, quelle che si possono davvero scegliere adesso.
- *
- * `offsetParent` nullo vuol dire nascosta: le chip delle azioni fuori dal
- * debug e quelle filtrate da una condizione stanno nel DOM ma non sono in
- * gioco, e una navigazione da tastiera che ci passa sopra sembra rotta.
- */
-function voci(): HTMLButtonElement[] {
-  return [...dock.querySelectorAll<HTMLButtonElement>('button.choice:not([disabled])')].filter(
-    (b) => b.offsetParent !== null,
-  );
-}
+// L'avvio sta in fondo di proposito: `boot()` può arrivare a costruire `Game`
+// nello stesso giro sincrono — succede con la storia incorporata — e una classe
+// dichiarata più sotto non è ancora inizializzata. Chiamarlo in cima costava un
+// «Cannot access before initialization» che si vede solo nella build.
+void boot();
 
-/**
- * Frecce e invio sul dock.
- *
- * E' il modo naturale di scorrere un elenco di battute — ed e' l'elenco delle
- * battute il posto dove serve davvero, perche' nel dialogo le chip *sono*
- * l'interfaccia (si parla a scelte, per la decisione 1.7.0) mentre nelle
- * azioni si scrive.
- *
- * Si sposta il fuoco vero del documento invece di tenere una selezione per
- * conto proprio: cosi' l'invio lo gestisce il bottone da solo, lo screen
- * reader annuncia la voce, e il contorno di `:focus-visible` che c'e' gia'
- * fa da evidenziazione senza aggiungere una seconda idea di "voce corrente"
- * che poi diverge da quella del browser.
- */
-document.addEventListener('keydown', (e) => {
-  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-  if (staScrivendo(e)) return;
-  const v = voci();
-  if (v.length === 0) return;
-  e.preventDefault();
-  const i = v.indexOf(document.activeElement as HTMLButtonElement);
-  const giu = e.key === 'ArrowDown';
-  const next = i < 0 ? (giu ? 0 : v.length - 1) : (i + (giu ? 1 : -1) + v.length) % v.length;
-  v[next].focus();
-});
-
-// I numeri restano: sono le stesse cifre stampate accanto a ogni voce.
-document.addEventListener('keydown', (e) => {
-  if (!/^[1-9]$/.test(e.key)) return;
-  if (staScrivendo(e)) return;
-  const b = voci()[Number(e.key) - 1];
-  if (b) {
-    e.preventDefault();
-    b.click();
-  }
-});
-
-export {};
+export { parseStory };

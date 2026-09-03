@@ -1,20 +1,19 @@
 {
   "name": "zaistory-player",
-  "version": "0.5.1",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
-  "description": "Player di test per story.ir.json: web (telefono/desktop) e CLI, sullo stesso core.",
-  "bin": {
-    "zaiplay": "./dist-node/src/cli/zaiplay.js"
-  },
   "scripts": {
     "build": "npm run build:node && npm run build:web",
     "build:node": "tsc -p tsconfig.json",
     "build:web": "vite build",
-    "dev": "vite",
-    "test": "npm run build:node && node --test \"dist-node/test/*.test.js\"",
-    "zaiplay": "node dist-node/src/cli/zaiplay.js",
     "build:site": "node scripts/build-site.mjs",
+    "check:web": "tsc -p tsconfig.web.json",
+    "test": "npm run build:node && node --test \"dist-node/test/*.test.js\"",
+    "dev": "vite",
+    "play": "node dist-node/src/cli/play.js",
+    "lint": "node dist-node/src/cli/play.js --lint",
+    "copertura": "node dist-node/src/cli/play.js --copertura",
     "embed": "node scripts/embed.mjs",
     "serve": "node scripts/serve.mjs"
   },

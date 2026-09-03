@@ -122,12 +122,18 @@ class Studio:
         """
         vuoto = {"mancanti": [], "avanzati": []}
         ir_path = None
-        if self.story and (self.story / "story.ir.json").is_file():
-            ir_path = self.story / "story.ir.json"
-        elif self.manifest.get("ir_file"):
-            candidato = pathlib.Path(self.manifest["ir_file"])
-            if candidato.is_file():
-                ir_path = candidato
+        if self.story:
+            # Il nome del file porta l'id della storia, quindi si cerca a glob:
+            # una cartella e' una storia, e ci sta dentro un solo .zaistory.json.
+            trovati = sorted(self.story.glob("*.zaistory.json"))
+            if len(trovati) == 1:
+                ir_path = trovati[0]
+        if ir_path is None:
+            candidato = self.manifest.get("story_file") or self.manifest.get("ir_file")
+            if candidato:
+                candidato = pathlib.Path(candidato)
+                if candidato.is_file():
+                    ir_path = candidato
         if ir_path is None:
             return vuoto
         try:
@@ -1051,11 +1057,11 @@ function disallineato(){
   const elenco = ids => ids.slice(0,4).map(i=>`<code>${i}</code>`).join(' ') +
       (ids.length > 4 ? ` e altri ${ids.length - 4}` : '');
   const pezzi = [];
-  if (m.length) pezzi.push(`<b>${m.length}</b> nell'IR e non qui: ${elenco(m)}`);
-  if (a.length) pezzi.push(`<b>${a.length}</b> qui e non piu' nell'IR: ${elenco(a)}`);
-  box.innerHTML = `<span>Il manifest non combacia piu&#39; con l&#39;IR — ${pezzi.join(' · ')}. ` +
+  if (m.length) pezzi.push(`<b>${m.length}</b> nella storia e non qui: ${elenco(m)}`);
+  if (a.length) pezzi.push(`<b>${a.length}</b> qui e non piu' nella storia: ${elenco(a)}`);
+  box.innerHTML = `<span>Il manifest non combacia piu&#39; con la storia — ${pezzi.join(' · ')}. ` +
     `Rifallo e riapri lo studio: <code>python3 assets-studio/images/extract_manifest.py ` +
-    `&lt;storia&gt;/story.ir.json -o &lt;storia&gt;/_work/assets_manifest.json</code>. ` +
+    `&lt;storia&gt;/&lt;id&gt;.zaistory.json -o &lt;storia&gt;/_work/assets_manifest.json</code>. ` +
     `Gli id dei job non cambiano, quindi approvazioni e immagini gia&#39; fatte restano.</span>`;
   box.hidden = false;
 }

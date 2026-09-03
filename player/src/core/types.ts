@@ -1,124 +1,54 @@
 /**
- * Tipi che rispecchiano `engine-ir.schema.json`.
+ * I tipi del formato zaistory, più i piccoli aiuti di lettura che tutti usano.
  *
- * Regola di questo modulo: e' un rispecchiamento fedele dello schema, niente di
- * piu'. Nessun campo di comodo, nessuna informazione derivata, nessun default
- * "furbo" applicato in fase di lettura. L'IR e' il contratto del progetto: se
- * un dato non c'e' qui, non deve esistere nemmeno nel player.
- *
- * I nomi dei campi restano quelli dell'IR (snake_case): il player non traduce
- * il contratto in un dialetto suo.
+ * Sono il riflesso in TypeScript di `zaistory.schema.json`: quando lo schema
+ * cambia, cambia anche questo file — e insieme a loro `load.ts`, dove
+ * `additionalProperties: false` diventa codice eseguibile. Un campo aggiunto
+ * qui e non là non verrà mai letto; uno aggiunto là e non qui non compila.
  */
 
-/**
- * L'id di un'immagine gia' prodotta e pubblicata dentro la storia.
- *
- * Non lo scrive il compilatore: lo scrive il modulo assets pubblicando le
- * immagini marcate come definitive. Il player lo risolve per convenzione in
- * `assets/images/<id>.webp`, relativo alla cartella della storia — l'IR non
- * porta percorsi, e non nomina nessun generatore.
- */
+// ------------------------------------------------------------------ base
+
 export type ImageRef = string;
 
-/** Descrizione puramente testuale di una voce. Provider-agnostica per scelta
- * architetturale: qui non c'e' e non deve arrivare nessun voice_id. */
-export interface VoiceSpec {
-  style_prompt?: string;
-}
-
-/**
- * Chi ha prodotto questo IR.
- *
- * E' tracciabilita' e basta: serve a sapere, riaprendo un file mesi dopo, con
- * quale compilatore e con quale modello e' stato ottenuto — domanda tutt'altro
- * che oziosa, visto che il compilatore non e' deterministico fra sessioni.
- *
- * Non e' il binding a un generatore, che resta fuori dall'IR: nessun
- * consumatore deve cambiare comportamento leggendo questi campi. Il player,
- * infatti, li mostra e nient'altro.
- */
 export interface Provenance {
   compiler: string;
   compiler_version: string;
   model?: string;
 }
 
-/** Il taglio con cui si generano le ancore: e' una decisione sull'intero
- * cast, non sul singolo personaggio. */
-export type AnchorFraming = 'bust' | 'waist-up' | 'full-body';
+export interface VoiceSpec {
+  style_prompt?: string;
+}
 
 export interface GlobalStyle {
   image_style_suffix?: string;
-  /** Lo stesso suffisso in inglese. L'italiano resta il canonico — e' quello
-   * che il player mostra in modalita' solo testo — e l'inglese esiste per il
-   * modello, che in italiano perde aderenza. */
   image_style_suffix_en?: string;
-  anchor_framing?: AnchorFraming;
+  anchor_framing?: string;
   narrator_voice?: VoiceSpec;
   default_tone?: string;
   ambient_music_tags?: string[];
 }
 
-export interface Character {
-  id: string;
-  name?: string;
-  /** Come il giocatore lo chiamera' scrivendo: "il ragazzo", "quello con la
-   * barba". Entrare in un dialogo e' un'azione a input libero, anche se la
-   * conversazione poi si gioca a scelte. */
-  aliases?: string[];
-  visual_prompt?: string;
-  visual_prompt_en?: string;
-  /** Override del taglio dell'ancora, ammesso solo per i soggetti non umani:
-   * su un quadrupede robotico "mezzo busto" non significa niente. */
-  anchor_framing?: AnchorFraming;
-  /** L'immagine di riferimento gia' prodotta per questo personaggio. */
-  image?: ImageRef;
-  voice?: VoiceSpec;
-}
-
-/**
- * Un luogo con un'identita' stabile lungo la storia.
- *
- * `visual_prompt` descrive il POSTO, non una singola inquadratura: e' il
- * riferimento che tiene uguale la casa di Yacob nelle tre scene in cui si
- * torna. E' per i luoghi quello che `Character` e' per le persone.
- */
-export interface Place {
-  id: string;
-  name?: string;
-  visual_prompt: string;
-  visual_prompt_en?: string;
-  /** La veduta di riferimento gia' prodotta per questo luogo. */
-  image?: ImageRef;
-}
-
-/** Anagrafica di un oggetto di inventario. Esiste perche' il player si
- * comanda a parole: un id non e' una risposta a "cosa ho nello zaino", e
- * "usa il coltellino" ha bisogno di qualcosa a cui agganciarsi. */
-export interface Item {
-  id: string;
-  name: string;
-  aliases?: string[];
-  /** La risposta a «guarda il coltello». E' un verbo del player, non
-   * un'azione: non consuma un turno e non pesa sul budget della scena. */
-  description?: string;
-  description_variants?: ConditionalText[];
-  visual_prompt?: string;
-  visual_prompt_en?: string;
-  /** L'icona d'inventario gia' prodotta per questo oggetto. */
-  image?: ImageRef;
-}
-
-/** Condizione di visibilita' di un'azione o di una scelta.
- * I campi presenti si sommano in AND. */
 export interface Condition {
   flag_present?: string;
   flag_absent?: string;
   has_item?: string;
+  /** Tutte. Serve dove i campi semplici non bastano — due oggetti sulla stessa
+   * porta è il caso tipico. */
+  all_of?: Condition[];
+  /** Almeno una. Il caso per cui esiste è l'oggetto in una qualunque delle sue
+   * forme: siccome un oggetto che cambia stato è un altro oggetto, una porta
+   * che va bene con il walkie scarico come con quello carico li elenca
+   * entrambi. */
+  any_of?: Condition[];
 }
 
-/** L'unico modo in cui lo stato di gioco puo' cambiare. Nessun player e nessun
- * resolver puo' fabbricarne uno: puo' solo applicare quelli gia' nell'IR. */
+export interface ConditionalText {
+  condition: Condition;
+  text: string;
+}
+
 export interface Effect {
   narration?: string;
   narration_voice?: VoiceSpec;
@@ -128,15 +58,111 @@ export interface Effect {
   remove_inventory?: string;
   play_sound_prompt?: string;
   goto_dialogue?: string;
-  goto_scene?: string;
+  goto_place?: string;
 }
 
-/** Scelta offerta al giocatore dentro un dialogo.
- * Nota: lo schema non prevede un id per le scelte; il player le identifica con
- * il nodo di destinazione (campo `goto`), che e' stabile. */
-/** Una scelta di dialogo si tocca, non si scrive: il parlato resta a scelte
- * esplicite, e l'input libero non entra mai in un dialogue_tree. Per questo qui
- * non ci sono `aliases` — c'erano in 1.6.0 e sono stati tolti in 1.7.0. */
+// -------------------------------------------------------------- entità
+
+/** Le quattro famiglie di gesto più il generico. Sono vocabolario italiano,
+ * non narrativa: valgono identiche per ogni storia. */
+export type Intent = 'perception' | 'manipulation' | 'communication' | 'movement' | 'generic';
+
+/** I verbi del giocatore sono quattro; questi sono i tre che agiscono DENTRO il
+ * luogo. Il quarto — andare — non manca: si scrive altrove, in un'`Exit`, come
+ * `guarda` da solo si scrive nel `look` della fase. Cambia il nodo invece del
+ * suo contenuto, ed è per questo che il grafo si legge in un posto solo. */
+export type Verb = 'look' | 'use' | 'talk';
+
+export interface Character {
+  id: string;
+  name?: string;
+  aliases?: string[];
+  description?: string;
+  description_variants?: ConditionalText[];
+  visual_prompt?: string;
+  visual_prompt_en?: string;
+  anchor_framing?: string;
+  image?: ImageRef;
+  voice?: VoiceSpec;
+}
+
+export interface Item {
+  id: string;
+  name: string;
+  aliases?: string[];
+  description?: string;
+  description_variants?: ConditionalText[];
+  visual_prompt?: string;
+  visual_prompt_en?: string;
+  image?: ImageRef;
+}
+
+/** Un oggetto d'ambiente: sta nel luogo, non nello zaino. */
+export interface Prop {
+  id: string;
+  name: string;
+  aliases?: string[];
+  description?: string;
+  description_variants?: ConditionalText[];
+  present_when?: Condition;
+  visual_prompt?: string;
+  visual_prompt_en?: string;
+  image?: ImageRef;
+}
+
+export interface CarryFlag {
+  id: string;
+  description?: string;
+}
+
+export interface NoMatch {
+  intent: Intent;
+  text: string;
+}
+
+export interface PlayerVoice {
+  inventory_intro?: string[];
+  inventory_empty?: string[];
+  presence_intro?: string[];
+  presence_alone?: string[];
+  exits_intro?: string[];
+  exits_none?: string[];
+  no_match_narration?: NoMatch[];
+}
+
+export interface Background {
+  image_prompt: string;
+  image_prompt_en?: string;
+  image?: ImageRef;
+  ambient_sound_prompt?: string;
+  place?: string;
+  characters_in_frame?: string[];
+}
+
+export interface NarrationBeat {
+  text: string;
+  voice?: VoiceSpec;
+  image_prompt?: string;
+  image_prompt_en?: string;
+  image?: ImageRef;
+  sound_effect_prompt?: string;
+  characters_in_frame?: string[];
+}
+
+// ------------------------------------------------------------- struttura
+
+export interface Action {
+  id: string;
+  verb: Verb;
+  target?: string;
+  second_target?: string;
+  test_phrases?: string[];
+  condition?: Condition;
+  blocked_narration?: string;
+  effect: Effect;
+  repeatable?: boolean;
+}
+
 export interface DialogueChoice {
   text: string;
   goto: string;
@@ -147,6 +173,7 @@ export interface DialogueChoice {
 export interface DialogueNode {
   speaker: string;
   text: string;
+  text_variants?: string[];
   voice_override?: VoiceSpec;
   effect?: Effect;
   choices?: DialogueChoice[];
@@ -159,394 +186,191 @@ export interface DialogueTree {
   nodes: Record<string, DialogueNode>;
 }
 
-export interface Action {
-  id: string;
-  label: string;
-  target?: string;
-  /** I modi in cui il giocatore puo' chiedere questa azione scrivendo. Sono la
-   * conoscenza semantica dell'azione, scritta in compilazione perche' il player
-   * non debba dedurla a runtime: la lista *e'* la copertura del resolver
-   * lessicale. */
-  aliases?: string[];
-  /** Parafrasi tenute deliberatamente fuori da `aliases`: non servono a
-   * giocare, servono a misurare. Il linter le passa al resolver e conta quante
-   * arrivano all'id giusto — e' cosi' che si sa se un backend piu' costoso vale
-   * il suo prezzo su questa storia, invece che a naso. */
-  test_phrases?: string[];
-  condition?: Condition;
-  /** Cosa si vede se il giocatore chiede l'azione ma la condition non e'
-   * soddisfatta. Testo d'autore, nessun effetto: un'azione filtrata in un menu
-   * spariva, a parole viene chiesta lo stesso e merita una risposta. */
-  blocked_narration?: string;
-  effect?: Effect;
-  repeatable?: boolean;
-}
-
-/**
- * Le sei famiglie in cui ricade praticamente tutto quello che si scrive a
- * un'avventura. Sono indipendenti dalla storia — le stesse in ogni IR — ed e'
- * la ragione per cui un fallback puo' essere pertinente senza essere generato:
- * si classifica il *tipo* di tentativo, e si pesca il testo che l'autore ha
- * gia' scritto per quel tipo.
- */
-export const INTENTS = ['percezione', 'manipolazione', 'movimento', 'sociale', 'forza', 'generico'] as const;
-export type Intent = (typeof INTENTS)[number];
-
-/** Una risposta d'autore a un tentativo che non corrisponde a nessuna azione,
- * agganciata al tipo di tentativo invece che al suo contenuto. */
-export interface NoMatch {
-  intent: Intent;
-  text: string;
-}
-
-/**
- * Un testo d'autore che vale solo in un certo stato: prima variante
- * soddisfatta, prima servita, altrimenti vale il testo di base.
- *
- * Serve alle descrizioni rileggibili — la stanza, un oggetto in mano — che
- * sarebbero una bugia se non cambiassero mai: un walkie messo in carica e' un
- * altro oggetto da guardare rispetto a quello scarico.
- */
-export interface ConditionalText {
-  condition: Condition;
-  text: string;
-}
-
-/**
- * La prosa dei verbi del player — guardarsi intorno, guardare nello zaino,
- * chiedere chi c'e'.
- *
- * Non sono azioni della scena: non stanno in `actions[]`, non consumano un
- * turno, non cambiano niente. Ma sono le tre cose che il giocatore fa piu'
- * spesso di tutte, e senza testo d'autore un player a input libero risponde
- * con un elenco di slug.
- */
-export interface PlayerVoice {
-  inventory_intro?: string[];
-  inventory_empty?: string[];
-  presence_intro?: string[];
-  presence_alone?: string[];
-  no_match_narration?: NoMatch[];
-}
-
-export interface SceneCharacter {
+export interface PhaseCharacter {
   id: string;
   visual_prompt?: string;
   visual_prompt_en?: string;
-  /** L'immagine della variante: un override di `visual_prompt` in una scena
-   * e' un'ancora a se', non un'inquadratura. */
   image?: ImageRef;
   voice?: VoiceSpec;
 }
 
-/** Beat della narrazione di ingresso scena. Per le cutscene la lista di beat
- * e' l'intera sequenza di montaggio. */
-export interface NarrationBeat {
-  text: string;
-  voice?: VoiceSpec;
-  image_prompt?: string;
-  image_prompt_en?: string;
-  /** L'inquadratura gia' prodotta per questo beat. */
-  image?: ImageRef;
-  place?: string;
-  characters_in_frame?: string[];
-  sound_effect_prompt?: string;
+export interface Ending {
+  kind: 'natural' | 'premature';
+  label?: string;
 }
 
-/**
- * Un'inquadratura: cosa si vede, dove si e', chi c'e' dentro.
- *
- * La usano la scena — `Scene.background` — e la storia — `Story.cover`. Sono la
- * stessa cosa a due scale, e quello che serve a generarle e' identico: un
- * prompt, un luogo, un cast. Una definizione sola invece di due gemelle che poi
- * divergono al primo campo aggiunto.
- */
-export interface Background {
-  image_prompt: string;
-  image_prompt_en?: string;
-  /** L'inquadratura gia' prodotta per questo nodo. */
-  image?: ImageRef;
-  ambient_sound_prompt?: string;
-  place?: string;
-  characters_in_frame?: string[];
-}
-
-export const SCENE_INTERACTIVE = 'interactive';
-export const SCENE_CUTSCENE = 'cutscene';
-export type SceneType = typeof SCENE_INTERACTIVE | typeof SCENE_CUTSCENE;
-
-export interface Scene {
+export interface Phase {
   id: string;
   title?: string;
-  /** La stanza com'e' adesso: la risposta a "guardati intorno" / "dove mi
-   * trovo". Rileggibile, non fa avanzare niente, non e' un'azione. */
-  look?: string;
-  /** Varianti di `look` legate allo stato: una stanza dopo che ci si e' fatto
-   * qualcosa non e' la stessa stanza. */
-  look_variants?: ConditionalText[];
-  /** Le risposte d'autore a una frase che non corrisponde a niente, una per
-   * intenzione. Scritte in compilazione e non generate a runtime: un testo
-   * generato inventa scenario che nel gioco non esiste, e nessun linter puo'
-   * controllarlo. */
-  no_match_narration?: NoMatch[];
+  condition?: Condition;
+  kind?: 'interactive' | 'cutscene';
   background?: Background;
-  scene_tone?: string;
-  scene_type?: SceneType;
-  characters?: SceneCharacter[];
+  look?: string;
+  look_variants?: ConditionalText[];
+  tone?: string;
+  characters?: PhaseCharacter[];
   narration?: NarrationBeat[];
-  dialogue_tree?: DialogueTree;
-  actions: Action[];
+  actions?: Action[];
+  dialogue?: DialogueTree;
+  no_match_narration?: NoMatch[];
   on_enter_flags_set?: string[];
+  ending?: Ending;
+}
+
+export interface Transition {
+  condition?: Condition;
+  narration: NarrationBeat[];
+  replay?: boolean;
+}
+
+export interface Exit {
+  to: string;
+  label?: string;
+  aliases?: string[];
+  known_when?: Condition;
+  condition?: Condition;
+  blocked_narration?: string;
+  transitions?: Transition[];
+}
+
+export interface Place {
+  id: string;
+  name: string;
+  aliases?: string[];
+  /** id di un luogo, in un altro atto, che è fisicamente lo stesso posto. I
+   * luoghi vivono dentro gli atti, le stanze no: due nodi di due grafi diversi
+   * possono essere la stessa stanza, e questo campo tiene separata l'identità
+   * di gioco — per atto — dall'identità visiva, che è del posto. */
+  same_as?: string;
+  visual_prompt?: string;
+  visual_prompt_en?: string;
+  image?: ImageRef;
+  completed_when?: Condition;
+  exits?: Exit[];
+  objects?: Prop[];
+  /** Le azioni valide in qualunque fase di questo luogo: si sommano a quelle
+   * della fase. Stessa scelta già fatta per gli oggetti d'ambiente, e per la
+   * stessa ragione — le fasi cambiano cosa si può fare, non cosa esiste. */
+  actions?: Action[];
+  phases: Phase[];
+}
+
+export interface Act {
+  id: string;
+  title?: string;
+  start_place: string;
+  flags?: string[];
+  reads_carry_flags?: string[];
+  writes_carry_flags?: string[];
+  places: Place[];
 }
 
 export interface Story {
-  ir_version: string;
+  zaistory_version: string;
   generated_by?: Provenance;
   id: string;
   title: string;
   description?: string;
-  /**
-   * La locandina: l'immagine che rappresenta la storia prima che cominci.
-   *
-   * Non e' l'inquadratura della prima scena, ed e' la differenza che conta:
-   * quella dice dove si comincia, questa dice **di cosa parla** — il
-   * protagonista, il luogo che la storia ha in testa, il tono. E' un
-   * `Background` come gli altri perche' si genera allo stesso modo.
-   */
-  cover?: Background;
   language?: string;
+  cover?: Background;
+  failure_mode?: 'none' | 'alternate_endings';
   global_style?: GlobalStyle;
-  /** La prosa dei verbi del player, valida per tutta la storia. */
   player_voice?: PlayerVoice;
-  characters?: Character[];
-  places?: Place[];
-  /** Chi il giocatore *e'*. Sta nella roster come gli altri, ma a «chi c'e'
-   * qui» non va elencato: e' chi sta chiedendo. */
   protagonist?: string;
-  start_scene: string;
-  state_flags_schema?: string[];
+  characters?: Character[];
   items?: Item[];
-  /** Oggetti gia' in inventario quando la partita comincia, prima della
-   * start_scene: quello che il personaggio si porta dietro da prima che la
-   * storia inizi. */
   initial_inventory?: string[];
-  scenes: Scene[];
+  carry_flags?: CarryFlag[];
+  start_act: string;
+  acts: Act[];
 }
 
-// ------------------------------------------------------------------ helper
-//
-// Funzioni pure sui tipi dell'IR: applicano i default dello schema e le
-// convenzioni di lettura, senza aggiungere niente al contratto.
-
-/** Applica il default dello schema per `scene_type`. */
-export function sceneType(sc: Scene): SceneType {
-  return sc.scene_type ?? SCENE_INTERACTIVE;
-}
+// ------------------------------------------------------------- indice
 
 /**
- * Vero se l'azione non cambia niente: narrazione e suono, e basta.
+ * Un indice piatto della storia, costruito una volta al caricamento.
  *
- * Serve a distinguere quello che nella scena **resta da fare** da quello che
- * si puo' solo riguardare. Un'osservazione e' rileggibile all'infinito e non
- * porta la storia da nessuna parte: contarla fra le cose da fare terrebbe ogni
- * scena "aperta" per sempre.
+ * La gerarchia è comoda da scrivere e scomoda da attraversare: quasi ogni
+ * domanda del player («dov'è il luogo X», «di quale atto fa parte») sarebbe
+ * altrimenti una scansione annidata. Gli id dei luoghi sono unici su tutta la
+ * storia, ed è il linter a garantirlo.
  */
-export function isOsservazione(a: Action): boolean {
-  const e = a.effect;
-  if (!e) return true;
-  return !(
-    e.set_flag ||
-    e.unset_flag ||
-    e.add_inventory ||
-    e.remove_inventory ||
-    e.goto_dialogue ||
-    e.goto_scene
-  );
+export interface StoryIndex {
+  story: Story;
+  acts: Map<string, Act>;
+  places: Map<string, Place>;
+  /** id del luogo -> id dell'atto che lo contiene. */
+  actOfPlace: Map<string, string>;
+  characters: Map<string, Character>;
+  items: Map<string, Item>;
+  /** Tutti i prop di tutti i luoghi, per id. */
+  props: Map<string, Prop>;
+  /** id del prop -> id del luogo in cui sta. */
+  placeOfProp: Map<string, string>;
 }
 
-/** Applica il default dello schema per `repeatable` (true se assente). */
-export function isRepeatable(a: Action): boolean {
-  return a.repeatable === undefined || a.repeatable;
-}
-
-/** Nome da mostrare per un personaggio, con fallback sull'id. */
-export function displayName(c: Character): string {
-  return c.name && c.name !== '' ? c.name : c.id;
-}
-
-export function findScene(story: Story, id: string): Scene | undefined {
-  return story.scenes.find((s) => s.id === id);
-}
-
-/** Un id assente non fa fallire niente qui — lo `speaker` di un nodo resta una
- * stringa libera per lo schema — ma e' un difetto: chi parla deve stare nella
- * roster globale, anche con una sola battuta, altrimenti non ha voce
- * assegnabile. E' il linter a segnalarlo. */
-export function findCharacter(story: Story, id: string): Character | undefined {
-  return story.characters?.find((c) => c.id === id);
-}
-
-/**
- * Lo `speaker` di chi non parla.
- *
- * Un nodo con questo speaker non e' una battuta: e' una **didascalia**, cioe'
- * quello che nella sceneggiatura sta fra due battute — «Tommy guarda Laura
- * nello specchietto», «Laura tiene ancora il palmo chiuso». Senza, un dialogo
- * diventa una sequenza di frasi a vuoto in cui non si capisce cosa stia
- * succedendo mentre si parla.
- *
- * Lo schema non ha un campo apposta e non deve averlo: un nodo del tree fa
- * gia' tutto quello che serve — sta in un punto preciso della sequenza, ha il
- * suo `next`, puo' portare un `effect`. Quello che serviva era smettere di
- * trattarlo come una battuta in lettura.
- */
-export const NARRATORE = 'narrator';
-
-/** Vero se il nodo e' una didascalia invece che una battuta. Le tre facce del
- * player la impaginano come prosa: senza nome davanti, perche' non c'e'
- * nessuno che la dice. */
-export function isDidascalia(n: DialogueNode): boolean {
-  return n.speaker === NARRATORE;
-}
-
-/** Etichetta da mostrare per uno speaker di dialogo. Sulle didascalie non si
- * chiama: quelle non hanno un nome davanti (vedi `isDidascalia`). */
-export function speakerName(story: Story, speaker: string): string {
-  if (speaker === NARRATORE) return 'Narratore';
-  const c = findCharacter(story, speaker);
-  return c ? displayName(c) : speaker;
-}
-
-export function findPlace(story: Story, id: string): Place | undefined {
-  return story.places?.find((p) => p.id === id);
-}
-
-/**
- * Le inquadrature di una scena: lo sfondo piu' ogni beat che cambia
- * inquadratura. Sono i punti in cui si genera un'immagine, e quindi i punti in
- * cui servono un luogo e un cast dichiarati.
- */
-export interface Shot {
-  where: string;
-  image_prompt: string;
-  place?: string;
-  characters_in_frame?: string[];
-}
-
-export function shotsOf(sc: Scene): Shot[] {
-  const out: Shot[] = [];
-  if (sc.background?.image_prompt) {
-    out.push({
-      where: `${sc.id} / background`,
-      image_prompt: sc.background.image_prompt,
-      place: sc.background.place,
-      characters_in_frame: sc.background.characters_in_frame,
-    });
+export function buildIndex(story: Story): StoryIndex {
+  const idx: StoryIndex = {
+    story,
+    acts: new Map(),
+    places: new Map(),
+    actOfPlace: new Map(),
+    characters: new Map(),
+    items: new Map(),
+    props: new Map(),
+    placeOfProp: new Map(),
+  };
+  for (const c of story.characters ?? []) idx.characters.set(c.id, c);
+  for (const i of story.items ?? []) idx.items.set(i.id, i);
+  for (const act of story.acts) {
+    idx.acts.set(act.id, act);
+    for (const place of act.places) {
+      idx.places.set(place.id, place);
+      idx.actOfPlace.set(place.id, act.id);
+      for (const prop of place.objects ?? []) {
+        idx.props.set(prop.id, prop);
+        idx.placeOfProp.set(prop.id, place.id);
+      }
+    }
   }
-  (sc.narration ?? []).forEach((b, i) => {
-    if (!b.image_prompt) return;
-    out.push({
-      where: `${sc.id} / beat ${i + 1}`,
-      image_prompt: b.image_prompt,
-      place: b.place,
-      characters_in_frame: b.characters_in_frame,
-    });
-  });
+  return idx;
+}
+
+// --------------------------------------------------------------- aiuti
+
+/** Il nome da mostrare a chi gioca. Mai un id: un id buttato in faccia al
+ * giocatore non è una risposta. */
+export function displayName(e: { id: string; name?: string } | undefined): string {
+  if (!e) return '';
+  return e.name && e.name.trim() ? e.name : e.id;
+}
+
+/** Le superfici lessicali di un'entità: il nome più gli alias. È su queste che
+ * il parser aggancia il complemento della frase. */
+export function surfaces(e: { name?: string; aliases?: string[] } | undefined): string[] {
+  if (!e) return [];
+  const out: string[] = [];
+  if (e.name) out.push(e.name);
+  for (const a of e.aliases ?? []) out.push(a);
   return out;
 }
 
-/**
- * La copertina come inquadratura, per chi tratta le inquadrature tutte uguali.
- *
- * Serve al linter e all'estrazione degli asset: sono due posti che ciclano su
- * `shotsOf` scena per scena, e senza questa la copertina resterebbe fuori da
- * tutti e due — nessun controllo sui suoi riferimenti, e un luogo usato solo
- * da lei verrebbe segnalato come mai referenziato.
- */
-export function coverShot(story: Story): Shot | undefined {
-  if (!story.cover?.image_prompt) return undefined;
-  return {
-    where: 'cover',
-    image_prompt: story.cover.image_prompt,
-    place: story.cover.place,
-    characters_in_frame: story.cover.characters_in_frame,
-  };
-}
-
-/** Tono da passare al resolver: quello locale se c'e', altrimenti il globale. */
-export function toneOf(story: Story, sc?: Scene): string {
-  if (sc?.scene_tone) return sc.scene_tone;
-  return story.global_style?.default_tone ?? '';
-}
-
-/**
- * Il testo di `look` che vale adesso: la prima variante la cui condizione e'
- * soddisfatta, altrimenti il `look` di base.
- *
- * `meets` arriva da fuori invece di importare `GameState`: i tipi non devono
- * sapere niente dello stato, e cosi' questa resta una funzione pura sull'IR.
- */
-export function lookNow(sc: Scene, meets: (c?: Condition) => boolean): string | undefined {
-  return oraVale(sc.look_variants, sc.look, meets);
-}
-
-/** La descrizione di un oggetto com'e' adesso. */
-export function descrizioneOra(it: Item, meets: (c?: Condition) => boolean): string | undefined {
-  return oraVale(it.description_variants, it.description, meets);
-}
-
-/** Prima variante soddisfatta, altrimenti il testo di base. */
-function oraVale(varianti: ConditionalText[] | undefined, base: string | undefined, meets: (c?: Condition) => boolean): string | undefined {
-  for (const v of varianti ?? []) {
+/** Il primo testo condizionale valido, o quello di base. L'ordine conta: vince
+ * il primo che matcha, quindi le varianti specifiche stanno prima. */
+export function textNow(
+  base: string | undefined,
+  variants: ConditionalText[] | undefined,
+  meets: (c?: Condition) => boolean,
+): string | undefined {
+  for (const v of variants ?? []) {
     if (meets(v.condition)) return v.text;
   }
   return base;
 }
 
-/**
- * I fallback disponibili per una scena: quelli suoi, poi quelli globali.
- *
- * L'ordine e' la precedenza — chi cerca per intenzione trova prima il testo
- * scritto per *questa* stanza, e ripiega su quello che vale ovunque solo se
- * qui non c'era niente.
- */
-export function noMatchPool(story: Story, sc?: Scene): NoMatch[] {
-  return [...(sc?.no_match_narration ?? []), ...(story.player_voice?.no_match_narration ?? [])];
-}
-
-export function findAction(sc: Scene, id: string): Action | undefined {
-  return sc.actions.find((a) => a.id === id);
-}
-
-export function findNode(sc: Scene, id: string): DialogueNode | undefined {
-  return sc.dialogue_tree?.nodes[id];
-}
-
-/** Id dei nodi di dialogo in ordine stabile (per il debug). */
-export function nodeIds(sc: Scene): string[] {
-  if (!sc.dialogue_tree) return [];
-  return Object.keys(sc.dialogue_tree.nodes).sort();
-}
-
-/** Etichetta di scena da mostrare in debug. */
-export function sceneLabel(sc: Scene): string {
-  return sc.title ? `${sc.title} (${sc.id})` : sc.id;
-}
-
-/**
- * Dice se dalla scena esiste, staticamente, almeno una transizione verso
- * un'altra scena. Serve a distinguere un finale legittimo da un vicolo cieco:
- * e' la sola regola di flusso che il player aggiunge allo schema, che non ha
- * un marcatore esplicito di finale.
- */
-export function sceneHasExit(sc: Scene): boolean {
-  const has = (e?: Effect) => !!e?.goto_scene;
-  if (sc.actions.some((a) => has(a.effect))) return true;
-  if (sc.dialogue_tree) {
-    for (const n of Object.values(sc.dialogue_tree.nodes)) {
-      if (has(n.effect)) return true;
-      if (n.choices?.some((c) => has(c.effect))) return true;
-    }
-  }
-  return false;
+/** Sceglie a rotazione fra più frasi d'autore. Il giocatore non distingue
+ * questo da un modello: distingue solo quando il ciclo è corto. */
+export function pick(list: string[] | undefined, turn: number): string | undefined {
+  if (!list || list.length === 0) return undefined;
+  return list[turn % list.length];
 }

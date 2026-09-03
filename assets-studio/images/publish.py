@@ -3,7 +3,7 @@
 
     python assets-studio/images/publish.py stories/metal-head
 
-E' l'unico passo della catena che tocca `story.ir.json`, e fa due cose sole:
+E' l'unico passo della catena che tocca il file della storia, e fa due cose sole:
 
 1. copia in `assets/images/` le immagini **marcate come definitive** nello
    studio, convertite in WebP (lato lungo 1024);
@@ -39,7 +39,7 @@ WORK_DIR = "_work"
 MANIFEST_NAME = "assets_manifest.json"
 SETTINGS_NAME = "_studio.json"
 LEDGER_NAME = "_published.json"
-IR_NAME = "story.ir.json"
+STORY_GLOB = "*.zaistory.json"
 IMAGES_DIR = "assets/images"
 
 DEFAULT_FORMAT = "webp"
@@ -59,7 +59,7 @@ class Storia:
 
     def __init__(self, root, ir=None, work=None, images=None):
         self.root = pathlib.Path(root)
-        self.ir_path = pathlib.Path(ir) if ir else self.root / IR_NAME
+        self.ir_path = pathlib.Path(ir) if ir else trova_storia(self.root)
         self.work = pathlib.Path(work) if work else self.root / WORK_DIR
         self.images = pathlib.Path(images) if images else self.root / IMAGES_DIR
         self.manifest_path = self.work / MANIFEST_NAME
@@ -70,6 +70,23 @@ class Storia:
         mancanti = [str(p) for p in (self.ir_path, self.manifest_path) if not p.is_file()]
         if mancanti:
             raise SystemExit("non trovo: " + ", ".join(mancanti))
+
+
+def trova_storia(root: pathlib.Path) -> pathlib.Path:
+    """L'unico `*.zaistory.json` della cartella.
+
+    Il nome del file porta l'id della storia, quindi non e' fisso e si cerca a
+    glob. Zero file o due file sono un errore, non un caso da gestire: una
+    cartella e' una storia.
+    """
+    trovati = sorted(root.glob(STORY_GLOB))
+    if len(trovati) == 1:
+        return trovati[0]
+    if not trovati:
+        return root / "storia.zaistory.json"  # non esiste: lo dira' check()
+    raise SystemExit(
+        f"in {root} ci sono {len(trovati)} file .zaistory.json "
+        f"({', '.join(p.name for p in trovati)}): una cartella e' una storia")
 
 
 def load_json(path: pathlib.Path, default=None):
@@ -135,15 +152,17 @@ def coerente(node: dict, job: dict, ir: dict, source: str) -> str | None:
         if atteso and node.get("id") != atteso:
             return f"il nodo {source} adesso e' «{node.get('id')}», non «{atteso}»"
         return None
-    scena = job.get("scene")
+    fase = job.get("scene")
     passi = parse_source(source)
-    if scena and len(passi) >= 2 and passi[0] == "scenes":
+    # `acts[a].places[p].phases[f]...`: si controlla che in quella posizione ci
+    # sia ancora la fase che il manifest aveva fotografato.
+    if fase and len(passi) >= 6 and passi[0] == "acts" and passi[2] == "places" and passi[4] == "phases":
         try:
-            vera = ir["scenes"][passi[1]]["id"]
+            vera = ir["acts"][passi[1]]["places"][passi[3]]["phases"][passi[5]]["id"]
         except (KeyError, IndexError, TypeError):
-            return f"la scena {source} non esiste piu'"
-        if vera != scena:
-            return f"in {source} adesso c'e' la scena «{vera}», non «{scena}»"
+            return f"la fase {source} non esiste piu'"
+        if vera != fase:
+            return f"in {source} adesso c'e' la fase «{vera}», non «{fase}»"
     return None
 
 
@@ -177,11 +196,40 @@ def varianti_ripetute(ir: dict, da_pubblicare: dict) -> dict:
     out = {}
     if not per_testo:
         return out
-    for scena in ir.get("scenes") or []:
-        for n in scena.get("characters") or []:
-            aid = per_testo.get((n.get("id"), override_variante(n)))
+    for act in ir.get("acts") or []:
+        for luogo in act.get("places") or []:
+            for fase in luogo.get("phases") or []:
+                for n in fase.get("characters") or []:
+                    aid = per_testo.get((n.get("id"), override_variante(n)))
+                    if aid:
+                        out[id(n)] = aid
+    return out
+
+
+def luoghi_condivisi(ir: dict, da_pubblicare: dict) -> dict:
+    """I luoghi che dichiarano `same_as` verso un luogo appena pubblicato.
+
+    Stessa forma del problema delle varianti d'ancora ripetute, e stessa
+    soluzione: l'ancora e' UNA, ma i nodi che devono portarne l'id sono piu'
+    d'uno. Il soggiorno dell'atto della villa e quello dell'atto del finale
+    sono la stessa stanza, e seguendo i soli `source` il secondo resterebbe
+    senza immagine pur avendone una gia' pronta e pagata.
+    """
+    per_luogo = {}
+    for info in da_pubblicare.values():
+        if info["job"].get("kind") != "place":
+            continue
+        entita = info["job"].get("entity_id")
+        if entita:
+            per_luogo[entita] = info["asset_id"]
+    out = {}
+    if not per_luogo:
+        return out
+    for act in ir.get("acts") or []:
+        for luogo in act.get("places") or []:
+            aid = per_luogo.get(luogo.get("same_as"))
             if aid:
-                out[id(n)] = aid
+                out[id(luogo)] = aid
     return out
 
 
@@ -194,16 +242,25 @@ def nodi_con_immagine(ir: dict):
     """
     if isinstance(ir.get("cover"), dict):
         yield ir["cover"]
-    for chiave in ("characters", "places", "items"):
+    for chiave in ("characters", "items"):
         for n in ir.get(chiave) or []:
             yield n
-    for scena in ir.get("scenes") or []:
-        if isinstance(scena.get("background"), dict):
-            yield scena["background"]
-        for n in scena.get("characters") or []:
-            yield n
-        for n in scena.get("narration") or []:
-            yield n
+    for act in ir.get("acts") or []:
+        for luogo in act.get("places") or []:
+            yield luogo
+            for n in luogo.get("objects") or []:
+                yield n
+            for uscita in luogo.get("exits") or []:
+                for tr in uscita.get("transitions") or []:
+                    for n in tr.get("narration") or []:
+                        yield n
+            for fase in luogo.get("phases") or []:
+                if isinstance(fase.get("background"), dict):
+                    yield fase["background"]
+                for n in fase.get("characters") or []:
+                    yield n
+                for n in fase.get("narration") or []:
+                    yield n
 
 
 # ------------------------------------------------------------- conversione
@@ -339,6 +396,7 @@ def publish(storia: Storia, *, tutte=False, force=False, dry_run=False, prune=Fa
     # L'IR: gli id che ci vanno, e via quelli che non ci vanno piu'.
     voluti = {id(info["node"]): info["asset_id"] for info in da_pubblicare.values()}
     voluti.update(varianti_ripetute(ir, da_pubblicare))
+    voluti.update(luoghi_condivisi(ir, da_pubblicare))
     cambiato = False
     for node in nodi_con_immagine(ir):
         vuole = voluti.get(id(node))
@@ -428,7 +486,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(
         description="copia nella storia le immagini approvate e scrive gli id nell'IR")
     ap.add_argument("storia", help="la cartella della storia (stories/<id>)")
-    ap.add_argument("--ir", help="percorso dell'IR, se non e' <storia>/story.ir.json")
+    ap.add_argument("--ir", help="percorso della storia, se non e' l'unico *.zaistory.json della cartella")
     ap.add_argument("--work", help="banco di lavoro, se non e' <storia>/_work")
     ap.add_argument("--images", help="destinazione, se non e' <storia>/assets/images")
     ap.add_argument("--all", action="store_true", dest="tutte",

@@ -1,0 +1,622 @@
+{
+  "zaistory_version": "1.0.0",
+  "generated_by": {
+    "compiler": "zaistory-compiler",
+    "compiler_version": "1.0.0"
+  },
+  "id": "mini",
+  "title": "Mini",
+  "description": "Fixture minima che esercita ogni costrutto del formato. Non è una storia: è un banco di prova.",
+  "language": "it",
+  "failure_mode": "none",
+  "cover": {
+    "image_prompt": "Una taverna di legno vista dall'esterno, di notte, la porta socchiusa che perde luce gialla.",
+    "image_prompt_en": "A wooden tavern seen from outside at night, door ajar spilling yellow light.",
+    "place": "taverna",
+    "characters_in_frame": [
+      "vagabondo"
+    ]
+  },
+  "global_style": {
+    "image_style_suffix": "cel-shaded piatto a colori, contorni netti",
+    "image_style_suffix_en": "flat cel-shaded color, crisp outlines",
+    "anchor_framing": "waist-up",
+    "narrator_voice": {
+      "style_prompt": "voce bassa, asciutta, senza enfasi"
+    },
+    "default_tone": "notturno, sospeso",
+    "ambient_music_tags": [
+      "ambient",
+      "sparse",
+      "night"
+    ]
+  },
+  "player_voice": {
+    "inventory_intro": [
+      "Nelle tasche:",
+      "Quello che porti addosso:"
+    ],
+    "inventory_empty": [
+      "Tasche vuote."
+    ],
+    "presence_intro": [
+      "Con te c'è:"
+    ],
+    "presence_alone": [
+      "Sei solo."
+    ],
+    "exits_intro": [
+      "Da qui puoi andare:"
+    ],
+    "exits_none": [
+      "Non c'è nessuna strada che tu conosca."
+    ],
+    "no_match_narration": [
+      {
+        "intent": "generic",
+        "text": "Non ti viene in mente come farlo."
+      },
+      {
+        "intent": "perception",
+        "text": "Non c'è niente del genere da vedere."
+      },
+      {
+        "intent": "manipulation",
+        "text": "Le mani non trovano niente a cui aggrapparsi."
+      },
+      {
+        "intent": "communication",
+        "text": "Non c'è nessuno che risponda."
+      },
+      {
+        "intent": "movement",
+        "text": "Da quella parte non si passa."
+      }
+    ]
+  },
+  "protagonist": "vagabondo",
+  "characters": [
+    {
+      "id": "vagabondo",
+      "name": "Il vagabondo",
+      "aliases": [
+        "vagabondo",
+        "me",
+        "me stesso"
+      ],
+      "description": "Cappotto lungo, scarpe che hanno camminato troppo.",
+      "visual_prompt": "Uomo sui quaranta, cappotto lungo consumato, barba di tre giorni.",
+      "visual_prompt_en": "Man in his forties, long worn coat, three-day beard.",
+      "voice": {
+        "style_prompt": "roca, poche parole"
+      }
+    },
+    {
+      "id": "oste",
+      "name": "L'oste",
+      "aliases": [
+        "oste",
+        "taverniere",
+        "l'uomo dietro il bancone",
+        "il tipo del bancone"
+      ],
+      "description": "Grosso, appoggiato al bancone come se lo tenesse su lui.",
+      "description_variants": [
+        {
+          "condition": {
+            "flag_present": "oste_diffidente"
+          },
+          "text": "Ti guarda dall'alto in basso e non smette."
+        }
+      ],
+      "visual_prompt": "Uomo grosso, grembiule macchiato, avambracci pesanti.",
+      "voice": {
+        "style_prompt": "grave, lenta, vagamente ostile"
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "chiave",
+      "name": "una chiave di ottone",
+      "aliases": [
+        "chiave",
+        "chiave di ottone",
+        "ottone"
+      ],
+      "description": "Piccola, calda di tasca. Non c'è scritto niente sopra.",
+      "visual_prompt": "Chiave di ottone corta, dentatura semplice.",
+      "image": "anchor.item.chiave"
+    },
+    {
+      "id": "lanterna_spenta",
+      "name": "una lanterna spenta",
+      "aliases": [
+        "lanterna",
+        "lanterna spenta",
+        "lume"
+      ],
+      "description": "Vetro annerito, stoppino corto. Non serve a niente così."
+    },
+    {
+      "id": "lanterna_accesa",
+      "name": "una lanterna accesa",
+      "aliases": [
+        "lanterna",
+        "lanterna accesa",
+        "lume"
+      ],
+      "description": "La fiamma è bassa ma tiene. Fa un cerchio di luce largo un passo."
+    }
+  ],
+  "initial_inventory": [
+    "lanterna_spenta"
+  ],
+  "carry_flags": [
+    {
+      "id": "ha_offeso_oste",
+      "description": "Ha trattato male l'oste: nell'atto due qualcuno se lo ricorda."
+    }
+  ],
+  "start_act": "atto_uno",
+  "acts": [
+    {
+      "id": "atto_uno",
+      "title": "La taverna",
+      "start_place": "taverna",
+      "flags": [
+        "oste_diffidente",
+        "chiave_scoperta",
+        "strada_nota"
+      ],
+      "writes_carry_flags": [
+        "ha_offeso_oste"
+      ],
+      "places": [
+        {
+          "id": "taverna",
+          "name": "la taverna",
+          "aliases": [
+            "taverna",
+            "locale",
+            "osteria",
+            "dentro"
+          ],
+          "visual_prompt": "Sala bassa di legno scuro, quattro tavoli, un bancone lungo.",
+          "visual_prompt_en": "Low dark-wood room, four tables, a long counter.",
+          "image": "anchor.place.taverna",
+          "completed_when": {
+            "flag_present": "chiave_scoperta"
+          },
+          "exits": [
+            {
+              "to": "strada",
+              "label": "la porta sulla strada",
+              "aliases": [
+                "porta",
+                "fuori",
+                "strada",
+                "uscire"
+              ],
+              "known_when": {
+                "flag_present": "strada_nota"
+              },
+              "condition": {
+                "has_item": "chiave"
+              },
+              "blocked_narration": "La porta è chiusa a chiave, e la chiave non ce l'hai tu.",
+              "transitions": [
+                {
+                  "narration": [
+                    {
+                      "text": "L'aria di fuori è più fredda di quanto ricordassi.",
+                      "image_prompt": "Soglia della taverna vista dall'interno, la notte oltre la porta aperta.",
+                      "sound_effect_prompt": "cardine che cigola, vento"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "objects": [
+            {
+              "id": "bancone",
+              "name": "il bancone",
+              "aliases": [
+                "bancone",
+                "banco",
+                "legno del bancone"
+              ],
+              "description": "Legno segnato da cerchi di bicchieri. Sotto, un ripiano che non si vede da qui."
+            },
+            {
+              "id": "camino",
+              "name": "il camino",
+              "aliases": [
+                "camino",
+                "fuoco",
+                "focolare",
+                "braci"
+              ],
+              "description": "Le braci tengono ancora. Basterebbe avvicinarci qualcosa."
+            },
+            {
+              "id": "chiave_sul_ripiano",
+              "name": "qualcosa di lucido",
+              "aliases": [
+                "cosa lucida",
+                "riflesso",
+                "luccichio"
+              ],
+              "description": "Sotto il bancone, appoggiata al ripiano, una chiave di ottone.",
+              "present_when": {
+                "flag_absent": "chiave_scoperta"
+              }
+            }
+          ],
+          "phases": [
+            {
+              "id": "taverna_dopo",
+              "condition": {
+                "flag_present": "chiave_scoperta"
+              },
+              "kind": "interactive",
+              "background": {
+                "image_prompt": "La sala della taverna dal centro, il bancone vuoto, la porta sul fondo.",
+                "image": "shot.taverna_dopo.bg",
+                "ambient_sound_prompt": "brace che schiocca, silenzio"
+              },
+              "look": "La chiave è nella tua tasca. Qui non è rimasto niente da cercare.",
+              "tone": "chiuso, pronto ad andarsene",
+              "characters": [
+                {
+                  "id": "oste"
+                }
+              ],
+              "actions": [
+                {
+                  "id": "guarda_oste_dopo",
+                  "verb": "look",
+                  "target": "oste",
+                  "test_phrases": [
+                    "osservo il taverniere",
+                    "che faccia ha l'uomo del bancone"
+                  ],
+                  "effect": {
+                    "narration": "Ti segue con gli occhi finché non arrivi alla porta."
+                  }
+                }
+              ]
+            },
+            {
+              "id": "taverna_arrivo",
+              "kind": "interactive",
+              "background": {
+                "image_prompt": "La sala della taverna vista dalla soglia, l'oste dietro il bancone.",
+                "image": "shot.taverna_arrivo.bg",
+                "ambient_sound_prompt": "brusio basso, un bicchiere posato",
+                "characters_in_frame": [
+                  "oste"
+                ]
+              },
+              "look": "Quattro tavoli, tutti liberi. Il camino tiene ancora qualche brace. Dietro il bancone, l'oste ti guarda entrare senza salutarti.",
+              "look_variants": [
+                {
+                  "condition": {
+                    "flag_present": "oste_diffidente"
+                  },
+                  "text": "Quattro tavoli liberi e un oste che adesso non ti toglie gli occhi di dosso. Sotto il bancone, qualcosa manda un riflesso."
+                }
+              ],
+              "tone": "notturno, sospeso",
+              "characters": [
+                {
+                  "id": "oste"
+                }
+              ],
+              "narration": [
+                {
+                  "text": "La porta si chiude alle tue spalle con un peso che non ti aspettavi.",
+                  "image_prompt": "Primo piano della porta che si chiude, controluce.",
+                  "voice": {
+                    "style_prompt": "bassa, asciutta"
+                  }
+                }
+              ],
+              "on_enter_flags_set": [
+                "strada_nota"
+              ],
+              "actions": [
+                {
+                  "id": "guarda_bancone",
+                  "verb": "look",
+                  "target": "bancone",
+                  "test_phrases": [
+                    "do un'occhiata al banco",
+                    "cosa c'è sul legno del bancone"
+                  ],
+                  "effect": {
+                    "narration": "Cerchi di bicchieri, e sotto il piano un ripiano in ombra. Qualcosa là sotto prende luce.",
+                    "set_flag": "oste_diffidente"
+                  }
+                },
+                {
+                  "id": "prendi_chiave",
+                  "verb": "use",
+                  "target": "chiave_sul_ripiano",
+                  "repeatable": false,
+                  "condition": {
+                    "flag_present": "oste_diffidente"
+                  },
+                  "blocked_narration": "Non hai ancora visto niente che valga la pena di allungare una mano.",
+                  "test_phrases": [
+                    "afferro il luccichio sotto il banco",
+                    "raccolgo quella cosa che brilla"
+                  ],
+                  "effect": {
+                    "narration": "Allunghi il braccio e la chiave è tua prima che l'oste finisca di voltarsi.",
+                    "set_flag": "chiave_scoperta",
+                    "add_inventory": "chiave",
+                    "play_sound_prompt": "metallo che struscia sul legno"
+                  }
+                },
+                {
+                  "id": "parla_oste",
+                  "verb": "talk",
+                  "target": "oste",
+                  "test_phrases": [
+                    "attacco discorso col taverniere",
+                    "chiedo qualcosa all'uomo del bancone"
+                  ],
+                  "effect": {
+                    "goto_dialogue": "d_start"
+                  }
+                }
+              ],
+              "dialogue": {
+                "start": "d_start",
+                "nodes": {
+                  "d_start": {
+                    "speaker": "oste",
+                    "text": "Non serviamo più a quest'ora.",
+                    "text_variants": [
+                      "La cucina è chiusa. Il resto pure."
+                    ],
+                    "choices": [
+                      {
+                        "text": "Non voglio da mangiare.",
+                        "goto": "d_calmo"
+                      },
+                      {
+                        "text": "Nemmeno da bere, immagino.",
+                        "goto": "d_offeso",
+                        "effect": {
+                          "narration": "L'oste posa lo straccio.",
+                          "set_flag": "ha_offeso_oste"
+                        }
+                      }
+                    ]
+                  },
+                  "d_calmo": {
+                    "speaker": "oste",
+                    "text": "E allora cosa vuoi.",
+                    "next": "d_fine"
+                  },
+                  "d_offeso": {
+                    "speaker": "oste",
+                    "text": "Nemmeno.",
+                    "next": "d_fine"
+                  },
+                  "d_fine": {
+                    "speaker": "narrator",
+                    "text": "Torna ad asciugare bicchieri già asciutti.",
+                    "end": true
+                  }
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "id": "accendi_lanterna",
+              "verb": "use",
+              "target": "lanterna_spenta",
+              "second_target": "camino",
+              "test_phrases": [
+                "do fuoco al lume con le braci",
+                "avvicino il lume al focolare"
+              ],
+              "effect": {
+                "narration": "Lo stoppino prende alla terza volta.",
+                "remove_inventory": "lanterna_spenta",
+                "add_inventory": "lanterna_accesa"
+              }
+            }
+          ]
+        },
+        {
+          "id": "strada",
+          "name": "la strada",
+          "aliases": [
+            "strada",
+            "fuori",
+            "vicolo"
+          ],
+          "visual_prompt": "Vicolo stretto di ciottoli bagnati fra due muri alti.",
+          "completed_when": {},
+          "exits": [
+            {
+              "to": "taverna",
+              "label": "la porta della taverna",
+              "aliases": [
+                "taverna",
+                "dentro",
+                "indietro",
+                "locale"
+              ],
+              "transitions": [
+                {
+                  "narration": [
+                    {
+                      "text": "Dentro è più caldo, e l'oste non ha cambiato posizione."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "to": "cortile",
+              "aliases": [
+                "cortile",
+                "cancello",
+                "avanti"
+              ],
+              "condition": {
+                "has_item": "lanterna_accesa"
+              },
+              "blocked_narration": "Più avanti il vicolo è buio pesto. Non ci vai senza luce."
+            }
+          ],
+          "phases": [
+            {
+              "id": "strada_unica",
+              "kind": "interactive",
+              "background": {
+                "image_prompt": "Vicolo di ciottoli bagnati, un lampione morto in fondo."
+              },
+              "look": "Ciottoli bagnati e due muri. In fondo il vicolo si chiude nel buio.",
+              "tone": "freddo, esposto",
+              "actions": [
+                {
+                  "id": "guarda_buio",
+                  "verb": "look",
+                  "target": "fondo_vicolo",
+                  "effect": {
+                    "narration": "Il buio in fondo non è un'ombra: è proprio assenza di luce."
+                  }
+                }
+              ]
+            }
+          ],
+          "objects": [
+            {
+              "id": "fondo_vicolo",
+              "name": "il fondo del vicolo",
+              "aliases": [
+                "fondo",
+                "buio",
+                "in fondo"
+              ],
+              "description": "Dove i muri si stringono e la luce non arriva."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "atto_due",
+      "title": "Il cortile",
+      "start_place": "cortile",
+      "flags": [
+        "ha_bussato"
+      ],
+      "reads_carry_flags": [
+        "ha_offeso_oste"
+      ],
+      "places": [
+        {
+          "id": "cortile",
+          "name": "il cortile",
+          "aliases": [
+            "cortile",
+            "corte"
+          ],
+          "visual_prompt": "Cortile chiuso, un pozzo al centro, una porta sul lato.",
+          "completed_when": {
+            "flag_present": "ha_bussato"
+          },
+          "phases": [
+            {
+              "id": "cortile_fine",
+              "condition": {
+                "flag_present": "ha_bussato"
+              },
+              "kind": "cutscene",
+              "background": {
+                "image_prompt": "La porta del cortile che si apre su una stanza illuminata."
+              },
+              "narration": [
+                {
+                  "text": "La porta si apre prima che tu bussi una seconda volta."
+                },
+                {
+                  "text": "Dentro c'è caldo, e qualcuno che ti aspettava.",
+                  "image_prompt": "Interno caldo visto dalla soglia, controluce."
+                }
+              ],
+              "ending": {
+                "kind": "natural",
+                "label": "La porta che si apre"
+              }
+            },
+            {
+              "id": "cortile_arrivo",
+              "kind": "interactive",
+              "background": {
+                "image_prompt": "Cortile notturno con un pozzo al centro, la lanterna che fa un cerchio di luce."
+              },
+              "look": "Un pozzo al centro, e una porta sul lato che non è chiusa.",
+              "look_variants": [
+                {
+                  "condition": {
+                    "flag_present": "ha_offeso_oste"
+                  },
+                  "text": "Un pozzo al centro, e una porta sul lato. Ti resta addosso lo sguardo dell'oste, e non aiuta."
+                }
+              ],
+              "tone": "sospeso, quasi arrivato",
+              "actions": [
+                {
+                  "id": "bussa",
+                  "verb": "use",
+                  "target": "porta_cortile",
+                  "repeatable": false,
+                  "test_phrases": [
+                    "batto sulla porta",
+                    "picchio all'uscio"
+                  ],
+                  "effect": {
+                    "narration": "Batti due volte.",
+                    "set_flag": "ha_bussato"
+                  }
+                }
+              ]
+            }
+          ],
+          "objects": [
+            {
+              "id": "porta_cortile",
+              "name": "la porta",
+              "aliases": [
+                "porta",
+                "uscio",
+                "battente"
+              ],
+              "description": "Legno chiaro, nuovo. Stona con tutto il resto."
+            },
+            {
+              "id": "pozzo",
+              "name": "il pozzo",
+              "aliases": [
+                "pozzo",
+                "secchio",
+                "corda del pozzo"
+              ],
+              "description": "Coperto da un'asse. Nessuno ci attinge da un pezzo."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
