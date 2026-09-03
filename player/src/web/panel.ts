@@ -23,7 +23,7 @@ import { ASCOLTO_DEFAULT, type ImpostazioniAscolto, type Listen } from './listen
  * Le prime quattro sono per chi gioca; le ultime tre ispezionano, e a debug
  * spento non compaiono nemmeno.
  */
-export type Tab = 'principale' | 'disco' | 'interprete' | 'ascolto' | 'stato' | 'linter';
+export type Tab = 'principale' | 'partita' | 'interprete' | 'ascolto' | 'stato' | 'linter';
 
 /** Le schede che esistono solo a debug acceso. */
 export const TAB_DEBUG: readonly Tab[] = ['stato', 'linter'];
@@ -113,11 +113,16 @@ export class Panel {
   render(): void {
     if (!this.aperto) return;
     clear(this.body);
+    // «Partita» è l'unica scheda in cui il contenuto vuole tutta l'altezza:
+    // dentro c'è un riquadro di testo, e un riquadro di testo alto un terzo del
+    // pannello con sotto il vuoto è spazio buttato. Le altre restano a flusso —
+    // lì il contenuto finisce dove finisce.
+    this.body.classList.toggle('pieno', this.tab === 'partita');
     switch (this.tab) {
       case 'principale':
         return this.principale();
-      case 'disco':
-        return this.disco();
+      case 'partita':
+        return this.partita();
       case 'interprete':
         return this.interprete();
       case 'ascolto':
@@ -170,32 +175,46 @@ export class Panel {
     }
   }
 
-  // --------------------------------------------------------------- disco
+  // ------------------------------------------------------------- partita
 
-  private disco(): void {
+  /**
+   * La partita, in chiaro: si copia, si manda via, si incolla, si riprende.
+   *
+   * Un riquadro solo, e non due. Erano due — quella da portare via e quella da
+   * incollare — ma sono lo stesso oggetto: la sequenza di quello che si è
+   * fatto. Scriverla due volte nella stessa scheda costringeva a copiarla da
+   * sopra e incollarla sotto per rigiocare la propria partita accorciata di un
+   * passo, che è il gesto più frequente di tutti mentre si collauda. Qui si
+   * scrive dentro quella che c'è e si preme «riprendi».
+   */
+  private partita(): void {
     const trace = this.hooks.trace();
     const passi = trace ? trace.split('\n').filter((l) => l.trim()).length : 0;
-    // Il conto dei passi stava nella scheda «traccia», che diceva la stessa
-    // cosa di questa con altre parole. Qui è anche più utile: dice quanto è
-    // lunga la partita che si sta per copiare.
-    this.body.append(el('h3', undefined, `portare via la partita (${passi} ${passi === 1 ? 'passo' : 'passi'})`));
+    // Il conto dei passi dice quanto è lunga la partita che si sta per copiare.
+    this.body.append(el('h3', undefined, `${passi} ${passi === 1 ? 'passo' : 'passi'}`));
     this.body.append(
       el(
         'p',
         'empty',
         'La partita è la sequenza di quello che hai scritto: il parser può solo scegliere fra azioni già ' +
           'definite, quindi quella sequenza la descrive per intero. Si copia, si manda dove vuoi — una mail a ' +
-          'te stesso, una nota, una chat — e si riprende da lì, anche su un altro device. Non passa da nessun ' +
-          'server.',
+          'te stesso, una nota, una chat — e non passa da nessun server. Incollandone un’altra qui dentro e ' +
+          'premendo «riprendi» viene rigiocata in un istante, e si continua da lì: la tua accorciata di un ' +
+          'passo, o quella di qualcun altro.',
       ),
     );
-    const ta = el('textarea', 'trace');
-    ta.rows = 8;
-    ta.readOnly = true;
-    ta.value = trace;
-    this.body.append(ta);
 
-    const btns = el('div', 'rowbtns');
+    const riga = el('div', 'partita-riga');
+    const ta = el('textarea', 'trace');
+    // L'altezza gliela dà il pannello, non il numero di righe: `rows` resta
+    // basso apposta, così è la scheda a stabilire quanto è alta e non il
+    // contrario.
+    ta.rows = 6;
+    ta.spellcheck = false;
+    ta.value = trace;
+    ta.placeholder = 'apri la porta\nprendi la torcia\n…';
+
+    const tasti = el('div', 'partita-tasti');
     const copia = el('button', 'btn primary', 'copia');
     copia.onclick = async () => {
       // La pressione non si aspetta: scrivere negli appunti richiede che il
@@ -208,32 +227,19 @@ export class Panel {
         setTimeout(() => (copia.textContent = 'copia'), 1200);
       } catch {
         ta.select();
-        copia.textContent = 'selezionata: copiala a mano';
+        copia.textContent = 'a mano';
       }
     };
-    btns.append(copia);
-    this.body.append(btns);
-
-    this.body.append(el('h3', undefined, 'riprendere'));
-    this.body.append(
-      el(
-        'p',
-        'empty',
-        "Incolla una partita — la tua, copiata qui sopra, o quella di qualcun altro. Viene rigiocata in un " +
-          "istante e poi si continua da lì.",
-      ),
-    );
-    const inp = el('textarea', 'trace');
-    inp.rows = 5;
-    inp.placeholder = 'apri la porta\nprendi la torcia\n…';
-    this.body.append(inp);
-    const go = el('button', 'btn primary', 'riprendi');
+    const go = el('button', 'btn', 'riprendi');
     go.onclick = async () => {
       await premi(go);
       this.close();
-      this.hooks.resume(inp.value);
+      this.hooks.resume(ta.value);
     };
-    this.body.append(go);
+    tasti.append(copia, go);
+
+    riga.append(ta, tasti);
+    this.body.append(riga);
   }
 
   // ---------------------------------------------------------- interprete
@@ -603,7 +609,7 @@ export function chiediSeRicominciare(): Promise<boolean> {
     titolo: 'Ricominciare da capo?',
     testo:
       'La partita in corso si perde e si riparte dall’inizio. Se vuoi tenerla, annulla e copiala dalla ' +
-      'scheda «disco»: da lì si riprende quando vuoi, anche su un altro device.',
+      'scheda «partita»: da lì si riprende quando vuoi, anche su un altro device.',
     ok: 'ricomincia',
   });
 }
