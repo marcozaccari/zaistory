@@ -73,9 +73,9 @@
 
   /* L'oro della storia: un oro spento, appena piu' chiaro della prosa — 9,5:1
      contro 8:1. Segna cio' che appartiene al racconto e non alla macchina che
-     lo serve, che e' la meta' calda della regola dei due colori: il nome della
-     scena in barra, i filetti della prosa d'autore, il nome di una faccia
-     aperta, gli oggetti che si hanno in mano.
+     lo serve, che e' la meta' calda della regola dei due colori: i filetti
+     della prosa d'autore, il nome di una faccia aperta, gli oggetti che si
+     hanno in mano. L'atto in barra ha una sfumatura sua, qui sotto.
      Piu' giallo e meno saturo di `--amber`, che qui e' il colore degli avvisi
      del linter e di un'immagine che manca: cio' che e' della storia non deve
      leggersi come un'avvertenza.
@@ -83,6 +83,12 @@
      dove comparve; adesso quello sta nel grigio caldo qui sopra e il nome dice
      la regola invece del primo caso. */
   --voce-storia: #d1b86a;
+
+  /* Lo stesso oro, di un soffio piu' acceso: l'atto in barra. Sta da solo su
+     una riga sua, sotto un titolo bianco e su un fondo piu' scuro del resto
+     della pagina, ed e' l'unico posto dove l'oro della storia si legge
+     leggermente sottotono. */
+  --voce-atto: #dbb762;
 
   /* Lo stesso oro, spento: i nomi d'autore che il player scrive — chi parla,
      chi c'e' in campo, cosa si ha in mano. Sotto la prosa, e va bene cosi': un
@@ -933,7 +939,7 @@ body.debug .umano {
    Il luogo le stava accanto ed e' sceso sul palco, accanto al tono; il conto
    delle azioni e' sceso in fondo al dock, accanto all'elenco che conta. */
 .topbar .titles span .dove {
-  color: var(--voce-storia);
+  color: var(--voce-atto);
 }
 
 /* Col debug al posto del nome c'e' l'id, e un id sta nel carattere dei dati:
@@ -2272,6 +2278,55 @@ body.palco-ridotto .volto .nome {
 .volto:hover .nome,
 .volto:focus-visible .nome {
   color: var(--voce-storia);
+}
+
+/* Telefono in piedi e palco ridotto: le facce si coricano.
+   La colonna sul bordo funziona finche' l'altezza c'e'. Ridotta a un quarto di
+   schermo ne entrano tre, e dalla quarta in poi il cast finisce sotto il bordo
+   della fascia — c'e' in scena chi non si vede, e la fascia ridotta esiste
+   proprio per non dover scorrere niente. In riga invece lo spazio che avanza e'
+   la larghezza, che ridotto e' l'unica dimensione rimasta: le facce vanno a
+   capo da sole e otto stanno in due righe.
+   La figura si sposta a sinistra perche' e' quello che libera la larghezza:
+   centrata lascerebbe due margini vuoti e nessuno dei due abbastanza largo.
+   E la sua colonna e' larga quanto la figura e basta — l'altezza e' quella
+   della fascia, e da li' e dalle proporzioni dell'immagine viene la larghezza:
+   una colonna a misura fissa lascerebbe un vuoto fra la figura e la prima
+   faccia, cioe' proprio la larghezza che si stava cercando di liberare. Meta'
+   schermo e' il tetto, per le panoramiche e per quando al posto della figura ci
+   sono i prompt.
+   Solo se c'e' qualcuno da mettere in riga: senza facce visibili la figura
+   torna dov'era, in mezzo, che una figura appoggiata a sinistra con mezzo palco
+   vuoto accanto e' una composizione che nessuno ha chiesto. Fuori dal debug le
+   facce non in campo non contano, perche' non si vedono. */
+@media (max-width: 639px) and (orientation: portrait) {
+  body.palco-ridotto:has(.palco-cast .volto:not(.fuori)) .palco-corpo,
+  body.debug.palco-ridotto:has(.palco-cast .volto) .palco-corpo {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  body.palco-ridotto:has(.palco-cast .volto:not(.fuori)) .palco-tela,
+  body.debug.palco-ridotto:has(.palco-cast .volto) .palco-tela {
+    align-items: flex-start;
+    max-width: 50vw;
+  }
+
+  /* Alta quanto la fascia, larga di conseguenza: e' l'altezza a essere contata
+     — e' lei la misura che il collasso ha stretto — e la larghezza la porta
+     dietro l'immagine con le sue proporzioni. */
+  body.palco-ridotto:has(.palco-cast .volto:not(.fuori)) .palco-tela:not(.nuda) img,
+  body.debug.palco-ridotto:has(.palco-cast .volto) .palco-tela:not(.nuda) img {
+    height: 100%;
+    width: auto;
+  }
+
+  body.palco-ridotto:has(.palco-cast .volto:not(.fuori)) .palco-cast,
+  body.debug.palco-ridotto:has(.palco-cast .volto) .palco-cast {
+    flex-flow: row wrap;
+    justify-content: flex-start;
+    align-content: flex-start;
+    padding: 8px;
+  }
 }
 
 /* --- La riga delle coordinate --------------------------------------------- */

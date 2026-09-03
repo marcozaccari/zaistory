@@ -283,9 +283,23 @@ export class Stage {
    * cominciata — e lì vale il titolo della storia: è pur sempre il nome di ciò
    * che si sta guardando, ed è scritto nel file come tutto il resto.
    */
+  /**
+   * Il titolo della lente: dove siamo e a che punto del luogo.
+   *
+   * Meno la ripetizione. La prima fase di un luogo si chiama quasi sempre come
+   * il luogo — «il garage» / «Il garage» — e non è un difetto della storia:
+   * entrare nella stanza *è* la prima fase, e un titolo di fase serve anche da
+   * solo dove il luogo non c'è. È chi li accosta a doverli guardare insieme,
+   * altrimenti la lente si intitola «il furgone ribaltato — Il furgone
+   * ribaltato». A distinguerli basta l'iniziale, e l'iniziale è di stampa.
+   */
   private titolo(): string {
     const pl = this.current?.place ? this.idx.places.get(this.current.place) : undefined;
-    return [pl && displayName(pl), this.phase?.title].filter(Boolean).join(' — ') || this.idx.story.title;
+    const luogo = pl ? displayName(pl) : undefined;
+    const fase = this.phase?.title;
+    const uguale = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+    const parti = [luogo, luogo && fase && uguale(luogo, fase) ? undefined : fase];
+    return parti.filter(Boolean).join(' — ') || this.idx.story.title;
   }
 
   /** I prompt che hanno prodotto — o che produrranno — questa inquadratura.
