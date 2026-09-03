@@ -25,7 +25,7 @@
 
 import './styles.css';
 
-import type { Resolution, Session as SessionType, TurnEvent, TurnResult } from '../core/index.js';
+import type { Action, Resolution, Session as SessionType, TurnEvent, TurnResult } from '../core/index.js';
 import {
   LoadError,
   Session,
@@ -501,7 +501,23 @@ class Game {
   }
 
   /**
-   * I due comandi, in fondo al dock e a destra.
+   * La riga degli strumenti, in fondo al dock: l'ispezione a sinistra, i due
+   * passi a destra.
+   *
+   * Sulla stessa linea perché sono due voci sole e stanno larghe: l'elenco
+   * delle azioni è chiuso quasi sempre — è una linguetta con un numero accanto
+   * — e sotto di lei una seconda riga con dentro due bottoni piccoli era mezzo
+   * dito di dock speso per niente. Aperta, l'elenco scende sotto la sua
+   * linguetta e i due passi restano dove sono.
+   */
+  private rigaDebug(ispezione?: HTMLElement): HTMLElement {
+    const riga = el('div', 'riga-debug solo-debug');
+    riga.append(ispezione ?? el('span'), this.controlliDebug());
+    return riga;
+  }
+
+  /**
+   * I due comandi, a destra.
    *
    * A destra perché non sono la partita: la riga in cui si scrive comincia da
    * sinistra ed è quella che si guarda giocando, questi due stanno in coda come
@@ -510,7 +526,7 @@ class Game {
    * diagnostica, così accendere il debug non deve ricostruire il dock.
    */
   private controlliDebug(): HTMLElement {
-    const riga = el('div', 'controlli solo-debug');
+    const riga = el('div', 'controlli');
 
     const b = (segno: string, etichetta: string, spento: boolean, fai: () => Promise<void>) => {
       const n = el('button', 'passo');
@@ -547,9 +563,19 @@ class Game {
     // si è premuta, non cosa si è detto.
     const battuta = scelta ? this.choices.find((c) => c.index === n - 1)?.text : undefined;
 
+    // Un'azione toccata nell'ispezione: si esegue **quella**, non una frase che
+    // le somiglia — il punto di premerla è saltare il parser, non metterlo alla
+    // prova un'altra volta. Nella traccia va col suo id, ed è l'unico comando
+    // del player che non sia una frase: senza, una partita in cui si è premuta
+    // una riga dell'ispezione non si rigiocherebbe più.
+    const marchio = /^azione\s+(\S+)$/.exec(line.trim());
+    const daIspezione = marchio
+      ? this.session.candidates().actions.find((a) => a.id === marchio[1])
+      : undefined;
+
     if (!silent || eco) {
       if (battuta) this.transcript.chosen(battuta);
-      else this.transcript.echo(line);
+      else this.transcript.echo(daIspezione ? this.etichettaAzione(daIspezione) : line);
     }
     if (!silent) {
       // La voce di prima si ferma: senza, un tocco veloce lascerebbe indietro
@@ -558,7 +584,11 @@ class Game {
       this.listen.taci();
     }
 
-    const res = scelta ? this.session.choose(n - 1) : await this.turno(line);
+    const res = daIspezione
+      ? this.session.takeResolution({ kind: 'action', action: daIspezione, score: 1 })
+      : scelta
+        ? this.session.choose(n - 1)
+        : await this.turno(line);
     // Nella traccia va solo quello che ha mosso la storia. Una frase che ha
     // ricevuto il ripiego per intenzione non ha fatto succedere niente, e
     // rigiocandola non farebbe succedere niente un'altra volta: tenerla
@@ -687,7 +717,7 @@ class Game {
       this.dock.append(again);
       // Anche qui, e soprattutto qui: un finale è il posto in cui collaudando
       // si vuole tornare indietro di una mossa per vedere l'altro.
-      this.dock.append(this.controlliDebug());
+      this.dock.append(this.rigaDebug());
       return;
     }
     this.paintDock(res, silent);
@@ -730,7 +760,7 @@ class Game {
       }
       // In dialogo la riga in cui si scrive non c'è, ma la battuta sbagliata è
       // proprio la mossa che collaudando si vuole rifare in un altro modo.
-      this.dock.append(this.controlliDebug());
+      this.dock.append(this.rigaDebug());
       return;
     }
 
@@ -812,10 +842,7 @@ class Game {
       void this.feed(v);
     };
     this.dock.append(row);
-    this.dock.append(this.controlliDebug());
-
-    const ispezione = this.ispezione();
-    if (ispezione) this.dock.append(ispezione);
+    this.dock.append(this.rigaDebug(this.ispezione()));
 
     // Il fuoco automatico vale solo dove la tastiera non costa niente: su un
     // telefono rimettercelo dopo una frase che non ha fatto match significa
@@ -853,7 +880,6 @@ class Game {
     // sempre *perché* una non compare.
     const aperte = actions.filter((a) => st.ok(a.condition));
     const { root, corpo } = piega('azioni', actions.length);
-    root.classList.add('solo-debug');
 
     const chips = (voci: string[]) => {
       const riga = el('div', 'chips');
@@ -878,14 +904,17 @@ class Game {
 
     for (const a of actions) {
       const ok = st.ok(a.condition);
-      const riga = el('div', 'act');
+      // Si tocca e si gioca. È la scorciatoia che l'elenco prometteva senza
+      // mantenerla: chi collauda legge «sblocca», vuole vedere cosa sblocca, e
+      // fin qui doveva indovinare da sé la frase che ci arriva. Anche quelle
+      // con la condizione chiusa — è così che si legge la `blocked_narration`,
+      // che altrimenti non la vede nessuno.
+      const riga = el('button', 'act');
+      riga.type = 'button';
+      riga.onclick = () => void this.premi(riga, () => this.feed(`azione ${a.id}`));
       const testa = el('div', 'head');
       testa.append(el('span', `mark ${ok ? 'on' : 'off'}`, ok ? '●' : '×'));
-      testa.append(
-        el('span', undefined, [verbLabel(a.verb), this.nomeBersaglio(a.target), this.nomeBersaglio(a.second_target)]
-          .filter(Boolean)
-          .join(' · ')),
-      );
+      testa.append(el('span', undefined, this.etichettaAzione(a)));
       // Un'azione che non muove niente si può rileggere per sempre; una che
       // sblocca è quella che fa avanzare la storia, ed è l'unica cosa che si
       // cerca quando una fase sembra ferma.
@@ -898,6 +927,15 @@ class Game {
       corpo.append(riga);
     }
     return root;
+  }
+
+  /** Come si legge un'azione: il gesto e su cosa. È la riga dell'ispezione, ed
+   * è anche l'eco che entra nel flusso quando la si gioca da lì — chi rilegge
+   * deve ritrovare la stessa cosa che ha toccato. */
+  private etichettaAzione(a: Action): string {
+    return [verbLabel(a.verb), this.nomeBersaglio(a.target), this.nomeBersaglio(a.second_target)]
+      .filter(Boolean)
+      .join(' · ');
   }
 
   /** Come si chiama un bersaglio per chi legge. Il protagonista non è un
@@ -1111,7 +1149,14 @@ class Game {
       this.panel.suDebug(on);
     };
     for (const b of debugButtons) {
-      b.addEventListener('click', () => setDebug(b.getAttribute('aria-pressed') !== 'true'));
+      b.addEventListener('click', () => {
+        setDebug(b.getAttribute('aria-pressed') !== 'true');
+        // Dal piede del menu il debug chiude il pannello, come il giro dei
+        // caratteri: quello che accende sta quasi tutto **sotto** il menu — le
+        // chip nel dock, l'ispezione del luogo, la meccanica nel trascritto — e
+        // restare sul pannello vuol dire premere e non vedere succedere niente.
+        if (b.id === 'btn-debug-panel') this.panel.close();
+      });
     }
 
     // La scelta fra testo e immagini compare solo quando c'è davvero qualcosa

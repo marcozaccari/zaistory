@@ -1078,19 +1078,40 @@ body.debug .dbg {
   padding: 4px 0 12px;
 }
 
-/* Indietro e avanti di un'azione, in coda al dock e a destra. Non sono la
-   partita — quella comincia da sinistra, dove si scrive — ma uno strumento
-   appoggiato al banco di chi la sta collaudando, e stanno dove stanno gli
-   strumenti: in fondo, piccoli, spenti finche' non c'e' niente da fare. */
-.dock .controlli {
+/* La riga degli strumenti, in coda al dock: l'ispezione a sinistra, i due
+   passi a destra. Sulla stessa linea perche' sono due voci sole e stanno
+   larghe — l'elenco delle azioni e' chiuso quasi sempre, e sotto di lui una
+   seconda riga con dentro due bottoni piccoli era mezzo dito di dock speso per
+   niente.
+
+   `align-items: flex-start`: aperto, l'elenco scende sotto la sua linguetta e i
+   due passi devono restare in cima, non scivolare a meta' della lista. */
+.dock .riga-debug {
   display: none;
-  justify-content: flex-end;
-  gap: 6px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
   margin-top: 8px;
 }
 
-body.debug .dock .controlli {
+body.debug .dock .riga-debug {
   display: flex;
+}
+
+/* La colonna di sinistra si prende quello che resta e si stringe: dentro c'e'
+   la riga `meta` di ogni azione, che e' lunga. */
+.dock .riga-debug > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Indietro e avanti di un'azione. Non sono la partita — quella comincia da
+   sinistra, dove si scrive — ma uno strumento appoggiato al banco di chi la sta
+   collaudando: piccoli, in coda, spenti finche' non c'e' niente da fare. */
+.dock .controlli {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
 }
 
 .dock .controlli .passo {
@@ -1122,16 +1143,9 @@ body.debug .dock .controlli {
   vertical-align: 0;
 }
 
-/* Dentro il dock la piega e' una voce fra le chip: prende il loro respiro e
-   sparisce con loro quando il debug e' spento. */
-.dock .piega.solo-debug {
-  display: none;
-}
-
-body.debug .dock .piega.solo-debug {
-  display: block;
-}
-
+/* Dentro il dock la piega e' una voce fra le chip e prende il loro respiro. A
+   farla sparire col debug spento e' la riga che la contiene, non lei: la
+   visibilita' la decide un posto solo. */
 .dock .piega-corpo {
   gap: 8px;
 }
@@ -1734,6 +1748,34 @@ body:not(.debug) #tabs button[data-debug] {
   padding: 9px 0;
   border-bottom: 1px solid var(--line);
   font-size: 13.5px;
+}
+
+/* Nel dock l'azione si tocca e si gioca. Resta la riga di prima — non diventa
+   una pastiglia — perche' quello che si legge li' dentro non cambia: e' un
+   elenco che si scorre leggendo, e solo dopo si preme. Da bottone eredita
+   niente, quindi il carattere, il colore e l'allineamento si rimettono a mano. */
+.dock button.act {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dock button.act:hover,
+.dock button.act:focus-visible {
+  background: var(--bg-soft);
+}
+
+.dock button.act:active,
+.dock button.act.premuto {
+  background: var(--accent-soft);
 }
 
 .act .head {

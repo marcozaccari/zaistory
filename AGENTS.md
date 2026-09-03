@@ -84,7 +84,10 @@ Ordine della ricostruzione (in `ARCHITECTURE.md`, «Stato del lavoro»):
    un'azione**: la partita è la sequenza di quello che si è scritto, quindi
    disfare vuol dire rigiocarla meno l'ultima riga — lo stato è quello vero, e
    dal flusso spariscono i blocchi di quell'azione. Si prova una frase, si
-   guarda, si torna indietro e se ne prova un'altra. 43 test.
+   guarda, si torna indietro e se ne prova un'altra. Stanno sulla stessa riga
+   dell'ispezione, che ora **si tocca e si gioca**: nella traccia quell'azione
+   va con il suo id (`azione <id>`, l'unico comando del player che non sia una
+   frase, ed è il prezzo per restare rigiocabile). 43 test.
 4. ~~**il modulo assets**~~ — fatto: estrazione sulla nuova gerarchia (oggetti
    d'ambiente e cutscene di passaggio compresi), studio, pubblicazione,
    **`rebind.py`**, gli script di avvio e i tre selftest, che ora girano sulla
